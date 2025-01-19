@@ -31,5 +31,7 @@ typedef struct Json {
 } Json;
 
 char *json_serialize(Json *json, char flags);
+Json *json_deserialize(char *json);
+char *TEST(char *json);
 
 #endif // JSON_H

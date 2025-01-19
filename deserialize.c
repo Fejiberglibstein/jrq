@@ -1,4 +1,5 @@
 #include "./json.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -37,11 +38,10 @@ inline bool is_whitespace(char c) {
 }
 
 char *skip_whitespace(char *json) {
-    int i = 0;
-    for (i = 0; is_whitespace(json[i]); i++)
+    for (; is_whitespace(*json); json++)
         ;
 
-    return json + i;
+    return json;
 }
 
 // ensures that a string is properly formatted, returning the end location of
@@ -53,14 +53,14 @@ char *skip_whitespace(char *json) {
 char *validate_string(char *json) {
     bool backslashed = false;
 
-    for (int i = 0; json[i] != '\0'; i++) {
-        char c = json[i];
+    for (; *json != '\0'; json++) {
+        char c = *json;
 
         if (c == '\\') {
             backslashed = true;
             break;
         } else if (c == '"' && !backslashed) {
-            return json + i + 1; // add 1 to go past the " character
+            return json + 1; // add 1 to go past the " character
         }
 
         backslashed = false;
@@ -81,9 +81,8 @@ char *validate_number(char *json) {
     // Numbers in json can _only_ match this regex [-]?[0-9]+\.[0-9]+ followed
     // by a comma or any whitespace
 
-    int i = 0;
-    for (i = 0; json[i] != '\0'; i++) {
-        char c = json[i];
+    for (; *json != '\0'; json++) {
+        char c = *json;
         if (c == '.') {
             if (finished_decimal) {
                 // A number like 1.0002.2 is INVALID json!!
@@ -93,7 +92,7 @@ char *validate_number(char *json) {
             }
         }
         if (is_whitespace(c) || c == ',') {
-            return json + i;
+            return json;
         }
         if ('0' < c && c < '9') {
             continue;
@@ -101,35 +100,39 @@ char *validate_number(char *json) {
         // Some illegal character has been reached
         return NULL;
     }
-    return json + i;
+    // reached '\0', so this is a valid number
+    return json;
 }
 
 char *validate_list(char *json, IntBuffer int_buf) {
     json = skip_whitespace(json);
     bool trailing_comma = false;
 
-    int i = 0;
     int list_items = 0;
 
     // Save the current index and add 1 so that we can insert our length
     // properly
-    int index = int_buf.length;
+    int buf_index = int_buf.length;
     buf_grow(&int_buf, 1);
     int_buf.length += 1;
 
-    for (i = 0; json[i] != '\0'; i++) {
-        if (json[i] == ']') {
-            return json + i + 1; // add 1 to go past the `]` character
+    for (; *json != ']'; json++) {
+        if (*json == '\0') {
+            // if we make it to the end with no `]` then thats a json error
+            return NULL;
         }
 
         // parse the next json item in the list
-        validate_json(json, int_buf);
+        json = validate_json(json, int_buf);
+        if (json == NULL) {
+            return NULL;
+        }
         // skip any whitespace before the comma
         json = skip_whitespace(json);
 
         // ensure the json has a comma after the item. If it has no comma and we
         // already have a trailing comma, the json is invalid
-        if (json[0] != ',') {
+        if (*json != ',') {
             if (trailing_comma) {
                 return NULL;
             } else {
@@ -141,11 +144,13 @@ char *validate_list(char *json, IntBuffer int_buf) {
 
         // skip past the whitespace after the comma
         json = skip_whitespace(json);
+        list_items++;
     }
 
-    // if we make it to the end with no `]` then thats a json error
+    // insert the amount of items we've accumulated into our int buf
+    int_buf.data[buf_index] = list_items;
 
-    return NULL;
+    return json;
 }
 
 // Makes sure that the json string is properly formatted. Returns NULL is json
@@ -165,6 +170,8 @@ char *validate_list(char *json, IntBuffer int_buf) {
 //          }
 //      },
 //      "baz": [ // 5 elements here
+//          [ // 0 elements here
+//          ],
 //          0,
 //          1,
 //          [ // 4 elements here
@@ -174,22 +181,49 @@ char *validate_list(char *json, IntBuffer int_buf) {
 //              7
 //          ],
 //          7,
-//          9
 //      ]
 //  }
 //
-//  In this example, the function will return [3, 1, 3, 5, 4]. This is the order
-//  in which the numbers appear.
+// In this example, the function will return [3, 1, 3, 5, 0, 4]. This is the
+// order in which the numbers appear.
+//
+// in the case where the json is simply `"hello"` or `10`, the function will
+// return []
 char *validate_json(char *json, IntBuffer int_buf) {
+    json = skip_whitespace(json);
+
+    switch (*json) {
+        // json++ to skip past the [, {, or "
+    case '[':
+        return validate_list(json++, int_buf);
+    case '{':
+        return validate_struct(json++, int_buf);
+    case '"':
+        return validate_string(json++);
+    }
+
+    if (('0' < *json && *json < '9') || *json == '-') {
+        return validate_number(json);
+    }
+    if ('A' < *json && *json < 'z') {
+        return validate_keyword(json);
+    }
 
     return NULL;
+}
+
+char *TEST(char *json) {
+    IntBuffer ints =
+        (IntBuffer) {.data = malloc(INITIAL_CAPACITY), .capacity = INITIAL_CAPACITY, .length = 0};
+
+    return validate_json(json, ints);
 }
 
 Json *json_deserialize(char *json) {
     IntBuffer ints =
         (IntBuffer) {.data = malloc(INITIAL_CAPACITY), .capacity = INITIAL_CAPACITY, .length = 0};
 
-    validate_json(json, ints);
+    json = validate_json(json, ints);
 
     return NULL;
 }
