@@ -34,7 +34,7 @@ void string_append(JsonString *str, char *buf, int buf_len) {
     str->length += buf_len - 1;
 }
 
-void deserialize(Json *json, JsonString *string, char *depth, bool colors, bool parsing_struct) {
+void serialize(Json *json, JsonString *string, char *depth, bool colors, bool parsing_struct) {
     // Buffer for int and float types when converting to string
     char buf[32];
     int buf_len;
@@ -123,7 +123,7 @@ void deserialize(Json *json, JsonString *string, char *depth, bool colors, bool 
         }
 
         for (int i = 0; list[i].type != TYPE_END_LIST; i++) {
-            deserialize(&(list[i]), string, next_depth, colors, is_struct);
+            serialize(&(list[i]), string, next_depth, colors, is_struct);
             if (list[i + 1].type != TYPE_END_LIST) {
                 string_append(string, ", ", 3);
             }
@@ -148,13 +148,13 @@ void deserialize(Json *json, JsonString *string, char *depth, bool colors, bool 
     }
 }
 
-JsonString json_deserialize(Json *json, uint8_t flags) {
+JsonString json_serialize(Json *json, uint8_t flags) {
     JsonString str =
         (JsonString) {.data = malloc(INITIAL_CAPACITY), .length = 0, .capacity = INITIAL_CAPACITY};
 
     int depth = (flags & JSON_NEW_LINES) ? 0 : -1;
     bool color = (flags & JSON_COLOR);
 
-    deserialize(json, &str, depth ? NULL : "S", color, false);
+    serialize(json, &str, depth ? NULL : "S", color, false);
     return str;
 }

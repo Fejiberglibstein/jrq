@@ -36,6 +36,6 @@ inline char *json_string(JsonString *str) {
     return str->data;
 }
 
-JsonString json_deserialize(Json *json, uint8_t flags);
+JsonString json_serialize(Json *json, uint8_t flags);
 
 #endif // JSON_H
