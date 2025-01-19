@@ -25,7 +25,7 @@ typedef struct {
     int capacity;
 } StringBuffer;
 
-void string_grow(StringBuffer *str, int amt) {
+inline void string_grow(StringBuffer *str, int amt) {
     if (str->capacity - str->length < amt) {
         do {
             str->capacity *= 2;
@@ -35,7 +35,7 @@ void string_grow(StringBuffer *str, int amt) {
     }
 }
 
-void string_append(StringBuffer *str, char *buf, int buf_len) {
+inline void string_append(StringBuffer *str, char *buf, int buf_len) {
     string_grow(str, buf_len);
     strcpy((str->data + str->length), buf);
     // - 1 for the null terminator
@@ -183,7 +183,7 @@ void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool 
     }
 }
 
-char *json_serialize(Json *json, uint8_t flags) {
+char *json_serialize(Json *json, char flags) {
     StringBuffer str =
         (StringBuffer) {.data = malloc(INITIAL_CAPACITY), .length = 0, .capacity = INITIAL_CAPACITY};
 

@@ -1,7 +1,6 @@
 #ifndef JSON_H
 #define JSON_H
 
-#include <stdint.h>
 #include <stdbool.h>
 #define JSON_NO_COMPACT 0b00000001
 #define JSON_COLOR 0b00000010
@@ -31,6 +30,6 @@ typedef struct Json {
     enum Type type;
 } Json;
 
-char *json_serialize(Json *json, uint8_t flags);
+char *json_serialize(Json *json, char flags);
 
 #endif // JSON_H
