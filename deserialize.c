@@ -157,6 +157,22 @@ char *validate_list(char *json, IntBuffer int_buf) {
     return json;
 }
 
+char *validate_keyword(char *json) {
+    json = skip_whitespace(json);
+#define KEYWORD(v)                                                                                 \
+    /* use sizeof() - 1 to remove the null terminator */                                           \
+    if (strncmp(json, v, sizeof(v) - 1) == 0) {                                                    \
+        /* don't use sizeof() - 1 because we want the null terminator */                           \
+        return json + sizeof(v);                                                                   \
+    }
+    KEYWORD("true");
+    KEYWORD("false");
+    KEYWORD("null");
+#undef KEYWORD
+
+    return NULL;
+}
+
 // Makes sure that the json string is properly formatted. Returns NULL is json
 // is improperly formatted
 //
@@ -210,7 +226,7 @@ char *validate_json(char *json, IntBuffer int_buf) {
         return validate_number(json);
     }
     if ('A' < *json && *json < 'z') {
-        // return validate_keyword(json);
+        return validate_keyword(json);
     }
 
     return NULL;
