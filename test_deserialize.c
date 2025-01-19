@@ -3,47 +3,63 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-extern char *TEST(char *);
+typedef struct {
+    int *data;
+    int length;
+    int capacity;
+} IntBuffer;
+
+extern char *validate_json(char *json, IntBuffer int_buf);
+char *validate(char *json) {
+    IntBuffer ints = (IntBuffer) {.data = malloc(4), .capacity = 4, .length = 0};
+    json = validate_json(json, ints);
+    free(ints.data);
+    return json;
+}
 
 void test_validate_simple() {
-    assert(TEST("\"hello\"") != NULL);
-    assert(TEST("\"hello\"]") != NULL);
-    assert(TEST("\"he\\\"llo\"") != NULL);
-    assert(TEST("\"hello") == NULL);
-    assert(TEST("          \"hello\"          ") != NULL);
+    assert(validate("\"hello\"") != NULL);
+    assert(validate("\"hello\"]") != NULL);
+    assert(validate("\"he\\\"llo\"") != NULL);
+    assert(validate("\"hello") == NULL);
+    assert(validate("          \"hello\"          ") != NULL);
 
-    assert(TEST("10") != NULL);
-    assert(TEST("123456789.10]") != NULL);
-    assert(TEST("3") != NULL);
-    assert(TEST("-10     ") != NULL);
-    assert(TEST("--10") == NULL);
-    assert(TEST("         -10.0") != NULL);
-    assert(TEST("-10.0.0") == NULL);
-    assert(TEST("      -.0      ") != NULL);
-    assert(TEST(".0") != NULL);
-    assert(TEST(".") != NULL);
+    assert(validate("10") != NULL);
+    assert(validate("123456789.10]") != NULL);
+    assert(validate("3") != NULL);
+    assert(validate("-10     ") != NULL);
+    assert(validate("--10") == NULL);
+    assert(validate("         -10.0") != NULL);
+    assert(validate("-10.0.0") == NULL);
+    assert(validate("      -.0      ") != NULL);
+    assert(validate(".0") != NULL);
+    assert(validate(".") != NULL);
 
-    assert(TEST("true       ") != NULL);
-    assert(TEST("true]") != NULL);
-    assert(TEST("         false") != NULL);
-    assert(TEST("        null         ") != NULL);
-    assert(TEST("hurwhui") == NULL);
-    assert(TEST("h") == NULL);
+    assert(validate("true       ") != NULL);
+    assert(validate("true]") != NULL);
+    assert(validate("         false") != NULL);
+    assert(validate("        null         ") != NULL);
+    assert(validate("hurwhui") == NULL);
+    assert(validate("h") == NULL);
 
-    assert(TEST("") == NULL);
+    assert(validate("") == NULL);
 }
 
 void test_validate_lists() {
-    assert(TEST("[]") != NULL);
-    assert(TEST("[true]") != NULL);
-    assert(TEST("[0, 10, true, null]") != NULL);
-    assert(TEST("[0, 10, true, \"hello\"]") != NULL);
-    assert(TEST("[4, 3, 2,]") != NULL);
-    assert(TEST("[4, [10, 2], null, [4, 4,], ]") != NULL);
+    assert(validate("[]") != NULL);
+    assert(validate("[true]") != NULL);
+    assert(validate("[0, 10, true, null]") != NULL);
+    assert(validate("[0, 10, true, \"hello\"]") != NULL);
+    assert(validate("[4, 3, 2,]") != NULL);
+    assert(validate("[4, [10, 2], \"hellllooo\", [4, 4,], ]") != NULL);
 
-    assert(TEST("[0, 10, true \"hello\"]") == NULL);
-    assert(TEST("[4, 3, 2,,]") == NULL);
-    assert(TEST("[4,, 3, 2]") == NULL);
+    assert(validate("[4, \"hello]") == NULL);
+    assert(validate("[0, 10, true \"hello\"]") == NULL);
+    assert(validate("[4, 3, 2,,]") == NULL);
+    assert(validate("[4,, 3, 2]") == NULL);
+    assert(validate("[4, 3, 2") == NULL);
+    assert(validate("[[4, 3, 2], 3, 2") == NULL);
+    assert(validate("[[4, 3, 2, 3], 2") == NULL);
 }
 
 void test_validate_structs() {

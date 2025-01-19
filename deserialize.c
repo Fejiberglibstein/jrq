@@ -131,7 +131,6 @@ char *validate_list(char *json, IntBuffer int_buf) {
         }
 
         // parse the next json item in the list
-        printf("\n");
         json = validate_json(json, int_buf);
         if (json == NULL) {
             return NULL;
@@ -215,7 +214,6 @@ char *validate_keyword(char *json) {
 // return []
 char *validate_json(char *json, IntBuffer int_buf) {
     json = skip_whitespace(json);
-    printf("%s", json);
 
     switch (*json) {
         // json++ to skip past the [, {, or "
@@ -237,15 +235,6 @@ char *validate_json(char *json, IntBuffer int_buf) {
     return NULL;
 }
 
-char *TEST(char *json) {
-    IntBuffer ints =
-        (IntBuffer) {.data = malloc(INITIAL_CAPACITY), .capacity = INITIAL_CAPACITY, .length = 0};
-
-    json = validate_json(json, ints);
-    printf("\n\n");
-    free(ints.data);
-    return json;
-}
 
 Json *json_deserialize(char *json) {
     IntBuffer ints =
