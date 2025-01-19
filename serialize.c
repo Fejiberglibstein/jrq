@@ -23,9 +23,9 @@ typedef struct {
     char *data;
     int length;
     int capacity;
-} JsonString;
+} StringBuffer;
 
-void string_grow(JsonString *str, int amt) {
+void string_grow(StringBuffer *str, int amt) {
     if (str->capacity - str->length < amt) {
         do {
             str->capacity *= 2;
@@ -35,14 +35,14 @@ void string_grow(JsonString *str, int amt) {
     }
 }
 
-void string_append(JsonString *str, char *buf, int buf_len) {
+void string_append(StringBuffer *str, char *buf, int buf_len) {
     string_grow(str, buf_len);
     strcpy((str->data + str->length), buf);
     // - 1 for the null terminator
     str->length += buf_len - 1;
 }
 
-void serialize(Json *json, JsonString *string, char *depth, bool colors, bool parsing_struct) {
+void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool parsing_struct) {
     // Use the depth to calculate indentation level.
     //
     // depth is a string of just spaces: "    " represents one indentation
@@ -184,8 +184,8 @@ void serialize(Json *json, JsonString *string, char *depth, bool colors, bool pa
 }
 
 char *json_serialize(Json *json, uint8_t flags) {
-    JsonString str =
-        (JsonString) {.data = malloc(INITIAL_CAPACITY), .length = 0, .capacity = INITIAL_CAPACITY};
+    StringBuffer str =
+        (StringBuffer) {.data = malloc(INITIAL_CAPACITY), .length = 0, .capacity = INITIAL_CAPACITY};
 
     int depth = (flags & JSON_NO_COMPACT) ? 0 : -1;
     bool color = (flags & JSON_COLOR);
