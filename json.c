@@ -17,6 +17,13 @@
         string_append(string, color, sizeof(color));                                               \
     }
 
+typedef struct {
+    char *data;
+    int length;
+    int capacity;
+} JsonString;
+
+
 void string_grow(JsonString *str, int amt) {
     if (str->capacity - str->length < amt) {
         do {
@@ -161,15 +168,15 @@ void serialize(Json *json, JsonString *string, char *depth, bool colors, bool pa
     }
 }
 
-JsonString json_serialize(Json *json, uint8_t flags) {
+char *json_serialize(Json *json, uint8_t flags) {
     JsonString str =
         (JsonString) {.data = malloc(INITIAL_CAPACITY), .length = 0, .capacity = INITIAL_CAPACITY};
 
-    int depth = (flags & JSON_NEW_LINES) ? 0 : -1;
+    int depth = (flags & JSON_NO_COMPACT) ? 0 : -1;
     bool color = (flags & JSON_COLOR);
 
     serialize(json, &str, depth ? NULL : "S", color, false);
-    return str;
+    return str.data;
 }
 
 // Makes sure that the json string is properly formatted.
@@ -208,6 +215,8 @@ int *validate_json(char *json) {
 }
 
 Json *json_deserialize(char *json) {
+
+
     validate_json(json);
 
     return NULL;

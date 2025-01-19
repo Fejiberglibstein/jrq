@@ -2,16 +2,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define FLAGS  JSON_NEW_LINES | JSON_COLOR
+#define FLAGS  JSON_NO_COMPACT | JSON_COLOR
 
 void test_lists() {
     Json string =
         (Json) {.type = TYPE_STRING,
                 .string_type = "000000000000000000000000000000000000000000000000000000000000000"};
 
-    JsonString data = json_deserialize(&string, FLAGS);
-    printf("%s\n\n\n", data.data);
-    free(data.data);
+    char *data = json_serialize(&string, FLAGS);
+    printf("%s\n\n\n", data);
+    free(data);
 
     // clang-format off
     Json list_data[] = {
@@ -51,19 +51,19 @@ void test_lists() {
 
     Json list = (Json) {.type = TYPE_LIST, .list_type = list_data};
 
-    data = json_deserialize(&list, FLAGS);
-    printf("%s\n\n", data.data);
-    free(data.data);
+    data = json_serialize(&list, FLAGS);
+    printf("%s\n\n", data);
+    free(data);
 
     list_data[1] = (Json) {0};
-    data = json_deserialize(&list, FLAGS);
-    printf("%s\n\n", data.data);
-    free(data.data);
+    data = json_serialize(&list, FLAGS);
+    printf("%s\n\n", data);
+    free(data);
 
     list_data[0] = (Json) {0};
-    data = json_deserialize(&list, FLAGS);
-    printf("%s\n\n", data.data);
-    free(data.data);
+    data = json_serialize(&list, FLAGS);
+    printf("%s\n\n", data);
+    free(data);
 }
 
 void test_structs() {
@@ -121,9 +121,9 @@ void test_structs() {
     };
     // clang-format on
 
-    JsonString data = json_deserialize(&list, FLAGS);
-    printf("%s\n\n", data.data);
-    free(data.data);
+    char *data = json_serialize(&list, FLAGS);
+    printf("%s\n\n", data);
+    free(data);
 }
 
 int main() {

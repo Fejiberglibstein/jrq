@@ -2,7 +2,7 @@
 #define JSON_H
 
 #include <stdint.h>
-#define JSON_NEW_LINES 0b00000001
+#define JSON_NO_COMPACT 0b00000001
 #define JSON_COLOR 0b00000010
 
 enum Type : char {
@@ -13,12 +13,6 @@ enum Type : char {
     TYPE_STRING,
     TYPE_LIST,
 };
-
-typedef struct {
-    char *data;
-    int length;
-    int capacity;
-} JsonString;
 
 typedef struct Json {
     char *field_name;
@@ -32,10 +26,6 @@ typedef struct Json {
     enum Type type;
 } Json;
 
-inline char *json_string(JsonString *str) {
-    return str->data;
-}
-
-JsonString json_serialize(Json *json, uint8_t flags);
+char *json_serialize(Json *json, uint8_t flags);
 
 #endif // JSON_H
