@@ -7,12 +7,12 @@
 
 #define INITIAL_CAPACITY 16
 
-#define STRING_COLOR "\x1b[36m"
-#define NUM_COLOR "\x1b[35m"
+#define STRING_COLOR "\x1b[32m"
+#define NUM_COLOR "\x1b[36m"
 #define KEY_COLOR "\x1b[34;1m"
 #define RESET_COLOR "\x1b[0m"
-#define NULL_COLOR "\x1b[31;3m"
-#define BOOL_COLOR "\x1b[35m"
+#define NULL_COLOR "\x1b[30;3m"
+#define BOOL_COLOR "\x1b[31m"
 
 #define APPEND_COLOR(color)                                                                        \
     if (colors) {                                                                                  \

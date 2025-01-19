@@ -96,8 +96,7 @@ void test_structs() {
             },
             (Json) {
                 .field_name = "bazz",
-                .type = TYPE_INT,
-                .int_type = 2,
+                .type = TYPE_NULL,
             },
             (Json) {
                 .field_name = "nested object",
@@ -105,8 +104,8 @@ void test_structs() {
                 .struct_type = (Json []) {
                     (Json) {
                         .field_name = "double foo",
-                        .type = TYPE_INT,
-                        .int_type = 10,
+                        .type = TYPE_BOOL,
+                        .bool_type = true,
                     },
                     (Json) {
                         .field_name = "blehah",
