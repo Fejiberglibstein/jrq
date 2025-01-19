@@ -58,7 +58,7 @@ char *validate_string(char *json) {
 
         if (c == '\\') {
             backslashed = true;
-            break;
+            continue;
         } else if (c == '"' && !backslashed) {
             return json + 1; // add 1 to go past the " character
         }

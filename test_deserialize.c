@@ -7,6 +7,7 @@
 
 void test_validate_simple() {
     assert(TEST("\"hello\"") != NULL);
+    assert(TEST("\"he\\\"llo\"") != NULL);
     assert(TEST("\"hello") == NULL);
     assert(TEST("          \"hello\"          ") != NULL);
     assert(TEST("10") != NULL);
