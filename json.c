@@ -35,11 +35,14 @@ void string_append(JsonString *str, char *buf, int buf_len) {
 }
 
 void serialize(Json *json, JsonString *string, char *depth, bool colors, bool parsing_struct) {
-    // Buffer for int and float types when converting to string
-    char buf[32];
-    int buf_len;
-    int str_len;
-
+    // Use the depth to calculate indentation level.
+    //
+    // depth is a string of just spaces: "    " represents one indentation
+    // level. Having one string that's passed into functions instead of an int
+    // for the depth minimizes heap allocations.
+    //
+    // If the depth is NULL, then we should not indent the json.
+    // If the depth is "S", this is a special case where the indentation is 0.
     char *next_depth = NULL;
     int depth_len = 0;
     if (depth != NULL) {
@@ -61,6 +64,8 @@ void serialize(Json *json, JsonString *string, char *depth, bool colors, bool pa
         }
     }
 
+    // When parsing lists/structs, use a bool to determine what braces should be
+    // used.
     bool is_struct = false;
 
     if (parsing_struct && json->field_name != NULL) {
@@ -77,6 +82,10 @@ void serialize(Json *json, JsonString *string, char *depth, bool colors, bool pa
     switch (json->type) {
     case TYPE_INT:
         APPEND_COLOR(NUM_COLOR);
+
+        // Buffer for int and float types when converting to string
+        char buf[32];
+        int buf_len;
 
         buf_len = snprintf(NULL, 0, "%d", json->int_type) + 1;
         buf[buf_len] = '\0';
@@ -110,9 +119,12 @@ void serialize(Json *json, JsonString *string, char *depth, bool colors, bool pa
     case TYPE_STRUCT:
         is_struct = true;
     case TYPE_LIST:
+    // Parsing a struct and list are effectively the same thing, so we just
+    // use a simple switch for which parenthesis type to use
+    //
+    // '{}' for structs, and `[]` for lists
 #define L_PAREN(...) is_struct ? "{" __VA_ARGS__ : "[" __VA_ARGS__
 #define R_PAREN(...) is_struct ? "}" __VA_ARGS__ : "]" __VA_ARGS__
-
         Json *list = json->list_type;
         bool skip_depth = list[0].type == TYPE_END_LIST;
 
@@ -140,6 +152,7 @@ void serialize(Json *json, JsonString *string, char *depth, bool colors, bool pa
 #undef L_PAREN
 #undef R_PAREN
     case TYPE_END_LIST:
+        // unreachable
         break;
     }
 
@@ -157,4 +170,45 @@ JsonString json_serialize(Json *json, uint8_t flags) {
 
     serialize(json, &str, depth ? NULL : "S", color, false);
     return str;
+}
+
+// Makes sure that the json string is properly formatted.
+//
+// Will return a list of ints with a 0 delimiter. This list will contain the
+// number of elements in each level of the json.
+//
+//  { // 3 elements here
+//      "foo": "bar",
+//      "bar": { // 1 element here
+//          "a": { // 3 elements here
+//              "b": 2,
+//              "c": 3,
+//              "d": 4
+//          }
+//      },
+//      "baz": [ // 5 elements here
+//          0,
+//          1,
+//          [ // 4 elements here
+//              10,
+//              9,
+//              8,
+//              7
+//          ],
+//          7,
+//          9
+//      ]
+//  }
+//
+//  In this example, the function will return [3, 1, 3, 5, 4]. This is the order in which
+//  the numbers appear
+int *validate_json(char *json) {
+
+    return NULL;
+}
+
+Json *json_deserialize(char *json) {
+    validate_json(json);
+
+    return NULL;
 }
