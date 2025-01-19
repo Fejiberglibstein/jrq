@@ -9,12 +9,16 @@ void test_simple() {
     assert(TEST("\"hello\"") != NULL);
     assert(TEST("\"hello") == NULL);
     assert(TEST("          \"hello\"          ") != NULL);
+    assert(TEST("10") != NULL);
+    assert(TEST("123456789.10") != NULL);
+    assert(TEST("3") != NULL);
     assert(TEST("-10") != NULL);
     assert(TEST("--10") == NULL);
     assert(TEST("-10.0") != NULL);
     assert(TEST("-10.0.0") == NULL);
-    assert(TEST("-.0") == NULL); // this might need to be fixed
-    assert(TEST(".0") == NULL);  // this might need to be fixed
+    assert(TEST("-.0") != NULL);
+    assert(TEST(".0") != NULL);
+    assert(TEST(".") != NULL);
 }
 
 void test_lists() {

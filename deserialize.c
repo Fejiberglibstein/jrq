@@ -11,7 +11,7 @@ typedef struct {
     int capacity;
 } IntBuffer;
 
-inline void buf_grow(IntBuffer *str, int amt) {
+void buf_grow(IntBuffer *str, int amt) {
     if (str->capacity - str->length < amt) {
         do {
             str->capacity *= 2;
@@ -21,7 +21,7 @@ inline void buf_grow(IntBuffer *str, int amt) {
     }
 }
 
-inline void buf_append(IntBuffer *str, int val) {
+void buf_append(IntBuffer *str, int val) {
     buf_grow(str, 1);
     str->data[str->length++] = val;
 }
@@ -33,7 +33,7 @@ char *validate_list(char *json, IntBuffer int_buf);
 char *validate_struct(char *json, IntBuffer int_buf);
 char *validate_json(char *json, IntBuffer int_buf);
 
-inline bool is_whitespace(char c) {
+bool is_whitespace(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
 
@@ -78,6 +78,9 @@ char *validate_string(char *json) {
 char *validate_number(char *json) {
     bool finished_decimal = false;
 
+    if (*json == '-') {
+        json += 1;
+    }
     // Numbers in json can _only_ match this regex [-]?[0-9]+\.[0-9]+ followed
     // by a comma or any whitespace
 
@@ -85,16 +88,17 @@ char *validate_number(char *json) {
         char c = *json;
         if (c == '.') {
             if (finished_decimal) {
-                // A number like 1.0002.2 is INVALID json!!
+                // A number like 1.0002.2 is invalid json!!
                 return NULL;
             } else {
                 finished_decimal = true;
+                continue;
             }
         }
         if (is_whitespace(c) || c == ',') {
             return json;
         }
-        if ('0' < c && c < '9') {
+        if ('0' <= c && c <= '9') {
             continue;
         }
         // Some illegal character has been reached
@@ -195,18 +199,18 @@ char *validate_json(char *json, IntBuffer int_buf) {
     switch (*json) {
         // json++ to skip past the [, {, or "
     case '[':
-        return validate_list(json++, int_buf);
+        return validate_list(json + 1, int_buf);
     case '{':
-        return validate_struct(json++, int_buf);
+        // return validate_struct(json + 1, int_buf);
     case '"':
-        return validate_string(json++);
+        return validate_string(json + 1);
     }
 
-    if (('0' < *json && *json < '9') || *json == '-') {
+    if (('0' <= *json && *json <= '9') || *json == '-' || *json == '.') {
         return validate_number(json);
     }
     if ('A' < *json && *json < 'z') {
-        return validate_keyword(json);
+        // return validate_keyword(json);
     }
 
     return NULL;
@@ -216,7 +220,9 @@ char *TEST(char *json) {
     IntBuffer ints =
         (IntBuffer) {.data = malloc(INITIAL_CAPACITY), .capacity = INITIAL_CAPACITY, .length = 0};
 
-    return validate_json(json, ints);
+    json = validate_json(json, ints);
+    free(ints.data);
+    return json;
 }
 
 Json *json_deserialize(char *json) {
@@ -224,6 +230,7 @@ Json *json_deserialize(char *json) {
         (IntBuffer) {.data = malloc(INITIAL_CAPACITY), .capacity = INITIAL_CAPACITY, .length = 0};
 
     json = validate_json(json, ints);
+    free(ints.data);
 
     return NULL;
 }
