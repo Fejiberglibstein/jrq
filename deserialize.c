@@ -101,8 +101,12 @@ char *validate_number(char *json) {
         if ('0' <= c && c <= '9') {
             continue;
         }
-        // Some illegal character has been reached
-        return NULL;
+        if (c == '-') {
+            return NULL;
+        }
+
+        // Some other character has been reached, number is over
+        break;
     }
     // reached '\0', so this is a valid number
     return json;
@@ -120,13 +124,14 @@ char *validate_list(char *json, IntBuffer int_buf) {
     buf_grow(&int_buf, 1);
     int_buf.length += 1;
 
-    for (; *json != ']'; json++) {
+    while (*json != ']') {
         if (*json == '\0') {
             // if we make it to the end with no `]` then thats a json error
             return NULL;
         }
 
         // parse the next json item in the list
+        printf("\n");
         json = validate_json(json, int_buf);
         if (json == NULL) {
             return NULL;
@@ -160,10 +165,9 @@ char *validate_list(char *json, IntBuffer int_buf) {
 char *validate_keyword(char *json) {
     json = skip_whitespace(json);
 #define KEYWORD(v)                                                                                 \
-    /* use sizeof() - 1 to remove the null terminator */                                           \
+    /* use sizeof(v) - 1 to remove the null terminator */                                          \
     if (strncmp(json, v, sizeof(v) - 1) == 0) {                                                    \
-        /* don't use sizeof() - 1 because we want the null terminator */                           \
-        return json + sizeof(v);                                                                   \
+        return json + sizeof(v) - 1;                                                               \
     }
     KEYWORD("true");
     KEYWORD("false");
@@ -211,6 +215,7 @@ char *validate_keyword(char *json) {
 // return []
 char *validate_json(char *json, IntBuffer int_buf) {
     json = skip_whitespace(json);
+    printf("%s", json);
 
     switch (*json) {
         // json++ to skip past the [, {, or "
@@ -237,6 +242,7 @@ char *TEST(char *json) {
         (IntBuffer) {.data = malloc(INITIAL_CAPACITY), .capacity = INITIAL_CAPACITY, .length = 0};
 
     json = validate_json(json, ints);
+    printf("\n\n");
     free(ints.data);
     return json;
 }
