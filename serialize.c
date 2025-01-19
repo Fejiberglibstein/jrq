@@ -11,6 +11,8 @@
 #define NUM_COLOR "\x1b[35m"
 #define KEY_COLOR "\x1b[34;1m"
 #define RESET_COLOR "\x1b[0m"
+#define NULL_COLOR "\x1b[31;3m"
+#define BOOL_COLOR "\x1b[35m"
 
 #define APPEND_COLOR(color)                                                                        \
     if (colors) {                                                                                  \
@@ -22,7 +24,6 @@ typedef struct {
     int length;
     int capacity;
 } JsonString;
-
 
 void string_grow(JsonString *str, int amt) {
     if (str->capacity - str->length < amt) {
@@ -87,6 +88,20 @@ void serialize(Json *json, JsonString *string, char *depth, bool colors, bool pa
     }
 
     switch (json->type) {
+    case TYPE_NULL:
+        APPEND_COLOR(NULL_COLOR);
+        string_append(string, "null", sizeof("null"));
+        APPEND_COLOR(RESET_COLOR);
+        break;
+    case TYPE_BOOL:
+        APPEND_COLOR(BOOL_COLOR);
+        if (json->bool_type) {
+            string_append(string, "true", sizeof("true"));
+        } else {
+            string_append(string, "false", sizeof("false"));
+        }
+        APPEND_COLOR(RESET_COLOR);
+        break;
     case TYPE_INT:
         APPEND_COLOR(NUM_COLOR);
 
@@ -126,14 +141,14 @@ void serialize(Json *json, JsonString *string, char *depth, bool colors, bool pa
     case TYPE_STRUCT:
         is_struct = true;
     case TYPE_LIST:
-    // Parsing a struct and list are effectively the same thing, so we just
-    // use a simple switch for which parenthesis type to use
-    //
-    // '{}' for structs, and `[]` for lists
+        // Parsing a struct and list are effectively the same thing, so we just
+        // use a simple switch for which parenthesis type to use
+        //
+        // '{}' for structs, and `[]` for lists
 #define L_PAREN(...) is_struct ? "{" __VA_ARGS__ : "[" __VA_ARGS__
 #define R_PAREN(...) is_struct ? "}" __VA_ARGS__ : "]" __VA_ARGS__
+        bool skip_depth = json->list_type[0].type == TYPE_END_LIST;
         Json *list = json->list_type;
-        bool skip_depth = list[0].type == TYPE_END_LIST;
 
         if (depth == NULL || skip_depth) {
             string_append(string, L_PAREN(), 2);
