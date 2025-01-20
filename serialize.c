@@ -88,12 +88,12 @@ void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool 
     }
 
     switch (json->type) {
-    case TYPE_NULL:
+    case JSONTYPE_NULL:
         APPEND_COLOR(NULL_COLOR);
         string_append(string, "null", sizeof("null"));
         APPEND_COLOR(RESET_COLOR);
         break;
-    case TYPE_BOOL:
+    case JSONTYPE_BOOL:
         APPEND_COLOR(BOOL_COLOR);
         if (json->bool_type) {
             string_append(string, "true", sizeof("true"));
@@ -102,7 +102,7 @@ void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool 
         }
         APPEND_COLOR(RESET_COLOR);
         break;
-    case TYPE_INT:
+    case JSONTYPE_INT:
         APPEND_COLOR(NUM_COLOR);
 
         // Buffer for int and float types when converting to string
@@ -117,7 +117,7 @@ void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool 
         APPEND_COLOR(RESET_COLOR);
         break;
 
-    case TYPE_FLOAT:
+    case JSONTYPE_FLOAT:
         APPEND_COLOR(NUM_COLOR);
 
         buf_len = snprintf(NULL, 0, "%f", json->float_type) + 1;
@@ -128,7 +128,7 @@ void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool 
         APPEND_COLOR(RESET_COLOR);
         break;
 
-    case TYPE_STRING:
+    case JSONTYPE_STRING:
         APPEND_COLOR(STRING_COLOR);
 
         string_append(string, "\"", 2);
@@ -138,16 +138,16 @@ void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool 
         APPEND_COLOR(RESET_COLOR);
         break;
 
-    case TYPE_STRUCT:
+    case JSONTYPE_STRUCT:
         is_struct = true;
-    case TYPE_LIST:
+    case JSONTYPE_LIST:
         // Parsing a struct and list are effectively the same thing, so we just
         // use a simple switch for which parenthesis type to use
         //
         // '{}' for structs, and `[]` for lists
 #define L_PAREN(...) is_struct ? "{" __VA_ARGS__ : "[" __VA_ARGS__
 #define R_PAREN(...) is_struct ? "}" __VA_ARGS__ : "]" __VA_ARGS__
-        bool skip_depth = json->list_type[0].type == TYPE_END_LIST;
+        bool skip_depth = json->list_type[0].type == JSONTYPE_END_LIST;
         Json *list = json->list_type;
 
         if (depth == NULL || skip_depth) {
@@ -156,9 +156,9 @@ void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool 
             string_append(string, L_PAREN("\n"), 3);
         }
 
-        for (int i = 0; list[i].type != TYPE_END_LIST; i++) {
+        for (int i = 0; list[i].type != JSONTYPE_END_LIST; i++) {
             serialize(&(list[i]), string, next_depth, colors, is_struct);
-            if (list[i + 1].type != TYPE_END_LIST) {
+            if (list[i + 1].type != JSONTYPE_END_LIST) {
                 string_append(string, ", ", 3);
             }
             if (depth != NULL && !skip_depth) {
@@ -173,7 +173,7 @@ void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool 
         break;
 #undef L_PAREN
 #undef R_PAREN
-    case TYPE_END_LIST:
+    case JSONTYPE_END_LIST:
         // unreachable
         break;
     }
@@ -184,8 +184,8 @@ void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool 
 }
 
 char *json_serialize(Json *json, char flags) {
-    StringBuffer str =
-        (StringBuffer) {.data = malloc(INITIAL_CAPACITY), .length = 0, .capacity = INITIAL_CAPACITY};
+    StringBuffer str = (StringBuffer
+    ) {.data = malloc(INITIAL_CAPACITY), .length = 0, .capacity = INITIAL_CAPACITY};
 
     int depth = (flags & JSON_NO_COMPACT) ? 0 : -1;
     bool color = (flags & JSON_COLOR);

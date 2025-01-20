@@ -5,15 +5,15 @@
 #define JSON_NO_COMPACT 0b00000001
 #define JSON_COLOR 0b00000010
 
-enum Type : char {
-    TYPE_END_LIST,
-    TYPE_INT,
-    TYPE_FLOAT,
-    TYPE_STRUCT,
-    TYPE_STRING,
-    TYPE_LIST,
-    TYPE_BOOL,
-    TYPE_NULL,
+enum JsonType : char {
+    JSONTYPE_END_LIST,
+    JSONTYPE_INT,
+    JSONTYPE_FLOAT,
+    JSONTYPE_STRUCT,
+    JSONTYPE_STRING,
+    JSONTYPE_LIST,
+    JSONTYPE_BOOL,
+    JSONTYPE_NULL,
 };
 
 typedef struct Json {
@@ -27,7 +27,7 @@ typedef struct Json {
         struct Json *struct_type;
         struct Json *list_type;
     };
-    enum Type type;
+    enum JsonType type;
 } Json;
 
 char *json_serialize(Json *json, char flags);
