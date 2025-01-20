@@ -36,11 +36,13 @@ struct ret validate(char *json) {
     };
     json = validate_json(json, &data);
     if (json == NULL) {
+        free(data.buf.data);
         return (struct ret) {0};
     }
 
     json = skip_whitespace(json);
     if (*json != '\0') {
+        free(data.buf.data);
         return (struct ret) {0};
     }
 
@@ -137,6 +139,7 @@ void test_int_buf() {
         "[10, [1, 2, 3], [2, [4, 4, 4], 10, true], 10, [2], []]", &data, list({7, 4, 5, 4, 2, 1})
     );
 #undef list
+    free(data.buf.data);
 }
 
 int main() {
@@ -151,12 +154,12 @@ void validate_int_buf(char *str, JsonData *data, int *ints, int int_len) {
     validate_json(str, data);
 
     if (int_len != data->buf.length) {
-        printf("`%s` failed on length\n", str);
+        // printf("`%s` failed on length\n", str);
         assert(int_len == data->buf.length);
     }
     for (int i = 0; i < data->buf.length; i++) {
         if (data->buf.data[i] != ints[i]) {
-            printf("`%s` failed on index %d: %d != %d\n", str, i, data->buf.data[i], ints[i]);
+            // printf("`%s` failed on index %d: %d != %d\n", str, i, data->buf.data[i], ints[i]);
             assert(data->buf.data[i] == ints[i]);
         }
     }

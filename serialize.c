@@ -65,7 +65,7 @@ void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool 
             depth_len = 1;
         } else {
             depth_len = (((strlen(depth) / 4) + 1) * 4) + 1;
-            next_depth = malloc(depth_len);
+            next_depth = malloc(depth_len + 1);
             memset(next_depth, ' ', depth_len);
             next_depth[depth_len] = '\0';
             string_append(string, next_depth, depth_len);

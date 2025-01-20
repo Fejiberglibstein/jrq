@@ -33,8 +33,10 @@ typedef struct {
 } ParsedValue;
 
 void buf_grow(IntBuffer *buf, int amt) {
-    if (buf->capacity - buf->length < amt) {
-        buf->capacity *= 2;
+    if (buf->capacity - buf->length * sizeof(int) < amt * sizeof(int)) {
+        do {
+            buf->capacity *= 2;
+        } while (buf->capacity - buf->length * sizeof(int) < amt * sizeof(int));
 
         buf->data = realloc(buf->data, buf->capacity);
     }
@@ -351,7 +353,8 @@ char *validate_list(char *json, JsonData *data) {
     // Save the current index and add 1 so that we can insert our length
     // properly
     int buf_index = data->buf.length;
-    buf_grow(&data->buf, 1);
+    printf("%p\n", data->buf.data);
+    buf_grow(&data->buf, sizeof(int));
     data->buf.length += 1;
 
     while (*json != ']') {
@@ -462,7 +465,7 @@ void allocate_json(JsonData *data) {
     // Skip past the json allocation part and put it in the string allocation
     // part
     data->str_ptr = mem + len * sizeof(Json);
-    printf("(json)%d, (strings)%d", len, data->str_len);
+    // printf("(json)%d, (strings)%d", len, data->str_len);
 }
 
 char *parse_json(char *str, JsonData *data, int buf_idx, int arena_idx, char *field_name) {
@@ -492,7 +495,7 @@ char *parse_json(char *str, JsonData *data, int buf_idx, int arena_idx, char *fi
     }
 
 stop:
-    printf("%s | %d\n", str, ret.json.type);
+    // printf("%s | %d\n", str, ret.json.type);
     if (field_name != NULL) {
         ret.json.field_name = field_name;
     }
@@ -530,9 +533,9 @@ Json *json_deserialize(char *str) {
         return NULL;
     }
 
-    printf("\x1b[36m%s: \x1b[34m", start);
+    // printf("\x1b[36m%s: \x1b[34m", start);
     allocate_json(&data);
-    printf("\x1b[0m\n");
+    // printf("\x1b[0m\n");
 
     parse_json(start, &data, 0, 0, NULL);
 
