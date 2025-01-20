@@ -19,14 +19,14 @@ enum JsonType : char {
 typedef struct Json {
     char *field_name;
     union {
-        int int_type;
-        float float_type;
-        bool bool_type;
-        void *null_type; /* this won't ever have meaningful data */
-        char *string_type;
-        struct Json *struct_type;
-        struct Json *list_type;
-    };
+        int Int;
+        float Float;
+        bool Bool;
+        void *Null; /* this won't ever have meaningful data */
+        char *String;
+        struct Json *Struct;
+        struct Json *List;
+    } v;
     enum JsonType type;
 } Json;
 

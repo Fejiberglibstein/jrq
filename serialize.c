@@ -95,7 +95,7 @@ void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool 
         break;
     case JSONTYPE_BOOL:
         APPEND_COLOR(BOOL_COLOR);
-        if (json->bool_type) {
+        if (json->v.Bool) {
             string_append(string, "true", sizeof("true"));
         } else {
             string_append(string, "false", sizeof("false"));
@@ -109,9 +109,9 @@ void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool 
         char buf[32];
         int buf_len;
 
-        buf_len = snprintf(NULL, 0, "%d", json->int_type) + 1;
+        buf_len = snprintf(NULL, 0, "%d", json->v.Int) + 1;
         buf[buf_len] = '\0';
-        snprintf(buf, buf_len, "%d", json->int_type);
+        snprintf(buf, buf_len, "%d", json->v.Int);
         string_append(string, buf, buf_len);
 
         APPEND_COLOR(RESET_COLOR);
@@ -120,9 +120,9 @@ void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool 
     case JSONTYPE_FLOAT:
         APPEND_COLOR(NUM_COLOR);
 
-        buf_len = snprintf(NULL, 0, "%f", json->float_type) + 1;
+        buf_len = snprintf(NULL, 0, "%f", json->v.Float) + 1;
         buf[buf_len] = '\0';
-        snprintf(buf, buf_len, "%f", json->float_type);
+        snprintf(buf, buf_len, "%f", json->v.Float);
         string_append(string, buf, buf_len);
 
         APPEND_COLOR(RESET_COLOR);
@@ -132,7 +132,7 @@ void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool 
         APPEND_COLOR(STRING_COLOR);
 
         string_append(string, "\"", 2);
-        string_append(string, json->string_type, strlen(json->string_type) + 1);
+        string_append(string, json->v.String, strlen(json->v.String) + 1);
         string_append(string, "\"", 2);
 
         APPEND_COLOR(RESET_COLOR);
@@ -147,8 +147,8 @@ void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool 
         // '{}' for structs, and `[]` for lists
 #define L_PAREN(...) is_struct ? "{" __VA_ARGS__ : "[" __VA_ARGS__
 #define R_PAREN(...) is_struct ? "}" __VA_ARGS__ : "]" __VA_ARGS__
-        bool skip_depth = json->list_type[0].type == JSONTYPE_END_LIST;
-        Json *list = json->list_type;
+        bool skip_depth = json->v.List[0].type == JSONTYPE_END_LIST;
+        Json *list = json->v.List;
 
         if (depth == NULL || skip_depth) {
             string_append(string, L_PAREN(), 2);

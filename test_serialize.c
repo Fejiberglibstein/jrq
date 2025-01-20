@@ -2,12 +2,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define FLAGS  JSON_NO_COMPACT | JSON_COLOR
+#define FLAGS JSON_NO_COMPACT | JSON_COLOR
 
 void test_validate_lists() {
     Json string =
         (Json) {.type = JSONTYPE_STRING,
-                .string_type = "000000000000000000000000000000000000000000000000000000000000000"};
+                .v.String = "000000000000000000000000000000000000000000000000000000000000000"};
 
     char *data = json_serialize(&string, FLAGS);
     printf("%s\n\n\n", data);
@@ -17,39 +17,39 @@ void test_validate_lists() {
     Json list_data[] = {
         (Json) {
             .type = JSONTYPE_STRING,
-            .string_type = "hello",
+            .v.String = "hello",
         },
         (Json) {
             .type = JSONTYPE_LIST,
-            .list_type = (Json[]) {
+            .v.List = (Json[]) {
                 (Json) {
                     .type = JSONTYPE_STRING,
-                    .string_type = "hello",
+                    .v.String = "hello",
                 },
                 (Json) {
                     .type = JSONTYPE_STRING,
-                    .string_type = "world",
+                    .v.String = "world",
                 },
                 (Json) {
                     .type = JSONTYPE_STRING,
-                    .string_type = "",
+                    .v.String = "",
                 },
                 0 // end of list
             },
         },
         (Json) {
             .type = JSONTYPE_INT,
-            .int_type = 4,
+            .v.Int = 4,
         },
         (Json) {
             .type = JSONTYPE_STRING,
-            .string_type = "hello",
+            .v.String = "hello",
         },
         0 // end of list
     };
     // clang-format on
 
-    Json list = (Json) {.type = JSONTYPE_LIST, .list_type = list_data};
+    Json list = (Json) {.type = JSONTYPE_LIST, .v.List = list_data};
 
     data = json_serialize(&list, FLAGS);
     printf("%s\n\n", data);
@@ -68,14 +68,14 @@ void test_validate_lists() {
 
 void test_validate_structs() {
     Json *inner_list = (Json[]) {
-        (Json) {.type = JSONTYPE_STRING, .string_type = "Heyyy"},
+        (Json) {.type = JSONTYPE_STRING, .v.String = "Heyyy"},
         (Json) {
             .type = JSONTYPE_FLOAT,
-            .float_type = 3.4,
+            .v.Float = 3.4,
         },
         (Json) {
             .type = JSONTYPE_INT,
-            .int_type = 4,
+            .v.Int = 4,
         },
         0,
     };
@@ -83,16 +83,16 @@ void test_validate_structs() {
     //
     Json list = (Json) {
         .type = JSONTYPE_STRUCT,
-        .struct_type = (Json[]) {
+        .v.Struct = (Json[]) {
             (Json) {
                 .field_name = "foo",
                 .type = JSONTYPE_INT,
-                .int_type = 2
+                .v.Int = 2
             },
             (Json) {
                 .field_name = "bar",
                 .type = JSONTYPE_LIST,
-                .list_type = inner_list,
+                .v.List = inner_list,
             },
             (Json) {
                 .field_name = "bazz",
@@ -101,16 +101,16 @@ void test_validate_structs() {
             (Json) {
                 .field_name = "nested object",
                 .type = JSONTYPE_STRUCT,
-                .struct_type = (Json []) {
+                .v.Struct = (Json []) {
                     (Json) {
                         .field_name = "double foo",
                         .type = JSONTYPE_BOOL,
-                        .bool_type = true,
+                        .v.Bool = true,
                     },
                     (Json) {
                         .field_name = "blehah",
                         .type = JSONTYPE_LIST,
-                        .list_type = inner_list,
+                        .v.List = inner_list,
                     },
                     0,
                 }
@@ -126,6 +126,6 @@ void test_validate_structs() {
 }
 
 int main() {
-    /*test_lists();*/
+    test_validate_lists();
     test_validate_structs();
 }
