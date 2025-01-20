@@ -11,6 +11,23 @@ typedef struct {
     int capacity;
 } IntBuffer;
 
+enum keyword {
+    KEYWORD_TRUE,
+    KEYWORD_FALSE,
+    KEYWORD_NULL,
+};
+
+typedef struct {
+    char *end;
+    enum JsonType type;
+    union {
+        char *String;
+        int Int;
+        float Float;
+        enum keyword keyword;
+    } v;
+} ParsedValue;
+
 void buf_grow(IntBuffer *buf, int amt) {
     if (buf->capacity - buf->length < amt) {
         buf->capacity *= 2;
@@ -31,12 +48,12 @@ char *validate_list(char *json, IntBuffer *int_buf);
 char *validate_struct(char *json, IntBuffer *int_buf);
 char *validate_json(char *json, IntBuffer *int_buf);
 
-char *parse_string(char *str, Json *arena, IntBuffer *buf, int arena_idx);
-char *parse_number(char *str, Json *arena, IntBuffer *buf, int arena_idx);
-char *parse_keyword(char *str, Json *arena, IntBuffer *buf, int arena_idx);
-char *parse_list(char *str, Json *arena, IntBuffer *buf, int buf_idx);
-char *parse_struct(char *str, Json *arena, IntBuffer *buf, int buf_idx);
-char *parse_json(char *str, Json *arena, IntBuffer *int_buf, int buf_idx, int arena_idx);
+ParsedValue parse_string(char *str);
+ParsedValue parse_number(char *str);
+ParsedValue parse_keyword(char *str);
+ParsedValue parse_list(char *str, Json *arena, IntBuffer *buf, int buf_idx);
+ParsedValue parse_struct(char *str, Json *arena, IntBuffer *buf, int buf_idx);
+ParsedValue parse_json(char *str, Json *arena, IntBuffer *int_buf, int buf_idx, int arena_idx);
 
 static inline bool is_whitespace(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
@@ -312,29 +329,60 @@ Json *allocate_json(IntBuffer *buf) {
     return calloc(len, sizeof(Json));
 }
 
-char *parse_json(char *str, Json *arena, IntBuffer *buf, int buf_idx, int arena_idx) {
+ParsedValue parse_json(char *str, Json *arena, IntBuffer *buf, int buf_idx, int arena_idx) {
     str = skip_whitespace(str);
+    struct ParsedValue;
 
     switch (*str) {
     // json++ to skip past the [, {, or "
     case '[':
-        return parse_list(str + 1, arena, buf, buf_idx);
+        parse_list(str + 1, arena, buf, buf_idx);
     case '{':
-        return parse_struct(str + 1, arena, buf, buf_idx);
+        parse_struct(str + 1, arena, buf, buf_idx);
     case '"':
-        return parse_string(str + 1, arena, buf, arena_idx);
+        parse_string(str + 1);
     }
 
     if (('0' <= *str && *str <= '9') || *str == '-' || *str == '.') {
-        return parse_number(str, arena, buf, arena_idx);
+        parse_number(str);
     }
     if ('A' < *str && *str < 'z') {
-        return parse_keyword(str, arena, buf, arena_idx);
+        parse_keyword(str);
     }
 
-    return NULL;
+    return (ParsedValue) {0};
 }
 
+ParsedValue parse_string(char *str) {
+    bool backslashed = false;
+
+    char *start = str;
+
+    int offset = 0;
+    for (; *str != '\0'; str++) {
+        char c = *str;
+
+        if (c == '\\') {
+            backslashed = true;
+            continue;
+        } else if (c == '"' && !backslashed) {
+            return str + 1; // add 1 to go past the " character
+        }
+
+        backslashed = false;
+    }
+
+    return (ParsedValue) {0};
+}
+
+// Will return a pointer to the root element in a json string.
+// If the json string is not properly formatted, the function will return NULL.
+//
+// The pointer returned can be freed by *just* calling free(ptr). This function
+// only creates one allocation.
+//
+// The string used to parse the json *will* be mutated, do not expect it to be the
+// same after calling this function.
 Json *json_deserialize(char *str) {
     IntBuffer int_buf =
         (IntBuffer) {.data = malloc(INITIAL_CAPACITY), .capacity = INITIAL_CAPACITY, .length = 0};
@@ -351,7 +399,7 @@ Json *json_deserialize(char *str) {
 
     Json *arena = allocate_json(&int_buf);
 
-    char *_ = parse_json(start, arena, &int_buf, 0, 0);
+    parse_json(start, arena, &int_buf, 0, 0);
 
     free(int_buf.data);
 
