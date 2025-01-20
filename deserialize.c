@@ -207,22 +207,17 @@ ParsedValue parse_list(char *str, JsonData *data, int buf_idx) {
         base_arena_idx += data->buf.data[i];
     }
 
-    // store the amount of lists/structs we visit
-    int complex_type_amt = 0;
+    int current_length = data->buf.length;
+    data->buf.length += 1;
 
     while (*str != ']') {
         // The json is already validated, so we don't need to check if things
         // are validated like we did in the validator function
 
         // parse the next json item in the list
-        ParsedValue ret = parse_json(
-            str, data, buf_idx + 1 + complex_type_amt, base_arena_idx + list_items, NULL
-        );
+        ParsedValue ret
+            = parse_json(str, data, buf_idx + data->buf.length - current_length, base_arena_idx + list_items, NULL);
         str = ret.end;
-
-        if (ret.json.type == JSONTYPE_LIST || ret.json.type == JSONTYPE_STRUCT) {
-            complex_type_amt++;
-        }
 
         // Skip past the comma if there is one
         str = skip_whitespace(str);
@@ -256,8 +251,8 @@ ParsedValue parse_struct(char *str, JsonData *data, int buf_idx) {
         base_arena_idx += data->buf.data[i];
     }
 
-    // store the amount of lists/structs we visit
-    int complex_type_amt = 0;
+    int current_length = data->buf.length;
+    data->buf.length += 1;
 
     while (*str != '}') {
         // The json is already validated, so we don't need to check if things
@@ -273,12 +268,8 @@ ParsedValue parse_struct(char *str, JsonData *data, int buf_idx) {
         str = skip_whitespace(str);
 
         // parse the next json item in the list
-        ret = parse_json(str, data, buf_idx + 1 + complex_type_amt, base_arena_idx + fields, NULL);
+        ret = parse_json(str, data, buf_idx + data->buf.length - current_length, base_arena_idx + fields, NULL);
         str = ret.end;
-
-        if (ret.json.type == JSONTYPE_LIST || ret.json.type == JSONTYPE_STRUCT) {
-            complex_type_amt++;
-        }
 
         // Skip past the comma if there is one
         str = skip_whitespace(str);
@@ -552,10 +543,11 @@ Json *json_deserialize(char *str) {
         return NULL;
     }
 
-    // printf("\x1b[36m%s: \x1b[34m", start);
     allocate_json(&data);
-    // printf("\x1b[0m\n");
 
+    // Reset the length so that while parsing we can use it to store where to
+    // place the next complex type (struct/lists)
+    data.buf.length = 0;
     parse_json(start, &data, 0, 0, NULL);
 
     free(data.buf.data);
