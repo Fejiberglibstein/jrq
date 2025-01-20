@@ -5,17 +5,27 @@
 
 #define INITIAL_CAPACITY 4
 
+enum keyword {
+    KEYWORD_TRUE,
+    KEYWORD_FALSE,
+    KEYWORD_NULL,
+};
+
 typedef struct {
     int *data;
     int length;
     int capacity;
 } IntBuffer;
 
-enum keyword {
-    KEYWORD_TRUE,
-    KEYWORD_FALSE,
-    KEYWORD_NULL,
-};
+typedef struct {
+    IntBuffer buf;
+    // The size of all strings in the json
+    int str_len;
+    // Pointer to the region of memory we allocate to hold the strings
+    char *str_ptr;
+    // Pointer to the region of memory we allocate to hold all the json
+    Json *arena;
+} JsonData;
 
 typedef struct {
     char *end;
@@ -41,14 +51,14 @@ void buf_append(IntBuffer *buf, int val) {
     buf->data[buf->length++] = val;
 }
 
-char *validate_json(char *json, IntBuffer *int_buf);
+char *validate_json(char *json, JsonData *data);
 
-ParsedValue parse_string(char *str);
-ParsedValue parse_number(char *str);
-ParsedValue parse_keyword(char *str);
-ParsedValue parse_list(char *str, Json *arena, IntBuffer *buf, int buf_idx);
-ParsedValue parse_struct(char *str, Json *arena, IntBuffer *buf, int buf_idx);
-ParsedValue parse_json(char *str, Json *arena, IntBuffer *int_buf, int buf_idx, int arena_idx);
+ParsedValue parse_string(char *str, JsonData *data);
+ParsedValue parse_number(char *str, JsonData *_);
+ParsedValue parse_keyword(char *str, JsonData *_);
+ParsedValue parse_list(char *str, JsonData *data, int buf_idx);
+ParsedValue parse_struct(char *str, JsonData *data, int buf_idx);
+ParsedValue parse_json(char *str, JsonData *data, int buf_idx, int arena_idx);
 
 static inline bool is_whitespace(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
@@ -67,22 +77,30 @@ char *skip_whitespace(char *json) {
 // end location means the character after the string " terminator:
 // "hello world",
 // function will return where the comma is
-ParsedValue parse_string(char *str) {
+ParsedValue parse_string(char *str, JsonData *data) {
     bool backslashed = false;
 
+    char *new_str = NULL;
     char *start = str;
 
-    for (; *str != '\0'; str++) {
+    for (int str_len = 0; *str != '\0'; str++, str_len++) {
         char c = *str;
 
         if (c == '\\') {
             backslashed = true;
             continue;
         } else if (c == '"' && !backslashed) {
+            if (data->str_ptr != NULL) {
+                data->str_len += str_len;
+            } else {
+                new_str = data->str_ptr;
+                data->str_ptr += str_len;
+                memcpy(new_str, start, str_len - 1);
+            }
             return (ParsedValue) {
                 .end = str + 1, // add 1 to go past the " character
                 .type = JSONTYPE_STRING,
-                .v.String = start,
+                .v.String = new_str,
             };
         }
 
@@ -98,7 +116,7 @@ ParsedValue parse_string(char *str) {
 // end location means the character after the last part of the number:
 // 291028.298103,
 // function will return where the comma is
-ParsedValue parse_number(char *str) {
+ParsedValue parse_number(char *str, JsonData *_) {
     bool finished_decimal = false;
 
     char *start = str;
@@ -130,22 +148,29 @@ ParsedValue parse_number(char *str) {
         break;
     }
 
+    ParsedValue ret;
+    char l = *str;
+    *str = '\0';
+
     if (finished_decimal) {
-        return (ParsedValue) {
+        ret = (ParsedValue) {
             .end = str,
             .type = JSONTYPE_FLOAT,
             .v.Float = atof(start),
         };
     } else {
-        return (ParsedValue) {
+        ret = (ParsedValue) {
             .end = str,
             .type = JSONTYPE_INT,
             .v.Int = atoi(start),
         };
     }
+
+    *str = l; // fix the string after setting the end value to \0
+    return ret;
 }
 
-char *validate_struct(char *json, IntBuffer *int_buf) {
+char *validate_struct(char *json, JsonData *data) {
     json = skip_whitespace(json);
     bool trailing_comma = false;
 
@@ -153,9 +178,9 @@ char *validate_struct(char *json, IntBuffer *int_buf) {
 
     // Save the current index and add 1 so that we can insert our length
     // properly
-    int buf_index = int_buf->length;
-    buf_grow(int_buf, 1);
-    int_buf->length += 1;
+    int buf_index = data->buf.length;
+    buf_grow(&data->buf, 1);
+    data->buf.length += 1;
 
     while (*json != '}') {
         if (*json == '\0') {
@@ -167,7 +192,7 @@ char *validate_struct(char *json, IntBuffer *int_buf) {
         if (*(json++) != '"') {
             return NULL;
         }
-        json = parse_string(json).end;
+        json = parse_string(json, false).end;
         if (json == NULL) {
             return NULL;
         }
@@ -180,7 +205,7 @@ char *validate_struct(char *json, IntBuffer *int_buf) {
         json = skip_whitespace(json);
 
         // parse the next json item in the list
-        json = validate_json(json, int_buf);
+        json = validate_json(json, data);
         if (json == NULL) {
             return NULL;
         }
@@ -203,12 +228,12 @@ char *validate_struct(char *json, IntBuffer *int_buf) {
     }
 
     // fields + 1 to make room for null terminator at the end of the struct
-    int_buf->data[buf_index] = fields + 1;
+    data->buf.data[buf_index] = fields + 1;
 
     return json + 1;
 }
 
-char *validate_list(char *json, IntBuffer *int_buf) {
+char *validate_list(char *json, JsonData *data) {
     json = skip_whitespace(json);
     bool trailing_comma = false;
 
@@ -216,9 +241,9 @@ char *validate_list(char *json, IntBuffer *int_buf) {
 
     // Save the current index and add 1 so that we can insert our length
     // properly
-    int buf_index = int_buf->length;
-    buf_grow(int_buf, 1);
-    int_buf->length += 1;
+    int buf_index = data->buf.length;
+    buf_grow(&data->buf, 1);
+    data->buf.length += 1;
 
     while (*json != ']') {
         if (*json == '\0') {
@@ -227,7 +252,7 @@ char *validate_list(char *json, IntBuffer *int_buf) {
         }
 
         // parse the next json item in the list
-        json = validate_json(json, int_buf);
+        json = validate_json(json, data);
         if (json == NULL) {
             return NULL;
         }
@@ -249,12 +274,12 @@ char *validate_list(char *json, IntBuffer *int_buf) {
     }
 
     // list_items + 1 to make room for null terminator at the end of the list
-    int_buf->data[buf_index] = list_items + 1;
+    data->buf.data[buf_index] = list_items + 1;
 
     return json + 1;
 }
 
-ParsedValue parse_keyword(char *json) {
+ParsedValue parse_keyword(char *json, JsonData *_) {
     json = skip_whitespace(json);
 #define KEYWORD(v, l...)                                                                           \
     /* use sizeof(v) - 1 to remove the null terminator */                                          \
@@ -306,42 +331,46 @@ ParsedValue parse_keyword(char *json) {
 //
 // in the case where the json is simply `"hello"` or `10`, the function will
 // return []
-char *validate_json(char *json, IntBuffer *int_buf) {
+char *validate_json(char *json, JsonData *data) {
     json = skip_whitespace(json);
 
     switch (*json) {
     // json++ to skip past the [, {, or "
     case '[':
-        return validate_list(json + 1, int_buf);
+        return validate_list(json + 1, data);
     case '{':
-        return validate_struct(json + 1, int_buf);
+        return validate_struct(json + 1, data);
     case '"':
-        return parse_string(json + 1).end;
+        return parse_string(json + 1, true).end;
     }
 
     if (('0' <= *json && *json <= '9') || *json == '-' || *json == '.') {
-        return parse_number(json).end;
+        return parse_number(json, data).end;
     }
     if ('A' < *json && *json < 'z') {
-        return parse_keyword(json).end;
+        return parse_keyword(json, data).end;
     }
 
     return NULL;
 }
 
-Json *allocate_json(IntBuffer *buf) {
+void allocate_json(JsonData *data) {
     // Initialize the amount of items we allocate to 1, all allocations will be
     // at LEAST 1 Json
     int len = 1;
 
-    for (int i = 0; i < buf->length; i++) {
-        len += buf->data[i];
+    for (int i = 0; i < data->buf.length; i++) {
+        len += data->buf.data[i];
     }
 
-    return calloc(len, sizeof(Json));
+    void *mem = calloc(len * sizeof(Json) + data->str_len, 1);
+    data->arena = mem;
+    // Skip past the json allocation part and put it in the string allocation
+    // part
+    data->str_ptr = mem + len * sizeof(Json);
 }
 
-ParsedValue parse_json(char *str, Json *arena, IntBuffer *buf, int buf_idx, int arena_idx) {
+ParsedValue parse_json(char *str, JsonData *data, int buf_idx, int arena_idx) {
     str = skip_whitespace(str);
     struct ParsedValue;
 
@@ -352,14 +381,14 @@ ParsedValue parse_json(char *str, Json *arena, IntBuffer *buf, int buf_idx, int 
     case '{':
         // parse_struct(str + 1, arena, buf, buf_idx);
     case '"':
-        parse_string(str + 1);
+        parse_string(str + 1, false);
     }
 
     if (('0' <= *str && *str <= '9') || *str == '-' || *str == '.') {
-        parse_number(str);
+        parse_number(str, data);
     }
     if ('A' < *str && *str < 'z') {
-        parse_keyword(str);
+        parse_keyword(str, data);
     }
 
     return (ParsedValue) {0};
@@ -374,25 +403,29 @@ ParsedValue parse_json(char *str, Json *arena, IntBuffer *buf, int buf_idx, int 
 // The string used to parse the json *will* be mutated, do not expect it to be the
 // same after calling this function.
 Json *json_deserialize(char *str) {
-    IntBuffer int_buf =
-        (IntBuffer) {.data = malloc(INITIAL_CAPACITY), .capacity = INITIAL_CAPACITY, .length = 0};
+    JsonData data = {
+        .buf = {.data = malloc(INITIAL_CAPACITY), .capacity = INITIAL_CAPACITY, .length = 0},
+        .str_len = 0,
+        .arena = NULL,
+        .str_ptr = NULL,
+    };
     char *start = str;
 
-    str = validate_json(str, &int_buf);
+    str = validate_json(str, &data);
     if (str == NULL) {
-        free(int_buf.data);
+        free(data.buf.data);
         return NULL;
     }
     str = skip_whitespace(str);
     if (*str != '\0') {
-        free(int_buf.data);
+        free(data.buf.data);
         return NULL;
     }
 
-    Json *arena = allocate_json(&int_buf);
+    allocate_json(&data);
 
-    parse_json(start, arena, &int_buf, 0, 0);
+    parse_json(start, &data, 0, 0);
 
-    free(int_buf.data);
-    return arena;
+    free(data.buf.data);
+    return data.arena;
 }
