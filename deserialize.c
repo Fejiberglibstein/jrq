@@ -1,7 +1,7 @@
 #include "./json.h"
+#include <memory.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <memory.h>
 
 #define INITIAL_CAPACITY 4
 
@@ -29,13 +29,7 @@ typedef struct {
 
 typedef struct {
     char *end;
-    enum JsonType type;
-    union {
-        char *String;
-        int Int;
-        float Float;
-        enum keyword keyword;
-    } v;
+    Json json;
 } ParsedValue;
 
 void buf_grow(IntBuffer *buf, int amt) {
@@ -58,7 +52,7 @@ ParsedValue parse_number(char *str, JsonData *_);
 ParsedValue parse_keyword(char *str, JsonData *_);
 ParsedValue parse_list(char *str, JsonData *data, int buf_idx);
 ParsedValue parse_struct(char *str, JsonData *data, int buf_idx);
-ParsedValue parse_json(char *str, JsonData *data, int buf_idx, int arena_idx);
+void parse_json(char *str, JsonData *data, int buf_idx, int arena_idx);
 
 static inline bool is_whitespace(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
@@ -90,17 +84,17 @@ ParsedValue parse_string(char *str, JsonData *data) {
             continue;
         } else if (c == '"' && !backslashed) {
             if (data->str_ptr == NULL) {
-                data->str_len += str_len;
+                data->str_len += str_len + 1;
             } else {
                 new_str = data->str_ptr;
-                data->str_ptr += str_len;
-                memcpy(new_str, start, str_len - 1);
+                data->str_ptr += str_len + 1;
+                memcpy(new_str, start, str_len);
             }
-            return (ParsedValue) {
-                .end = str + 1, // add 1 to go past the " character
-                .type = JSONTYPE_STRING,
-                .v.String = new_str,
-            };
+            return (ParsedValue) {.end = str + 1, // add 1 to go past the " character
+                                  .json = {
+                                      .type = JSONTYPE_STRING,
+                                      .v.String = new_str,
+                                  }};
         }
 
         backslashed = false;
@@ -155,21 +149,39 @@ ParsedValue parse_number(char *str, JsonData *_) {
     buf[num_length] = '\0';
 
     if (finished_decimal) {
-        ret = (ParsedValue) {
-            .end = str,
-            .type = JSONTYPE_FLOAT,
-            .v.Float = atof(buf),
-        };
+        ret = (ParsedValue) {.end = str,
+                             .json = {
+                                 .type = JSONTYPE_FLOAT,
+                                 .v.Float = atof(buf),
+
+                             }};
     } else {
-        ret = (ParsedValue) {
-            .end = str,
-            .type = JSONTYPE_INT,
-            .v.Int = atoi(buf),
-        };
+        ret = (ParsedValue) {.end = str,
+                             .json = {
+                                 .type = JSONTYPE_INT,
+                                 .v.Int = atoi(buf),
+
+                             }};
     }
 
     return ret;
 }
+
+ParsedValue parse_keyword(char *json, JsonData *_) {
+    json = skip_whitespace(json);
+#define KEYWORD(v, l...)                                                                           \
+    /* use sizeof(v) - 1 to remove the null terminator */                                          \
+    if (strncmp(json, v, sizeof(v) - 1) == 0) {                                                    \
+        return (ParsedValue) {.end = json + sizeof(v) - 1, .json = {l}};                           \
+    }
+    KEYWORD("true", .type = JSONTYPE_BOOL, .v.Bool = true);
+    KEYWORD("false", .type = JSONTYPE_BOOL, .v.Bool = false);
+    KEYWORD("null", .type = JSONTYPE_NULL, .v.Null = NULL);
+#undef KEYWORD
+
+    return (ParsedValue) {.end = NULL};
+}
+
 
 char *validate_struct(char *json, JsonData *data) {
     json = skip_whitespace(json);
@@ -280,21 +292,6 @@ char *validate_list(char *json, JsonData *data) {
     return json + 1;
 }
 
-ParsedValue parse_keyword(char *json, JsonData *_) {
-    json = skip_whitespace(json);
-#define KEYWORD(v, l...)                                                                           \
-    /* use sizeof(v) - 1 to remove the null terminator */                                          \
-    if (strncmp(json, v, sizeof(v) - 1) == 0) {                                                    \
-        return (ParsedValue) {.end = json + sizeof(v) - 1, l};                                     \
-    }
-    KEYWORD("true", .type = JSONTYPE_BOOL, .v.keyword = KEYWORD_TRUE);
-    KEYWORD("false", .type = JSONTYPE_BOOL, .v.keyword = KEYWORD_FALSE);
-    KEYWORD("null", .type = JSONTYPE_NULL, .v.keyword = KEYWORD_NULL);
-#undef KEYWORD
-
-    return (ParsedValue) {.end = NULL};
-}
-
 // Makes sure that the json string is properly formatted. Returns NULL is json
 // is improperly formatted
 //
@@ -333,7 +330,6 @@ ParsedValue parse_keyword(char *json, JsonData *_) {
 // in the case where the json is simply `"hello"` or `10`, the function will
 // return []
 char *validate_json(char *json, JsonData *data) {
-    printf("%s\n", json);
     json = skip_whitespace(json);
 
     switch (*json) {
@@ -372,28 +368,28 @@ void allocate_json(JsonData *data) {
     data->str_ptr = mem + len * sizeof(Json);
 }
 
-ParsedValue parse_json(char *str, JsonData *data, int buf_idx, int arena_idx) {
+void parse_json(char *str, JsonData *data, int buf_idx, int arena_idx) {
     str = skip_whitespace(str);
-    struct ParsedValue;
+    ParsedValue ret;
 
     switch (*str) {
     // json++ to skip past the [, {, or "
     case '[':
-        // parse_list(str + 1, arena, buf, buf_idx);
+        ret = parse_list(str + 1, data, buf_idx);
     case '{':
-        // parse_struct(str + 1, arena, buf, buf_idx);
+        ret = parse_struct(str + 1, data, buf_idx);
     case '"':
-        parse_string(str + 1, data);
+        ret = parse_string(str + 1, data);
     }
 
     if (('0' <= *str && *str <= '9') || *str == '-' || *str == '.') {
-        parse_number(str, data);
+        ret = parse_number(str, data);
     }
     if ('A' < *str && *str < 'z') {
-        parse_keyword(str, data);
+        ret = parse_keyword(str, data);
     }
 
-    return (ParsedValue) {0};
+    data->arena[arena_idx] = ret.json;
 }
 
 // Will return a pointer to the root element in a json string.
@@ -401,9 +397,6 @@ ParsedValue parse_json(char *str, JsonData *data, int buf_idx, int arena_idx) {
 //
 // The pointer returned can be freed by *just* calling free(ptr). This function
 // only creates one allocation.
-//
-// The string used to parse the json *will* be mutated, do not expect it to be the
-// same after calling this function.
 Json *json_deserialize(char *str) {
     JsonData data = {
         .buf = {.data = malloc(INITIAL_CAPACITY), .capacity = INITIAL_CAPACITY, .length = 0},

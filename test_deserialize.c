@@ -22,7 +22,12 @@ typedef struct {
 extern char *validate_json(char *json, JsonData *data);
 extern char *skip_whitespace(char *json);
 
-char *validate(char *json) {
+struct ret {
+    char *end;
+    int str_len;
+};
+
+struct ret validate(char *json) {
     JsonData data = {
         .buf = {.data = malloc(4), .capacity = 4, .length = 0},
         .str_len = 0,
@@ -31,78 +36,86 @@ char *validate(char *json) {
     };
     json = validate_json(json, &data);
     if (json == NULL) {
-        return NULL;
+        return (struct ret) {0};
     }
 
     json = skip_whitespace(json);
     if (*json != '\0') {
-        return NULL;
+        return (struct ret) {0};
     }
 
     free(data.buf.data);
-    return json;
+    return (struct ret) {
+        .end = json,
+        .str_len = data.str_len,
+    };
 }
 
 void test_validate_simple() {
-    assert(validate("\"hello\"") != NULL);
-    assert(validate("\"he\\\"llo\"") != NULL);
-    assert(validate("          \"hello\"          ") != NULL);
-    assert(validate("\"hello\"]") == NULL);
-    assert(validate("\"hello  ") == NULL);
+    assert(validate("\"hello\"").end != NULL);
+    assert(validate("\"hello\"").str_len == 6);
+    assert(validate("\"he\\\"llo\"").end != NULL);
+    assert(validate("          \"hello\"          ").end != NULL);
+    assert(validate("\"hello\"]").end == NULL);
+    assert(validate("\"hello  ").end == NULL);
 
-    assert(validate("10") != NULL);
-    assert(validate("123456789.10]") == NULL);
-    assert(validate("3") != NULL);
-    assert(validate("-10     ") != NULL);
-    assert(validate("--10") == NULL);
-    assert(validate("         -10.0") != NULL);
-    assert(validate("-10.0.0") == NULL);
-    assert(validate("      -.0      ") != NULL);
-    assert(validate(".0") != NULL);
-    assert(validate(".") != NULL);
+    assert(validate("10").end != NULL);
+    assert(validate("123456789.10]").end == NULL);
+    assert(validate("3").end != NULL);
+    assert(validate("-10     ").end != NULL);
+    assert(validate("--10").end == NULL);
+    assert(validate("         -10.0").end != NULL);
+    assert(validate("-10.0.0").end == NULL);
+    assert(validate("      -.0      ").end != NULL);
+    assert(validate(".0").end != NULL);
+    assert(validate(".").end != NULL);
 
-    assert(validate("true       ") != NULL);
-    assert(validate("true]") == NULL);
-    assert(validate("         false") != NULL);
-    assert(validate("        null         ") != NULL);
-    assert(validate("hurwhui") == NULL);
-    assert(validate("h") == NULL);
+    assert(validate("true       ").end != NULL);
+    assert(validate("true]").end == NULL);
+    assert(validate("         false").end != NULL);
+    assert(validate("        null         ").end != NULL);
+    assert(validate("hurwhui").end == NULL);
+    assert(validate("h").end == NULL);
 
-    assert(validate("") == NULL);
+    assert(validate("").end == NULL);
 }
 
 void test_validate_lists() {
-    assert(validate("[]") != NULL);
-    assert(validate("[true]") != NULL);
-    assert(validate("[0, 10, true, null]") != NULL);
-    assert(validate("[0, 10, true, \"hello\"]") != NULL);
-    assert(validate("[4, 3, 2,]") != NULL);
-    assert(validate("[4, [10, 2], \"hellllooo\", [4, 4,], ]") != NULL);
+    assert(validate("[]").end != NULL);
+    assert(validate("[true]").end != NULL);
+    assert(validate("[0, 10, true, null]").end != NULL);
+    assert(validate("[0, 10, true, \"hello\"]").end != NULL);
+    assert(validate("[4, 3, 2,]").end != NULL);
+    assert(validate("[4, [10, 2], \"hellllooo\", [4, 4,], ]").end != NULL);
 
-    assert(validate("[4, \"hello]") == NULL);
-    assert(validate("[0, 10, true \"hello\"]") == NULL);
-    assert(validate("[4, 3, 2,,]") == NULL);
-    assert(validate("[4,, 3, 2]") == NULL);
-    assert(validate("[4, 3, 2") == NULL);
-    assert(validate("[[4, 3, 2], 3, 2") == NULL);
-    assert(validate("[[4, 3, 2, 3], 2") == NULL);
+    assert(validate("[4, \"hello]").end == NULL);
+    assert(validate("[0, 10, true \"hello\"]").end == NULL);
+    assert(validate("[4, 3, 2,,]").end == NULL);
+    assert(validate("[4,, 3, 2]").end == NULL);
+    assert(validate("[4, 3, 2").end == NULL);
+    assert(validate("[[4, 3, 2], 3, 2").end == NULL);
+    assert(validate("[[4, 3, 2, 3], 2").end == NULL);
 }
 
 void test_validate_structs() {
-    assert(validate("{}") != NULL);
-    assert(validate("{\"foo\": true}") != NULL);
-    assert(validate("{     \"foo\"    : true  , }") != NULL);
+    assert(validate("{}").end != NULL);
+    assert(validate("{\"foo\": true}").end != NULL);
+    assert(validate("{     \"foo\"    : true  , }").end != NULL);
     assert(
-        validate("{\"foo\": true, \"bleh\": {\"car\": [10, 2, 3], \"h\": 10}, \"bl\": null}") !=
+        validate("{\"foo\": true, \"bleh\": {\"car\": [10, 2, 3], \"h\": 10}, \"bl\": null}").end !=
         NULL
     );
+    assert(
+        validate("{\"foo\": true, \"bleh\": {\"car\": [10, 2, 3], \"h\": 10}, \"bl\": null}")
+            .str_len == 18
+    );
 
-    assert(validate("{\"foo\": true]") == NULL);
-    assert(validate("{\"foo\": true]}") == NULL);
-    assert(validate("{\"foo\": true,,}") == NULL);
-    assert(validate("{true}") == NULL);
-    assert(validate("{\"foo\"}") == NULL);
-    assert(validate("{\"foo\": }") == NULL);
+    assert(validate("{\"foo\": true]").end == NULL);
+    assert(validate("{\"foo\": true]}").end == NULL);
+    assert(validate("{\"foo\": true,,}").end == NULL);
+    assert(validate("{true}").end == NULL);
+    assert(validate("{\"foo\"}").end == NULL);
+    assert(validate("{\"foo\": }").end == NULL);
 }
 
 void validate_int_buf(char *str, JsonData *data, int *ints, int int_len);
