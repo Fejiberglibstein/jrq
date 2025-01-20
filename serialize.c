@@ -25,7 +25,7 @@ typedef struct {
     int capacity;
 } StringBuffer;
 
-inline void string_grow(StringBuffer *str, int amt) {
+void string_grow(StringBuffer *str, int amt) {
     if (str->capacity - str->length < amt) {
         do {
             str->capacity *= 2;
@@ -35,7 +35,7 @@ inline void string_grow(StringBuffer *str, int amt) {
     }
 }
 
-inline void string_append(StringBuffer *str, char *buf, int buf_len) {
+void string_append(StringBuffer *str, char *buf, int buf_len) {
     string_grow(str, buf_len);
     strcpy((str->data + str->length), buf);
     // - 1 for the null terminator
