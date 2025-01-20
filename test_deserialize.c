@@ -97,11 +97,11 @@ void test_int_buf() {
 #define list(l...) (int[]) l, sizeof((int[])l) / 4
     validate_int_buf("1", &ints, list({}));
     validate_int_buf("true", &ints, list({}));
-    validate_int_buf("[true]", &ints, list({1}));
-    validate_int_buf("[]", &ints, list({0}));
-    validate_int_buf("[null, \"foo\"]", &ints, list({2}));
+    validate_int_buf("[true]", &ints, list({2}));
+    validate_int_buf("[]", &ints, list({1}));
+    validate_int_buf("[null, \"foo\"]", &ints, list({3}));
     validate_int_buf(
-        "[10, [1, 2, 3], [2, [4, 4, 4], 10, true], 10, [2], []]", &ints, list({6, 3, 4, 3, 1, 0})
+        "[10, [1, 2, 3], [2, [4, 4, 4], 10, true], 10, [2], []]", &ints, list({7, 4, 5, 4, 2, 1})
     );
 #undef list
 }

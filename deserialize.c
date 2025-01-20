@@ -41,11 +41,6 @@ void buf_append(IntBuffer *buf, int val) {
     buf->data[buf->length++] = val;
 }
 
-char *validate_string(char *json);
-char *validate_number(char *json);
-char *validate_keyword(char *json);
-char *validate_list(char *json, IntBuffer *int_buf);
-char *validate_struct(char *json, IntBuffer *int_buf);
 char *validate_json(char *json, IntBuffer *int_buf);
 
 ParsedValue parse_string(char *str);
@@ -72,23 +67,29 @@ char *skip_whitespace(char *json) {
 // end location means the character after the string " terminator:
 // "hello world",
 // function will return where the comma is
-char *validate_string(char *json) {
+ParsedValue parse_string(char *str) {
     bool backslashed = false;
 
-    for (; *json != '\0'; json++) {
-        char c = *json;
+    char *start = str;
+
+    for (; *str != '\0'; str++) {
+        char c = *str;
 
         if (c == '\\') {
             backslashed = true;
             continue;
         } else if (c == '"' && !backslashed) {
-            return json + 1; // add 1 to go past the " character
+            return (ParsedValue) {
+                .end = str + 1, // add 1 to go past the " character
+                .type = JSONTYPE_STRING,
+                .v.String = start,
+            };
         }
 
         backslashed = false;
     }
-
-    return NULL;
+    // String not terminated, error
+    return (ParsedValue) {.end = NULL};
 }
 
 // ensures that a number is properly formatted, returning the end location of
@@ -97,41 +98,51 @@ char *validate_string(char *json) {
 // end location means the character after the last part of the number:
 // 291028.298103,
 // function will return where the comma is
-char *validate_number(char *json) {
+ParsedValue parse_number(char *str) {
     bool finished_decimal = false;
 
-    if (*json == '-') {
-        json += 1;
+    char *start = str;
+    if (*str == '-') {
+        str += 1;
     }
     // Numbers in json can _only_ match this regex [-]?[0-9]+\.[0-9]+ followed
     // by a comma or any whitespace
 
-    for (; *json != '\0'; json++) {
-        char c = *json;
+    for (; *str != '\0'; str++) {
+        char c = *str;
         if (c == '.') {
             if (finished_decimal) {
                 // A number like 1.0002.2 is invalid json!!
-                return NULL;
+                return (ParsedValue) {.end = NULL};
             } else {
                 finished_decimal = true;
                 continue;
             }
         }
-        if (is_whitespace(c) || c == ',') {
-            return json;
-        }
         if ('0' <= c && c <= '9') {
             continue;
         }
         if (c == '-') {
-            return NULL;
+            return (ParsedValue) {.end = NULL};
         }
 
         // Some other character has been reached, number is over
         break;
     }
-    // reached '\0', so this is a valid number
-    return json;
+
+    if (finished_decimal) {
+        return (ParsedValue) {
+            .end = str,
+            .type = JSONTYPE_FLOAT,
+            .v.Float = atof(start),
+        };
+    } else {
+        return (ParsedValue) {
+            .end = str,
+            .type = JSONTYPE_INT,
+            .v.Int = atoi(start),
+        };
+    }
 }
 
 char *validate_struct(char *json, IntBuffer *int_buf) {
@@ -156,7 +167,7 @@ char *validate_struct(char *json, IntBuffer *int_buf) {
         if (*(json++) != '"') {
             return NULL;
         }
-        json = validate_string(json);
+        json = parse_string(json).end;
         if (json == NULL) {
             return NULL;
         }
@@ -243,19 +254,19 @@ char *validate_list(char *json, IntBuffer *int_buf) {
     return json + 1;
 }
 
-char *validate_keyword(char *json) {
+ParsedValue parse_keyword(char *json) {
     json = skip_whitespace(json);
-#define KEYWORD(v)                                                                                 \
+#define KEYWORD(v, l...)                                                                           \
     /* use sizeof(v) - 1 to remove the null terminator */                                          \
     if (strncmp(json, v, sizeof(v) - 1) == 0) {                                                    \
-        return json + sizeof(v) - 1;                                                               \
+        return (ParsedValue) {.end = json + sizeof(v) - 1, l};                                     \
     }
-    KEYWORD("true");
-    KEYWORD("false");
-    KEYWORD("null");
+    KEYWORD("true", .type = JSONTYPE_BOOL, .v.keyword = KEYWORD_TRUE);
+    KEYWORD("false", .type = JSONTYPE_BOOL, .v.keyword = KEYWORD_FALSE);
+    KEYWORD("null", .type = JSONTYPE_NULL, .v.keyword = KEYWORD_NULL);
 #undef KEYWORD
 
-    return NULL;
+    return (ParsedValue) {.end = NULL};
 }
 
 // Makes sure that the json string is properly formatted. Returns NULL is json
@@ -290,7 +301,8 @@ char *validate_keyword(char *json) {
 //  }
 //
 // In this example, the function will return [3, 1, 3, 5, 0, 4]. This is the
-// order in which the numbers appear.
+// order in which the numbers appear. However, all the numbers returned will
+// have 1 added to them, so the function will actually return [4, 2, 4, 6, 1, 5]
 //
 // in the case where the json is simply `"hello"` or `10`, the function will
 // return []
@@ -304,14 +316,14 @@ char *validate_json(char *json, IntBuffer *int_buf) {
     case '{':
         return validate_struct(json + 1, int_buf);
     case '"':
-        return validate_string(json + 1);
+        return parse_string(json + 1).end;
     }
 
     if (('0' <= *json && *json <= '9') || *json == '-' || *json == '.') {
-        return validate_number(json);
+        return parse_number(json).end;
     }
     if ('A' < *json && *json < 'z') {
-        return validate_keyword(json);
+        return parse_keyword(json).end;
     }
 
     return NULL;
@@ -336,9 +348,9 @@ ParsedValue parse_json(char *str, Json *arena, IntBuffer *buf, int buf_idx, int 
     switch (*str) {
     // json++ to skip past the [, {, or "
     case '[':
-        parse_list(str + 1, arena, buf, buf_idx);
+        // parse_list(str + 1, arena, buf, buf_idx);
     case '{':
-        parse_struct(str + 1, arena, buf, buf_idx);
+        // parse_struct(str + 1, arena, buf, buf_idx);
     case '"':
         parse_string(str + 1);
     }
@@ -348,28 +360,6 @@ ParsedValue parse_json(char *str, Json *arena, IntBuffer *buf, int buf_idx, int 
     }
     if ('A' < *str && *str < 'z') {
         parse_keyword(str);
-    }
-
-    return (ParsedValue) {0};
-}
-
-ParsedValue parse_string(char *str) {
-    bool backslashed = false;
-
-    char *start = str;
-
-    int offset = 0;
-    for (; *str != '\0'; str++) {
-        char c = *str;
-
-        if (c == '\\') {
-            backslashed = true;
-            continue;
-        } else if (c == '"' && !backslashed) {
-            return str + 1; // add 1 to go past the " character
-        }
-
-        backslashed = false;
     }
 
     return (ParsedValue) {0};
@@ -390,10 +380,12 @@ Json *json_deserialize(char *str) {
 
     str = validate_json(str, &int_buf);
     if (str == NULL) {
+        free(int_buf.data);
         return NULL;
     }
     str = skip_whitespace(str);
     if (*str != '\0') {
+        free(int_buf.data);
         return NULL;
     }
 
@@ -402,6 +394,5 @@ Json *json_deserialize(char *str) {
     parse_json(start, arena, &int_buf, 0, 0);
 
     free(int_buf.data);
-
-    return NULL;
+    return arena;
 }
