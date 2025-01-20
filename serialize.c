@@ -72,6 +72,8 @@ void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool 
         }
     }
 
+    // printf("%d\n", json->type);
+
     // When parsing lists/structs, use a bool to determine what braces should be
     // used.
     bool is_struct = false;
@@ -147,6 +149,7 @@ void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool 
         // '{}' for structs, and `[]` for lists
 #define L_PAREN(...) is_struct ? "{" __VA_ARGS__ : "[" __VA_ARGS__
 #define R_PAREN(...) is_struct ? "}" __VA_ARGS__ : "]" __VA_ARGS__
+        ;
         bool skip_depth = json->v.List[0].type == JSONTYPE_END_LIST;
         Json *list = json->v.List;
 
@@ -184,9 +187,11 @@ void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool 
 }
 
 char *json_serialize(Json *json, char flags) {
-    StringBuffer str = (StringBuffer
-    ) {.data = malloc(INITIAL_CAPACITY), .length = 0, .capacity = INITIAL_CAPACITY};
-
+    StringBuffer str = (StringBuffer) {
+        .data = malloc(INITIAL_CAPACITY),
+        .length = 0,
+        .capacity = INITIAL_CAPACITY,
+    };
     int depth = (flags & JSON_NO_COMPACT) ? 0 : -1;
     bool color = (flags & JSON_COLOR);
 
