@@ -11,27 +11,25 @@ typedef struct {
     int capacity;
 } IntBuffer;
 
-void buf_grow(IntBuffer *str, int amt) {
-    if (str->capacity - str->length < amt) {
-        do {
-            str->capacity *= 2;
-        } while (str->capacity - str->length < amt);
+void buf_grow(IntBuffer *buf, int amt) {
+    if (buf->capacity - buf->length < amt) {
+        buf->capacity *= 2;
 
-        str->data = realloc(str->data, str->capacity);
+        buf->data = realloc(buf->data, buf->capacity);
     }
 }
 
-void buf_append(IntBuffer *str, int val) {
-    buf_grow(str, 1);
-    str->data[str->length++] = val;
+void buf_append(IntBuffer *buf, int val) {
+    buf_grow(buf, 1);
+    buf->data[buf->length++] = val;
 }
 
 char *validate_string(char *json);
 char *validate_number(char *json);
 char *validate_keyword(char *json);
-char *validate_list(char *json, IntBuffer int_buf);
-char *validate_struct(char *json, IntBuffer int_buf);
-char *validate_json(char *json, IntBuffer int_buf);
+char *validate_list(char *json, IntBuffer *int_buf);
+char *validate_struct(char *json, IntBuffer *int_buf);
+char *validate_json(char *json, IntBuffer *int_buf);
 
 bool is_whitespace(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
@@ -112,7 +110,7 @@ char *validate_number(char *json) {
     return json;
 }
 
-char *validate_list(char *json, IntBuffer int_buf) {
+char *validate_list(char *json, IntBuffer *int_buf) {
     json = skip_whitespace(json);
     bool trailing_comma = false;
 
@@ -120,9 +118,9 @@ char *validate_list(char *json, IntBuffer int_buf) {
 
     // Save the current index and add 1 so that we can insert our length
     // properly
-    int buf_index = int_buf.length;
-    buf_grow(&int_buf, 1);
-    int_buf.length += 1;
+    int buf_index = int_buf->length;
+    buf_grow(int_buf, 1);
+    int_buf->length += 1;
 
     while (*json != ']') {
         if (*json == '\0') {
@@ -156,9 +154,9 @@ char *validate_list(char *json, IntBuffer int_buf) {
     }
 
     // insert the amount of items we've accumulated into our int buf
-    int_buf.data[buf_index] = list_items;
+    int_buf->data[buf_index] = list_items;
 
-    return json;
+    return json + 1;
 }
 
 char *validate_keyword(char *json) {
@@ -212,17 +210,17 @@ char *validate_keyword(char *json) {
 //
 // in the case where the json is simply `"hello"` or `10`, the function will
 // return []
-char *validate_json(char *json, IntBuffer int_buf) {
+char *validate_json(char *json, IntBuffer *int_buf) {
     json = skip_whitespace(json);
 
     switch (*json) {
         // json++ to skip past the [, {, or "
-    case '[':
-        return validate_list(json + 1, int_buf);
-    case '{':
-        // return validate_struct(json + 1, int_buf);
-    case '"':
-        return validate_string(json + 1);
+        case '[':
+            return validate_list(json + 1, int_buf);
+        case '{':
+            // return validate_struct(json + 1, int_buf);
+        case '"':
+            return validate_string(json + 1);
     }
 
     if (('0' <= *json && *json <= '9') || *json == '-' || *json == '.') {
@@ -233,15 +231,14 @@ char *validate_json(char *json, IntBuffer int_buf) {
     }
 
     return NULL;
-}
+    }
 
+    Json *json_deserialize(char *json) {
+        IntBuffer ints =
+            (IntBuffer) {.data = malloc(INITIAL_CAPACITY), .capacity = INITIAL_CAPACITY, .length = 0};
 
-Json *json_deserialize(char *json) {
-    IntBuffer ints =
-        (IntBuffer) {.data = malloc(INITIAL_CAPACITY), .capacity = INITIAL_CAPACITY, .length = 0};
+        json = validate_json(json, &ints);
+        free(ints.data);
 
-    json = validate_json(json, ints);
-    free(ints.data);
-
-    return NULL;
-}
+        return NULL;
+    }
