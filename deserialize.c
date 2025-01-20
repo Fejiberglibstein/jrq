@@ -31,11 +31,11 @@ char *validate_list(char *json, IntBuffer *int_buf);
 char *validate_struct(char *json, IntBuffer *int_buf);
 char *validate_json(char *json, IntBuffer *int_buf);
 
-bool is_whitespace(char c) {
+static inline bool is_whitespace(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
 
-char *skip_whitespace(char *json) {
+static inline char *skip_whitespace(char *json) {
     for (; is_whitespace(*json); json++)
         ;
 
@@ -110,6 +110,66 @@ char *validate_number(char *json) {
     return json;
 }
 
+char *validate_struct(char *json, IntBuffer *int_buf) {
+    json = skip_whitespace(json);
+    bool trailing_comma = false;
+
+    int fields = 0;
+
+    // Save the current index and add 1 so that we can insert our length
+    // properly
+    int buf_index = int_buf->length;
+    buf_grow(int_buf, 1);
+    int_buf->length += 1;
+
+    while (*json != '}') {
+        if (*json == '\0') {
+            // if we make it to the end with no `}` then thats a json error
+            return NULL;
+        }
+
+        // We need to make sure we have the field name string first
+        json = validate_string(json);
+        if (json == NULL) {
+            return NULL;
+        }
+        json = skip_whitespace(json);
+
+        // We need a : after the field: {"foo": true}
+        if (*json != ':') {
+            return NULL;
+        }
+        json = skip_whitespace(json);
+
+        // parse the next json item in the list
+        json = validate_json(json, int_buf);
+        if (json == NULL) {
+            return NULL;
+        }
+        json = skip_whitespace(json);
+
+        // ensure the json has a comma after the item. If it has no comma and we
+        // already have a trailing comma, the json is invalid
+        if (*json != ',') {
+            if (trailing_comma) {
+                return NULL;
+            } else {
+                trailing_comma = true;
+            }
+        } else {
+            json++; // skip past the comma
+        }
+        json = skip_whitespace(json);
+
+        fields++;
+    }
+
+    // insert the amount of items we've accumulated into our int buf
+    int_buf->data[buf_index] = fields;
+
+    return json + 1;
+}
+
 char *validate_list(char *json, IntBuffer *int_buf) {
     json = skip_whitespace(json);
     bool trailing_comma = false;
@@ -133,7 +193,6 @@ char *validate_list(char *json, IntBuffer *int_buf) {
         if (json == NULL) {
             return NULL;
         }
-        // skip any whitespace before the comma
         json = skip_whitespace(json);
 
         // ensure the json has a comma after the item. If it has no comma and we
@@ -147,8 +206,6 @@ char *validate_list(char *json, IntBuffer *int_buf) {
         } else {
             json++; // skip past the comma
         }
-
-        // skip past the whitespace after the comma
         json = skip_whitespace(json);
         list_items++;
     }
@@ -214,13 +271,13 @@ char *validate_json(char *json, IntBuffer *int_buf) {
     json = skip_whitespace(json);
 
     switch (*json) {
-        // json++ to skip past the [, {, or "
-        case '[':
-            return validate_list(json + 1, int_buf);
-        case '{':
-            // return validate_struct(json + 1, int_buf);
-        case '"':
-            return validate_string(json + 1);
+    // json++ to skip past the [, {, or "
+    case '[':
+        return validate_list(json + 1, int_buf);
+    case '{':
+        return validate_struct(json + 1, int_buf);
+    case '"':
+        return validate_string(json + 1);
     }
 
     if (('0' <= *json && *json <= '9') || *json == '-' || *json == '.') {
@@ -231,14 +288,14 @@ char *validate_json(char *json, IntBuffer *int_buf) {
     }
 
     return NULL;
-    }
+}
 
-    Json *json_deserialize(char *json) {
-        IntBuffer ints =
-            (IntBuffer) {.data = malloc(INITIAL_CAPACITY), .capacity = INITIAL_CAPACITY, .length = 0};
+Json *json_deserialize(char *json) {
+    IntBuffer ints =
+        (IntBuffer) {.data = malloc(INITIAL_CAPACITY), .capacity = INITIAL_CAPACITY, .length = 0};
 
-        json = validate_json(json, &ints);
-        free(ints.data);
+    json = validate_json(json, &ints);
+    free(ints.data);
 
-        return NULL;
-    }
+    return NULL;
+}
