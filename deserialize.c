@@ -31,6 +31,13 @@ char *validate_list(char *json, IntBuffer *int_buf);
 char *validate_struct(char *json, IntBuffer *int_buf);
 char *validate_json(char *json, IntBuffer *int_buf);
 
+char *parse_string(char *str, Json *arena, IntBuffer *buf, int arena_idx);
+char *parse_number(char *str, Json *arena, IntBuffer *buf, int arena_idx);
+char *parse_keyword(char *str, Json *arena, IntBuffer *buf, int arena_idx);
+char *parse_list(char *str, Json *arena, IntBuffer *buf, int buf_idx);
+char *parse_struct(char *str, Json *arena, IntBuffer *buf, int buf_idx);
+char *parse_json(char *str, Json *arena, IntBuffer *int_buf, int buf_idx, int arena_idx);
+
 static inline bool is_whitespace(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
@@ -167,8 +174,8 @@ char *validate_struct(char *json, IntBuffer *int_buf) {
         fields++;
     }
 
-    // insert the amount of items we've accumulated into our int buf
-    int_buf->data[buf_index] = fields;
+    // fields + 1 to make room for null terminator at the end of the struct
+    int_buf->data[buf_index] = fields + 1;
 
     return json + 1;
 }
@@ -213,8 +220,8 @@ char *validate_list(char *json, IntBuffer *int_buf) {
         list_items++;
     }
 
-    // insert the amount of items we've accumulated into our int buf
-    int_buf->data[buf_index] = list_items;
+    // list_items + 1 to make room for null terminator at the end of the list
+    int_buf->data[buf_index] = list_items + 1;
 
     return json + 1;
 }
@@ -293,12 +300,60 @@ char *validate_json(char *json, IntBuffer *int_buf) {
     return NULL;
 }
 
-Json *json_deserialize(char *json) {
-    IntBuffer ints =
-        (IntBuffer) {.data = malloc(INITIAL_CAPACITY), .capacity = INITIAL_CAPACITY, .length = 0};
+Json *allocate_json(IntBuffer *buf) {
+    // Initialize the amount of items we allocate to 1, all allocations will be
+    // at LEAST 1 Json
+    int len = 1;
 
-    json = validate_json(json, &ints);
-    free(ints.data);
+    for (int i = 0; i < buf->length; i++) {
+        len += buf->data[i];
+    }
+
+    return calloc(len, sizeof(Json));
+}
+
+char *parse_json(char *str, Json *arena, IntBuffer *buf, int buf_idx, int arena_idx) {
+    str = skip_whitespace(str);
+
+    switch (*str) {
+    // json++ to skip past the [, {, or "
+    case '[':
+        return parse_list(str + 1, arena, buf, buf_idx);
+    case '{':
+        return parse_struct(str + 1, arena, buf, buf_idx);
+    case '"':
+        return parse_string(str + 1, arena, buf, arena_idx);
+    }
+
+    if (('0' <= *str && *str <= '9') || *str == '-' || *str == '.') {
+        return parse_number(str, arena, buf, arena_idx);
+    }
+    if ('A' < *str && *str < 'z') {
+        return parse_keyword(str, arena, buf, arena_idx);
+    }
+
+    return NULL;
+}
+
+Json *json_deserialize(char *str) {
+    IntBuffer int_buf =
+        (IntBuffer) {.data = malloc(INITIAL_CAPACITY), .capacity = INITIAL_CAPACITY, .length = 0};
+    char *start = str;
+
+    str = validate_json(str, &int_buf);
+    if (str == NULL) {
+        return NULL;
+    }
+    str = skip_whitespace(str);
+    if (*str != '\0') {
+        return NULL;
+    }
+
+    Json *arena = allocate_json(&int_buf);
+
+    char *_ = parse_json(start, arena, &int_buf, 0, 0);
+
+    free(int_buf.data);
 
     return NULL;
 }
