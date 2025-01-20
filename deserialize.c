@@ -54,7 +54,7 @@ ParsedValue parse_number(char *str, JsonData *_);
 ParsedValue parse_keyword(char *str, JsonData *_);
 ParsedValue parse_list(char *str, JsonData *data, int buf_idx);
 ParsedValue parse_struct(char *str, JsonData *data, int buf_idx);
-char *parse_json(char *str, JsonData *data, int buf_idx, int arena_idx, char *field_name);
+ParsedValue parse_json(char *str, JsonData *data, int buf_idx, int arena_idx, char *field_name);
 
 static inline bool is_whitespace(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
@@ -207,12 +207,22 @@ ParsedValue parse_list(char *str, JsonData *data, int buf_idx) {
         base_arena_idx += data->buf.data[i];
     }
 
+    // store the amount of lists/structs we visit
+    int complex_type_amt = 0;
+
     while (*str != ']') {
         // The json is already validated, so we don't need to check if things
         // are validated like we did in the validator function
 
         // parse the next json item in the list
-        str = parse_json(str, data, buf_idx + 1 + list_items, base_arena_idx + list_items, NULL);
+        ParsedValue ret = parse_json(
+            str, data, buf_idx + 1 + complex_type_amt, base_arena_idx + list_items, NULL
+        );
+        str = ret.end;
+
+        if (ret.json.type == JSONTYPE_LIST || ret.json.type == JSONTYPE_STRUCT) {
+            complex_type_amt++;
+        }
 
         // Skip past the comma if there is one
         str = skip_whitespace(str);
@@ -224,7 +234,8 @@ ParsedValue parse_list(char *str, JsonData *data, int buf_idx) {
         list_items++;
     }
 
-    // fields + 1 to make room for null terminator at the end of the struct
+    data->arena[base_arena_idx + list_items] = (Json) {.type = JSONTYPE_END_LIST};
+
     return (ParsedValue) {
         .end = str + 1,
         .json = (Json) {
@@ -245,6 +256,9 @@ ParsedValue parse_struct(char *str, JsonData *data, int buf_idx) {
         base_arena_idx += data->buf.data[i];
     }
 
+    // store the amount of lists/structs we visit
+    int complex_type_amt = 0;
+
     while (*str != '}') {
         // The json is already validated, so we don't need to check if things
         // are validated like we did in the validator function
@@ -259,7 +273,12 @@ ParsedValue parse_struct(char *str, JsonData *data, int buf_idx) {
         str = skip_whitespace(str);
 
         // parse the next json item in the list
-        str = parse_json(str, data, buf_idx + 1, base_arena_idx + fields, field_name);
+        ret = parse_json(str, data, buf_idx + 1 + complex_type_amt, base_arena_idx + fields, NULL);
+        str = ret.end;
+
+        if (ret.json.type == JSONTYPE_LIST || ret.json.type == JSONTYPE_STRUCT) {
+            complex_type_amt++;
+        }
 
         // Skip past the comma if there is one
         str = skip_whitespace(str);
@@ -271,7 +290,8 @@ ParsedValue parse_struct(char *str, JsonData *data, int buf_idx) {
         fields++;
     }
 
-    // fields + 1 to make room for null terminator at the end of the struct
+    data->arena[base_arena_idx + fields] = (Json) {.type = JSONTYPE_END_LIST};
+
     return (ParsedValue) {
         .end = str + 1,
         .json = (Json) {
@@ -353,7 +373,6 @@ char *validate_list(char *json, JsonData *data) {
     // Save the current index and add 1 so that we can insert our length
     // properly
     int buf_index = data->buf.length;
-    printf("%p\n", data->buf.data);
     buf_grow(&data->buf, sizeof(int));
     data->buf.length += 1;
 
@@ -468,7 +487,7 @@ void allocate_json(JsonData *data) {
     // printf("(json)%d, (strings)%d", len, data->str_len);
 }
 
-char *parse_json(char *str, JsonData *data, int buf_idx, int arena_idx, char *field_name) {
+ParsedValue parse_json(char *str, JsonData *data, int buf_idx, int arena_idx, char *field_name) {
     str = skip_whitespace(str);
     ParsedValue ret;
 
@@ -501,7 +520,7 @@ stop:
     }
 
     data->arena[arena_idx] = ret.json;
-    return ret.end;
+    return ret;
 }
 
 // Will return a pointer to the root element in a json string.
