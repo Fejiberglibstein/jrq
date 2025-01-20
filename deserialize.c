@@ -1,7 +1,7 @@
 #include "./json.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <memory.h>
 
 #define INITIAL_CAPACITY 4
 
@@ -79,7 +79,6 @@ char *skip_whitespace(char *json) {
 // function will return where the comma is
 ParsedValue parse_string(char *str, JsonData *data) {
     bool backslashed = false;
-
     char *new_str = NULL;
     char *start = str;
 
@@ -90,7 +89,7 @@ ParsedValue parse_string(char *str, JsonData *data) {
             backslashed = true;
             continue;
         } else if (c == '"' && !backslashed) {
-            if (data->str_ptr != NULL) {
+            if (data->str_ptr == NULL) {
                 data->str_len += str_len;
             } else {
                 new_str = data->str_ptr;
@@ -126,7 +125,8 @@ ParsedValue parse_number(char *str, JsonData *_) {
     // Numbers in json can _only_ match this regex [-]?[0-9]+\.[0-9]+ followed
     // by a comma or any whitespace
 
-    for (; *str != '\0'; str++) {
+    int num_length = 0;
+    for (num_length = 0; *str != '\0'; str++, num_length++) {
         char c = *str;
         if (c == '.') {
             if (finished_decimal) {
@@ -149,24 +149,25 @@ ParsedValue parse_number(char *str, JsonData *_) {
     }
 
     ParsedValue ret;
-    char l = *str;
-    *str = '\0';
+
+    char buf[num_length + 1];
+    memcpy(buf, start, num_length);
+    buf[num_length] = '\0';
 
     if (finished_decimal) {
         ret = (ParsedValue) {
             .end = str,
             .type = JSONTYPE_FLOAT,
-            .v.Float = atof(start),
+            .v.Float = atof(buf),
         };
     } else {
         ret = (ParsedValue) {
             .end = str,
             .type = JSONTYPE_INT,
-            .v.Int = atoi(start),
+            .v.Int = atoi(buf),
         };
     }
 
-    *str = l; // fix the string after setting the end value to \0
     return ret;
 }
 
@@ -192,7 +193,7 @@ char *validate_struct(char *json, JsonData *data) {
         if (*(json++) != '"') {
             return NULL;
         }
-        json = parse_string(json, false).end;
+        json = parse_string(json, data).end;
         if (json == NULL) {
             return NULL;
         }
@@ -332,6 +333,7 @@ ParsedValue parse_keyword(char *json, JsonData *_) {
 // in the case where the json is simply `"hello"` or `10`, the function will
 // return []
 char *validate_json(char *json, JsonData *data) {
+    printf("%s\n", json);
     json = skip_whitespace(json);
 
     switch (*json) {
@@ -341,7 +343,7 @@ char *validate_json(char *json, JsonData *data) {
     case '{':
         return validate_struct(json + 1, data);
     case '"':
-        return parse_string(json + 1, true).end;
+        return parse_string(json + 1, data).end;
     }
 
     if (('0' <= *json && *json <= '9') || *json == '-' || *json == '.') {
@@ -381,7 +383,7 @@ ParsedValue parse_json(char *str, JsonData *data, int buf_idx, int arena_idx) {
     case '{':
         // parse_struct(str + 1, arena, buf, buf_idx);
     case '"':
-        parse_string(str + 1, false);
+        parse_string(str + 1, data);
     }
 
     if (('0' <= *str && *str <= '9') || *str == '-' || *str == '.') {

@@ -9,12 +9,27 @@ typedef struct {
     int capacity;
 } IntBuffer;
 
-extern char *validate_json(char *json, IntBuffer *int_buf);
+typedef struct {
+    IntBuffer buf;
+    // The size of all strings in the json
+    int str_len;
+    // Pointer to the region of memory we allocate to hold the strings
+    char *str_ptr;
+    // Pointer to the region of memory we allocate to hold all the json
+    Json *arena;
+} JsonData;
+
+extern char *validate_json(char *json, JsonData *data);
 extern char *skip_whitespace(char *json);
 
 char *validate(char *json) {
-    IntBuffer ints = (IntBuffer) {.data = malloc(4), .capacity = 4, .length = 0};
-    json = validate_json(json, &ints);
+    JsonData data = {
+        .buf = {.data = malloc(4), .capacity = 4, .length = 0},
+        .str_len = 0,
+        .arena = NULL,
+        .str_ptr = NULL,
+    };
+    json = validate_json(json, &data);
     if (json == NULL) {
         return NULL;
     }
@@ -24,7 +39,7 @@ char *validate(char *json) {
         return NULL;
     }
 
-    free(ints.data);
+    free(data.buf.data);
     return json;
 }
 
@@ -90,18 +105,23 @@ void test_validate_structs() {
     assert(validate("{\"foo\": }") == NULL);
 }
 
-void validate_int_buf(char *data, IntBuffer *buf, int *ints, int int_len);
+void validate_int_buf(char *str, JsonData *data, int *ints, int int_len);
 
 void test_int_buf() {
-    IntBuffer ints = (IntBuffer) {.data = malloc(4), .capacity = 4, .length = 0};
+    JsonData data = {
+        .buf = {.data = malloc(4), .capacity = 4, .length = 0},
+        .str_len = 0,
+        .arena = NULL,
+        .str_ptr = NULL,
+    };
 #define list(l...) (int[]) l, sizeof((int[])l) / 4
-    validate_int_buf("1", &ints, list({}));
-    validate_int_buf("true", &ints, list({}));
-    validate_int_buf("[true]", &ints, list({2}));
-    validate_int_buf("[]", &ints, list({1}));
-    validate_int_buf("[null, \"foo\"]", &ints, list({3}));
+    validate_int_buf("1", &data, list({}));
+    validate_int_buf("true", &data, list({}));
+    validate_int_buf("[true]", &data, list({2}));
+    validate_int_buf("[]", &data, list({1}));
+    validate_int_buf("[null, \"foo\"]", &data, list({3}));
     validate_int_buf(
-        "[10, [1, 2, 3], [2, [4, 4, 4], 10, true], 10, [2], []]", &ints, list({7, 4, 5, 4, 2, 1})
+        "[10, [1, 2, 3], [2, [4, 4, 4], 10, true], 10, [2], []]", &data, list({7, 4, 5, 4, 2, 1})
     );
 #undef list
 }
@@ -114,19 +134,19 @@ int main() {
     test_int_buf();
 }
 
-void validate_int_buf(char *data, IntBuffer *buf, int *ints, int int_len) {
-    validate_json(data, buf);
+void validate_int_buf(char *str, JsonData *data, int *ints, int int_len) {
+    validate_json(str, data);
 
-    if (int_len != buf->length) {
-        printf("`%s` failed on length\n", data);
-        assert(int_len == buf->length);
+    if (int_len != data->buf.length) {
+        printf("`%s` failed on length\n", str);
+        assert(int_len == data->buf.length);
     }
-    for (int i = 0; i < buf->length; i++) {
-        if (buf->data[i] != ints[i]) {
-            printf("`%s` failed on index %d: %d != %d\n", data, i, buf->data[i], ints[i]);
-            assert(buf->data[i] == ints[i]);
+    for (int i = 0; i < data->buf.length; i++) {
+        if (data->buf.data[i] != ints[i]) {
+            printf("`%s` failed on index %d: %d != %d\n", str, i, data->buf.data[i], ints[i]);
+            assert(data->buf.data[i] == ints[i]);
         }
     }
 
-    buf->length = 0;
+    data->buf.length = 0;
 }
