@@ -125,8 +125,7 @@ ParsedValue parse_number(char *str, JsonData *_) {
     // Numbers in json can _only_ match this regex [-]?[0-9]+\.[0-9]+ followed
     // by a comma or any whitespace
 
-    int num_length = 0;
-    for (num_length = 0; *str != '\0'; str++, num_length++) {
+    for (; *str != '\0'; str++) {
         char c = *str;
         if (c == '.') {
             if (finished_decimal) {
@@ -154,6 +153,7 @@ ParsedValue parse_number(char *str, JsonData *_) {
 
     ParsedValue ret;
 
+    int num_length = str - start;
     char buf[num_length + 1];
     memcpy(buf, start, num_length);
     buf[num_length] = '\0';
@@ -215,8 +215,13 @@ ParsedValue parse_list(char *str, JsonData *data, int buf_idx) {
         // are validated like we did in the validator function
 
         // parse the next json item in the list
-        ParsedValue ret
-            = parse_json(str, data, buf_idx + data->buf.length - current_length, base_arena_idx + list_items, NULL);
+        ParsedValue ret = parse_json(
+            str,
+            data,
+            buf_idx + data->buf.length - current_length,
+            base_arena_idx + list_items,
+            NULL
+        );
         str = ret.end;
 
         // Skip past the comma if there is one
@@ -258,6 +263,9 @@ ParsedValue parse_struct(char *str, JsonData *data, int buf_idx) {
         // The json is already validated, so we don't need to check if things
         // are validated like we did in the validator function
 
+        // skip past the " character
+        str++;
+
         ParsedValue ret = parse_string(str, data);
         str = ret.end;
         char *field_name = ret.json.v.String;
@@ -268,7 +276,13 @@ ParsedValue parse_struct(char *str, JsonData *data, int buf_idx) {
         str = skip_whitespace(str);
 
         // parse the next json item in the list
-        ret = parse_json(str, data, buf_idx + data->buf.length - current_length, base_arena_idx + fields, NULL);
+        ret = parse_json(
+            str,
+            data,
+            buf_idx + data->buf.length - current_length,
+            base_arena_idx + fields,
+            field_name
+        );
         str = ret.end;
 
         // Skip past the comma if there is one
