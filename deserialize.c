@@ -35,7 +35,7 @@ static inline bool is_whitespace(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
 
-static inline char *skip_whitespace(char *json) {
+char *skip_whitespace(char *json) {
     for (; is_whitespace(*json); json++)
         ;
 
@@ -129,6 +129,9 @@ char *validate_struct(char *json, IntBuffer *int_buf) {
         }
 
         // We need to make sure we have the field name string first
+        if (*(json++) != '"') {
+            return NULL;
+        }
         json = validate_string(json);
         if (json == NULL) {
             return NULL;
@@ -136,7 +139,7 @@ char *validate_struct(char *json, IntBuffer *int_buf) {
         json = skip_whitespace(json);
 
         // We need a : after the field: {"foo": true}
-        if (*json != ':') {
+        if (*(json++) != ':') {
             return NULL;
         }
         json = skip_whitespace(json);

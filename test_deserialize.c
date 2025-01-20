@@ -10,23 +10,33 @@ typedef struct {
 } IntBuffer;
 
 extern char *validate_json(char *json, IntBuffer *int_buf);
+extern char *skip_whitespace(char *json);
 
 char *validate(char *json) {
     IntBuffer ints = (IntBuffer) {.data = malloc(4), .capacity = 4, .length = 0};
     json = validate_json(json, &ints);
+    if (json == NULL) {
+        return NULL;
+    }
+
+    json = skip_whitespace(json);
+    if (*json != '\0') {
+        return NULL;
+    }
+
     free(ints.data);
     return json;
 }
 
 void test_validate_simple() {
     assert(validate("\"hello\"") != NULL);
-    assert(validate("\"hello\"]") != NULL);
     assert(validate("\"he\\\"llo\"") != NULL);
-    assert(validate("\"hello") == NULL);
     assert(validate("          \"hello\"          ") != NULL);
+    assert(validate("\"hello\"]") == NULL);
+    assert(validate("\"hello  ") == NULL);
 
     assert(validate("10") != NULL);
-    assert(validate("123456789.10]") != NULL);
+    assert(validate("123456789.10]") == NULL);
     assert(validate("3") != NULL);
     assert(validate("-10     ") != NULL);
     assert(validate("--10") == NULL);
@@ -37,7 +47,7 @@ void test_validate_simple() {
     assert(validate(".") != NULL);
 
     assert(validate("true       ") != NULL);
-    assert(validate("true]") != NULL);
+    assert(validate("true]") == NULL);
     assert(validate("         false") != NULL);
     assert(validate("        null         ") != NULL);
     assert(validate("hurwhui") == NULL);
@@ -65,6 +75,19 @@ void test_validate_lists() {
 
 void test_validate_structs() {
     assert(validate("{}") != NULL);
+    assert(validate("{\"foo\": true}") != NULL);
+    assert(validate("{     \"foo\"    : true  , }") != NULL);
+    assert(
+        validate("{\"foo\": true, \"bleh\": {\"car\": [10, 2, 3], \"h\": 10}, \"bl\": null}") !=
+        NULL
+    );
+
+    assert(validate("{\"foo\": true]") == NULL);
+    assert(validate("{\"foo\": true]}") == NULL);
+    assert(validate("{\"foo\": true,,}") == NULL);
+    assert(validate("{true}") == NULL);
+    assert(validate("{\"foo\"}") == NULL);
+    assert(validate("{\"foo\": }") == NULL);
 }
 
 void validate_int_buf(char *data, IntBuffer *buf, int *ints, int int_len);
@@ -78,9 +101,7 @@ void test_int_buf() {
     validate_int_buf("[]", &ints, list({0}));
     validate_int_buf("[null, \"foo\"]", &ints, list({2}));
     validate_int_buf(
-        "[10, [1, 2, 3], [2, [4, 4, 4], 10, true], 10, [2], []]",
-        &ints,
-        list({6, 3, 4, 3, 1, 0})
+        "[10, [1, 2, 3], [2, [4, 4, 4], 10, true], 10, [2], []]", &ints, list({6, 3, 4, 3, 1, 0})
     );
 #undef list
 }
