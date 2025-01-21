@@ -1,13 +1,14 @@
-#include "./json.h"
+#include "../src/json.h"
 #include <stdio.h>
 #include <stdlib.h>
 
 #define FLAGS JSON_NO_COMPACT | JSON_COLOR
 
 void test_validate_lists() {
-    Json string =
-        (Json) {.type = JSONTYPE_STRING,
-                .v.String = "000000000000000000000000000000000000000000000000000000000000000"};
+    Json string = (Json) {
+        .type = JSONTYPE_STRING,
+        .v.String = "000000000000000000000000000000000000000000000000000000000000000",
+    };
 
     char *data = json_serialize(&string, FLAGS);
     printf("%s\n\n\n", data);
@@ -71,7 +72,7 @@ void test_validate_structs() {
         (Json) {.type = JSONTYPE_STRING, .v.String = "Heyyy"},
         (Json) {
             .type = JSONTYPE_FLOAT,
-            .v.Float = 3.4,
+            .v.Float = 3.4F,
         },
         (Json) {
             .type = JSONTYPE_INT,

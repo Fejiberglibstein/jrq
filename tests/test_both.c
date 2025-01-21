@@ -1,4 +1,4 @@
-#include "./json.h"
+#include "../src/json.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
