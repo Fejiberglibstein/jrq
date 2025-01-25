@@ -1,16 +1,39 @@
 #include "./src/json.h"
 #include <memory.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
-int main(int argc, char **argv) {
-    char *str;
+char *read_from_file(int fd) {
 
-    if (argc < 2) {
-        return -1;
+    size_t capacity = 4;
+    size_t length = 4;
+    char *str = malloc(capacity);
+    char *start = str;
+
+    for (;;) {
+        size_t bytes = read(fd, str, length - 1);
+        printf("%zu\n", bytes);
+        if (bytes < 0) {
+            return NULL;
+        }
+        if (bytes == 0) {
+            break;
+        }
+        capacity *= 2;
+        str = realloc(str, capacity);
+        length = capacity - length;
     }
-    str = argv[1];
+
+    return start;
+}
+
+int main(int argc, char **argv) {
+
+    char *str = read_from_file(STDIN_FILENO);
+    printf("--%s\n", str);
 
     Json *json = json_deserialize(str);
     if (json == NULL) {
