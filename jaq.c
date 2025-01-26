@@ -9,12 +9,12 @@
 char *read_from_file(int fd) {
 
     size_t capacity = 4;
-    size_t length = 4;
+    size_t length = 2;
     char *str = malloc(capacity);
     char *start = str;
 
     for (;;) {
-        size_t bytes = read(fd, str, length - 1);
+        size_t bytes = read(fd, str, length);
         printf("%zu\n", bytes);
         if (bytes < 0) {
             return NULL;
@@ -22,8 +22,14 @@ char *read_from_file(int fd) {
         if (bytes == 0) {
             break;
         }
+
         capacity *= 2;
-        str = realloc(str, capacity);
+        start = realloc(start, capacity);
+        if (start == NULL) {
+            return NULL;
+        }
+
+        str += length;
         length = capacity - length;
     }
 
