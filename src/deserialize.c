@@ -30,6 +30,10 @@ typedef struct {
 typedef struct {
     char *end;
     Json json;
+    // Optional error message when validating the json
+    //
+    // Null is there is no error
+    char *error_message;
 } ParsedValue;
 
 void buf_grow(IntBuffer *buf, int amt) {
@@ -61,8 +65,9 @@ static inline bool is_whitespace(char c) {
 }
 
 char *skip_whitespace(char *json) {
-    for (; is_whitespace(*json); json++)
-        ;
+    while (is_whitespace(*json)) {
+        json++;
+    }
 
     return json;
 }
@@ -105,7 +110,7 @@ ParsedValue parse_string(char *str, JsonData *data) {
     }
     // String not terminated, error
     return (ParsedValue) {
-        .end = NULL,
+        .error_message = "Unterminated string"
     };
 }
 
@@ -131,7 +136,7 @@ ParsedValue parse_number(char *str, JsonData *_) {
             if (finished_decimal) {
                 // A number like 1.0002.2 is invalid json!!
                 return (ParsedValue) {
-                    .end = NULL,
+                    .error_message = "Invalid number"
                 };
             } else {
                 finished_decimal = true;
@@ -143,7 +148,7 @@ ParsedValue parse_number(char *str, JsonData *_) {
         }
         if (c == '-') {
             return (ParsedValue) {
-                .end = NULL,
+                .error_message = "Invalid number"
             };
         }
 
@@ -192,7 +197,7 @@ ParsedValue parse_keyword(char *json, JsonData *_) {
 #undef KEYWORD
 
     return (ParsedValue) {
-        .end = NULL,
+        .end = "Invalid keyword",
     };
 }
 
