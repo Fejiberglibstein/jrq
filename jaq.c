@@ -43,15 +43,15 @@ char *read_from_file(int fd) {
 }
 
 int main(int argc, char **argv) {
-
     char *str = read_from_file(STDIN_FILENO);
 
     Json *json = json_deserialize(str);
     if (json == NULL) {
         return -1;
     }
+    free(str);
 
-    char flags = 0;
+    char flags = JSON_NO_COMPACT;
     if (isatty(STDOUT_FILENO)) {
         flags = JSON_COLOR | JSON_NO_COMPACT;
     }
