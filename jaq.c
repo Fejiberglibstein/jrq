@@ -9,28 +9,34 @@
 char *read_from_file(int fd) {
 
     size_t capacity = 4;
-    size_t length = 2;
     char *str = malloc(capacity);
     char *start = str;
 
+    size_t length = 0;
+
     for (;;) {
-        size_t bytes = read(fd, str, length);
-        printf("%zu\n", bytes);
+        // If length is 0, we should read the initial value of capacity bytes,
+        // otherwise read the actual length
+        size_t bytes_to_read = (length) ? length : capacity;
+        size_t bytes = read(fd, str, bytes_to_read);
         if (bytes < 0) {
             return NULL;
         }
-        if (bytes == 0) {
+        if (bytes < length) {
             break;
         }
 
+        // Length = next capacity / 4
+        length = capacity;
         capacity *= 2;
-        start = realloc(start, capacity);
-        if (start == NULL) {
+
+        char *tmp = realloc(start, capacity);
+        if (tmp == NULL) {
             return NULL;
         }
+        start = tmp;
+        str = start + length;
 
-        str += length;
-        length = capacity - length;
     }
 
     return start;
@@ -39,7 +45,6 @@ char *read_from_file(int fd) {
 int main(int argc, char **argv) {
 
     char *str = read_from_file(STDIN_FILENO);
-    printf("--%s\n", str);
 
     Json *json = json_deserialize(str);
     if (json == NULL) {
