@@ -47,7 +47,8 @@ void buf_grow(IntBuffer *buf, int amt) {
             buf->capacity *= 2;
         } while (buf->capacity - buf->length * sizeof(int) < amt * sizeof(int));
 
-        buf->data = realloc(buf->data, buf->capacity);
+        int *tmp = realloc(buf->data, buf->capacity);
+        buf->data = tmp;
     }
 }
 
@@ -157,7 +158,7 @@ ParsedValue parse_number(char *str, JsonData *_) {
 
     ParsedValue ret;
 
-    int num_length = str - start;
+    int num_length = (int)(str - start);
     char buf[num_length + 1];
     memcpy(buf, start, num_length);
     buf[num_length] = '\0';
@@ -167,7 +168,7 @@ ParsedValue parse_number(char *str, JsonData *_) {
             .end = str,
             .json = (Json) {
                 .type = JSONTYPE_FLOAT,
-                .v.Float = atof(buf),
+                .v.Double = atof(buf),
             },
         };
     } else {

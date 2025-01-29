@@ -122,9 +122,9 @@ void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool 
     case JSONTYPE_FLOAT:
         APPEND_COLOR(NUM_COLOR);
 
-        buf_len = snprintf(NULL, 0, "%f", json->v.Float) + 1;
+        buf_len = snprintf(NULL, 0, "%f", json->v.Double) + 1;
         buf[buf_len] = '\0';
-        snprintf(buf, buf_len, "%f", json->v.Float);
+        snprintf(buf, buf_len, "%f", json->v.Double);
         string_append(string, buf, buf_len);
 
         APPEND_COLOR(RESET_COLOR);
@@ -134,7 +134,7 @@ void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool 
         APPEND_COLOR(STRING_COLOR);
 
         string_append(string, "\"", 2);
-        string_append(string, json->v.String, strlen(json->v.String) + 1);
+        string_append(string, json->v.String, (int)strlen(json->v.String) + 1);
         string_append(string, "\"", 2);
 
         APPEND_COLOR(RESET_COLOR);

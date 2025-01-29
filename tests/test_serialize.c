@@ -72,7 +72,7 @@ void test_validate_structs() {
         (Json) {.type = JSONTYPE_STRING, .v.String = "Heyyy"},
         (Json) {
             .type = JSONTYPE_FLOAT,
-            .v.Float = 3.4F,
+            .v.Double = 3.4F,
         },
         (Json) {
             .type = JSONTYPE_INT,

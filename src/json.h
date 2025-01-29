@@ -20,7 +20,7 @@ typedef struct Json {
     char *field_name;
     union {
         int Int;
-        float Float;
+        double Double;
         bool Bool;
         void *Null; /* this won't ever have meaningful data */
         char *String;
