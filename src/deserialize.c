@@ -36,6 +36,11 @@ typedef struct {
     char *error_message;
 } ParsedValue;
 
+typedef struct {
+    char *res;
+    char *err;
+} ValidateResult;
+
 void buf_grow(IntBuffer *buf, int amt) {
     if (buf->capacity - buf->length * sizeof(int) < amt * sizeof(int)) {
         do {
@@ -51,7 +56,7 @@ void buf_append(IntBuffer *buf, int val) {
     buf->data[buf->length++] = val;
 }
 
-char *validate_json(char *json, JsonData *data);
+ValidateResult validate_json(char *json, JsonData *data);
 
 ParsedValue parse_string(char *str, JsonData *data);
 ParsedValue parse_number(char *str, JsonData *_);
@@ -109,9 +114,7 @@ ParsedValue parse_string(char *str, JsonData *data) {
         backslashed = false;
     }
     // String not terminated, error
-    return (ParsedValue) {
-        .error_message = "Unterminated string"
-    };
+    return (ParsedValue) {.error_message = "Unterminated string"};
 }
 
 // ensures that a number is properly formatted, returning the end location of
@@ -135,9 +138,7 @@ ParsedValue parse_number(char *str, JsonData *_) {
         if (c == '.') {
             if (finished_decimal) {
                 // A number like 1.0002.2 is invalid json!!
-                return (ParsedValue) {
-                    .error_message = "Invalid number"
-                };
+                return (ParsedValue) {.error_message = "Invalid number"};
             } else {
                 finished_decimal = true;
                 continue;
@@ -147,9 +148,7 @@ ParsedValue parse_number(char *str, JsonData *_) {
             continue;
         }
         if (c == '-') {
-            return (ParsedValue) {
-                .error_message = "Invalid number"
-            };
+            return (ParsedValue) {.error_message = "Invalid number"};
         }
 
         // Some other character has been reached, number is over
@@ -311,7 +310,7 @@ ParsedValue parse_struct(char *str, JsonData *data, int buf_idx) {
     };
 }
 
-char *validate_struct(char *json, JsonData *data) {
+ValidateResult validate_struct(char *json, JsonData *data) {
     json = skip_whitespace(json);
     bool trailing_comma = false;
 
@@ -326,37 +325,38 @@ char *validate_struct(char *json, JsonData *data) {
     while (*json != '}') {
         if (*json == '\0') {
             // if we make it to the end with no `}` then thats a json error
-            return NULL;
+            return (ValidateResult) {.err = "No closing } in json object"};
         }
 
         // We need to make sure we have the field name string first
         if (*(json++) != '"') {
-            return NULL;
+            return (ValidateResult) {.err = "Invalid json object key"};
         }
         json = parse_string(json, data).end;
         if (json == NULL) {
-            return NULL;
+            return (ValidateResult) {.err = "Invalid json object key"};
         }
         json = skip_whitespace(json);
 
         // We need a : after the field: {"foo": true}
         if (*(json++) != ':') {
-            return NULL;
+            return (ValidateResult) {.err = "Missing ':' after key in json object"};
         }
         json = skip_whitespace(json);
 
         // parse the next json item in the list
-        json = validate_json(json, data);
-        if (json == NULL) {
-            return NULL;
+        ValidateResult res = validate_json(json, data);
+        if (res.err != NULL) {
+            return res;
         }
+        json = res.res;
         json = skip_whitespace(json);
 
         // ensure the json has a comma after the item. If it has no comma and we
         // already have a trailing comma, the json is invalid
         if (*json != ',') {
             if (trailing_comma) {
-                return NULL;
+                return (ValidateResult) {.err = "Missing ',' between values"};
             } else {
                 trailing_comma = true;
             }
@@ -371,10 +371,10 @@ char *validate_struct(char *json, JsonData *data) {
     // fields + 1 to make room for null terminator at the end of the struct
     data->buf.data[buf_index] = fields + 1;
 
-    return json + 1;
+    return (ValidateResult) {.res = json + 1};
 }
 
-char *validate_list(char *json, JsonData *data) {
+ValidateResult validate_list(char *json, JsonData *data) {
     json = skip_whitespace(json);
     bool trailing_comma = false;
 
@@ -389,13 +389,13 @@ char *validate_list(char *json, JsonData *data) {
     while (*json != ']') {
         if (*json == '\0') {
             // if we make it to the end with no `]` then thats a json error
-            return NULL;
+            return (ValidateResult) {.err = "No closing ] in json list"};
         }
 
         // parse the next json item in the list
-        json = validate_json(json, data);
-        if (json == NULL) {
-            return NULL;
+        ValidateResult res = validate_json(json, data);
+        if (res.err != NULL) {
+            return res;
         }
         json = skip_whitespace(json);
 
@@ -403,7 +403,7 @@ char *validate_list(char *json, JsonData *data) {
         // already have a trailing comma, the json is invalid
         if (*json != ',') {
             if (trailing_comma) {
-                return NULL;
+                return (ValidateResult) {.err = "Missing ',' between values"};
             } else {
                 trailing_comma = true;
             }
@@ -417,7 +417,7 @@ char *validate_list(char *json, JsonData *data) {
     // list_items + 1 to make room for null terminator at the end of the list
     data->buf.data[buf_index] = list_items + 1;
 
-    return json + 1;
+    return (ValidateResult) {.res = json + 1};
 }
 
 // Makes sure that the json string is properly formatted. Returns NULL is json
@@ -457,7 +457,7 @@ char *validate_list(char *json, JsonData *data) {
 //
 // in the case where the json is simply `"hello"` or `10`, the function will
 // return []
-char *validate_json(char *json, JsonData *data) {
+ValidateResult validate_json(char *json, JsonData *data) {
     json = skip_whitespace(json);
 
     switch (*json) {
@@ -467,17 +467,17 @@ char *validate_json(char *json, JsonData *data) {
     case '{':
         return validate_struct(json + 1, data);
     case '"':
-        return parse_string(json + 1, data).end;
+        return (ValidateResult) {.res = parse_string(json + 1, data).end};
     }
 
     if (('0' <= *json && *json <= '9') || *json == '-' || *json == '.') {
-        return parse_number(json, data).end;
+        return (ValidateResult) {.res = parse_number(json, data).end};
     }
     if ('A' < *json && *json < 'z') {
-        return parse_keyword(json, data).end;
+        return (ValidateResult) {.res = parse_keyword(json, data).end};
     }
 
-    return NULL;
+    return (ValidateResult) {.err = "This was NOT json"};
 }
 
 void allocate_json(JsonData *data) {
@@ -551,8 +551,10 @@ Json *json_deserialize(char *str) {
     };
     char *start = str;
 
-    str = validate_json(str, &data);
-    if (str == NULL) {
+    ValidateResult res = validate_json(str, &data);
+    str = res.res;
+    if (res.err != NULL) {
+        fprintf(stderr, "jaq: Parse error: %s\n", res.err);
         free(data.buf.data);
         return NULL;
     }
