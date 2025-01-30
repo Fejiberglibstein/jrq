@@ -1,6 +1,6 @@
 project('jaq', 'c')
 
-files = ['./src/serialize.c', './src/deserialize.c']
+files = ['./src/json_serialize.c', './src/json_deserialize.c', './src/lexer.c']
 
 executable('jaq', files + './src/main.c')
 
