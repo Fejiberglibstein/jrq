@@ -396,6 +396,7 @@ ValidateResult validate_list(char *json, JsonData *data) {
         if (res.err != NULL) {
             return res;
         }
+        json = res.res;
         json = skip_whitespace(json);
 
         // ensure the json has a comma after the item. If it has no comma and we
@@ -459,6 +460,8 @@ ValidateResult validate_list(char *json, JsonData *data) {
 ValidateResult validate_json(char *json, JsonData *data) {
     json = skip_whitespace(json);
 
+    ParsedValue res;
+
     switch (*json) {
     // json++ to skip past the [, {, or "
     case '[':
@@ -466,14 +469,17 @@ ValidateResult validate_json(char *json, JsonData *data) {
     case '{':
         return validate_struct(json + 1, data);
     case '"':
-        return (ValidateResult) {.res = parse_string(json + 1, data).end};
+        res = parse_string(json + 1, data);
+        return (ValidateResult) {.res = res.end, .err = res.error_message};
     }
 
     if (('0' <= *json && *json <= '9') || *json == '-' || *json == '.') {
-        return (ValidateResult) {.res = parse_number(json, data).end};
+        res = parse_number(json, data);
+        return (ValidateResult) {.res = res.end, .err = res.error_message};
     }
     if ('A' < *json && *json < 'z') {
-        return (ValidateResult) {.res = parse_keyword(json, data).end};
+        res = parse_keyword(json, data);
+        return (ValidateResult) {.res = res.end, .err = res.error_message};
     }
 
     return (ValidateResult) {.err = "This was NOT json"};
