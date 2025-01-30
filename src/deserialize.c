@@ -203,7 +203,6 @@ ParsedValue parse_keyword(char *json, JsonData *_) {
 
 ParsedValue parse_list(char *str, JsonData *data, int buf_idx) {
     str = skip_whitespace(str);
-    bool trailing_comma = false;
 
     int list_items = 0;
     // start it at 1, we need to reserve the 0th index for the start of the json
@@ -252,7 +251,6 @@ ParsedValue parse_list(char *str, JsonData *data, int buf_idx) {
 
 ParsedValue parse_struct(char *str, JsonData *data, int buf_idx) {
     str = skip_whitespace(str);
-    bool trailing_comma = false;
 
     int fields = 0;
     // start it at 1, we need to reserve the 0th index for the start of the json

@@ -80,8 +80,6 @@ void test_validate_structs() {
         },
         0,
     };
-    // clang-format off
-    //
     Json list = (Json) {
         .type = JSONTYPE_STRUCT,
         .v.Struct = (Json[]) {
@@ -117,9 +115,8 @@ void test_validate_structs() {
                 }
             },
             0,
-        }
+        },
     };
-    // clang-format on
 
     char *data = json_serialize(&list, FLAGS);
     printf("%s\n\n", data);
