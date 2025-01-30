@@ -1,3 +1,6 @@
+#ifndef _LEXER_H
+#define _LEXER_H
+
 #include <sys/types.h>
 typedef enum uint8_t {
 
@@ -58,3 +61,7 @@ typedef struct {
     } inner;
     TokenType type;
 } Token;
+
+Token *lex(char *input);
+
+#endif // _LEXER_H

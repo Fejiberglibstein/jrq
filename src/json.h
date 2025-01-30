@@ -1,5 +1,5 @@
-#ifndef JSON_H
-#define JSON_H
+#ifndef _JSON_H
+#define _JSON_H
 
 #include <stdbool.h>
 #define JSON_NO_COMPACT 0b00000001
@@ -33,4 +33,4 @@ typedef struct Json {
 char *json_serialize(Json *json, char flags);
 Json *json_deserialize(char *json);
 
-#endif // JSON_H
+#endif // _JSON_H

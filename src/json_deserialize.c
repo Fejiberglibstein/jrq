@@ -1,4 +1,5 @@
 #include "./json.h"
+#include "./utils.h"
 #include <memory.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,6 +49,7 @@ void buf_grow(IntBuffer *buf, int amt) {
         } while (buf->capacity - buf->length * sizeof(int) < amt * sizeof(int));
 
         int *tmp = realloc(buf->data, buf->capacity);
+        assert_ptr(tmp);
         buf->data = tmp;
     }
 }
@@ -65,10 +67,6 @@ ParsedValue parse_keyword(char *str, JsonData *_);
 ParsedValue parse_list(char *str, JsonData *data, int buf_idx);
 ParsedValue parse_struct(char *str, JsonData *data, int buf_idx);
 ParsedValue parse_json(char *str, JsonData *data, int buf_idx, int arena_idx, char *field_name);
-
-static inline bool is_whitespace(char c) {
-    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
-}
 
 char *skip_whitespace(char *json) {
     while (is_whitespace(*json)) {
@@ -495,6 +493,7 @@ void allocate_json(JsonData *data) {
     }
 
     void *mem = calloc(len * sizeof(Json) + data->str_len, 1);
+    assert_ptr(mem);
     data->arena = mem;
     // Skip past the json allocation part and put it in the string allocation
     // part
