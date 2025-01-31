@@ -1,4 +1,5 @@
 #include "./json.h"
+#include "./utils.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -19,30 +20,7 @@
         string_append(string, color, sizeof(color));                                               \
     }
 
-typedef struct {
-    char *data;
-    int length;
-    int capacity;
-} StringBuffer;
-
-void string_grow(StringBuffer *str, int amt) {
-    if (str->capacity - str->length < amt) {
-        do {
-            str->capacity *= 2;
-        } while (str->capacity - str->length < amt);
-
-        str->data = realloc(str->data, str->capacity);
-    }
-}
-
-void string_append(StringBuffer *str, char *buf, int buf_len) {
-    string_grow(str, buf_len);
-    strcpy((str->data + str->length), buf);
-    // - 1 for the null terminator
-    str->length += buf_len - 1;
-}
-
-void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool parsing_struct) {
+void serialize(Json *json, String *string, char *depth, bool colors, bool parsing_struct) {
     // Use the depth to calculate indentation level.
     //
     // depth is a string of just spaces: "    " represents one indentation
@@ -187,7 +165,7 @@ void serialize(Json *json, StringBuffer *string, char *depth, bool colors, bool 
 }
 
 char *json_serialize(Json *json, char flags) {
-    StringBuffer str = (StringBuffer) {
+    String str = (String) {
         .data = malloc(INITIAL_CAPACITY),
         .length = 0,
         .capacity = INITIAL_CAPACITY,
