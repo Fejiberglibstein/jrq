@@ -18,11 +18,11 @@ char *next_char(Lexer *l) {
         l->position.col = 0;
     }
     l->position.col++;
-    return l->str++;
+    return ++l->str;
 }
 
-char *peek_char(Lexer *l) {
-    return l->str + 1;
+static inline char peek_char(Lexer *l) {
+    return l->str[1];
 }
 
 void skip_whitespace(Lexer *l) {
@@ -43,11 +43,7 @@ LexResult parse_ident(Lexer *l) {
     char *start = l->str;
     Position start_position = l->position;
 
-    for (;;) {
-        char c = *peek_char(l);
-        if (!(is_alpha(c) || is_digit(c))) {
-            break;
-        }
+    while (is_alpha(peek_char(l)) || is_digit(peek_char(l))) {
         next_char(l);
     }
 
@@ -78,23 +74,27 @@ LexResult parse_string(Lexer *l) {
 
     bool backslashed = false;
 
-    char c = *peek_char(l);
-    while (c != '"' && !backslashed) {
+    for (;;) {
+        char c = *next_char(l);
+        if (c == '"' && !backslashed) {
+            break;
+        }
         backslashed = false;
         if (c == '\\') {
             backslashed = true;
         }
-
-        next_char(l);
-        c = *peek_char(l);
     }
 
-    uint size = (uint)(l->str - start);
+    Position end_position = l->position;
 
-    char *string = malloc(size + 1);
+    uint size = (uint)(l->str - start) + 1;
+
+    char *string = calloc(1, size + 1);
     assert_ptr(string);
     strncpy(string, start, size);
-    string[size] = '\0';
+
+    // Skip past the "
+    next_char(l);
 
     return (LexResult) {
         .token = (Token) {
@@ -102,7 +102,7 @@ LexResult parse_string(Lexer *l) {
             .inner.string = string,
             .range = (Range) {
                 .start = start_position,
-                .end = l->position,
+                .end = end_position,
             }
         },
     };
@@ -113,27 +113,42 @@ LexResult parse_number(Lexer *l) {
     Position start_position = l->position;
     bool has_decimal = false;
 
-    char c = *start;
     for (;;) {
+        char c = peek_char(l);
+
+        if (c == '.') {
+            if (has_decimal) {
+                return (LexResult) {.error_message = "Invalid suffix on decimal"};
+            } else {
+                has_decimal = true;
+            }
+        } else if (!is_digit(c)) {
+            break;
+        }
 
         next_char(l);
-        c = *peek_char(l);
     }
 
-    uint size = (uint)(l->str - start) + 1;
+    Position end_position = l->position;
 
-    char *ident = malloc(size + 1);
-    assert_ptr(ident);
-    strncpy(ident, start, size);
-    ident[size] = '\0';
+    uint size = (uint)(l->str - start) + 1;
+    char *number = calloc(1, size + 1);
+    assert_ptr(number);
+    strncpy(number, start, size);
+
+    double res = atof(number);
+    free(number);
+
+    // Go to character after the number
+    next_char(l);
 
     return (LexResult) {
         .token = (Token) {
             .type = TOKEN_NUMBER, 
-            .inner.number = 0.0,
+            .inner.number = res,
             .range = (Range) {
                 .start = start_position,
-                .end = l->position,
+                .end = end_position,
             }
         },
     };
