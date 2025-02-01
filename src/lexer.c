@@ -1,6 +1,7 @@
 #include "./lexer.h"
 #include "utils.h"
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -42,19 +43,22 @@ LexResult parse_ident(Lexer *l) {
     char *start = l->str;
     Position start_position = l->position;
 
-    char c = *start;
-    while (is_alpha(c) || is_digit(c)) {
-        c = *next_char(l);
+    for (;;) {
+        char c = *peek_char(l);
+        if (!(is_alpha(c) || is_digit(c))) {
+            break;
+        }
+        next_char(l);
     }
 
-    uint size = (uint)(l->str - start);
+    Position end_position = l->position;
 
-    char *ident = malloc(size + 1);
+    uint size = (uint)(l->str - start) + 1;
+    char *ident = calloc(1, size + 1);
     assert_ptr(ident);
     strncpy(ident, start, size);
-    ident[size] = '\0';
 
-    l->str -= 1;
+    next_char(l);
 
     return (LexResult) {
         .token = (Token) {
@@ -62,7 +66,7 @@ LexResult parse_ident(Lexer *l) {
             .inner.ident = ident,
             .range = (Range) {
                 .start = start_position,
-                .end = l->position,
+                .end = end_position,
             }
         },
     };
@@ -136,6 +140,7 @@ LexResult parse_number(Lexer *l) {
 }
 
 LexResult lex_next_tok(Lexer *l) {
+    skip_whitespace(l);
     switch (*l->str) {
     case 'a' ... 'z':
     case 'A' ... 'Z':
@@ -161,4 +166,3 @@ Lexer lex_init(char *input) {
         .str = input,
     };
 }
-

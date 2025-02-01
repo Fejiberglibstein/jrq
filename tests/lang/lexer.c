@@ -13,15 +13,16 @@
         snprintf(res, buf_size, msg, args);                                                        \
         return res;                                                                                \
     };
+
 char *tok_equal(Token exp, Token actual) {
     jaq_assert(
-        actual.type == exp.type, "Types not equal: Expected %d, got %d", exp.type, actual.type
+        actual.type == exp.type, "Types not equal: Expected %d, got %d.", exp.type, actual.type
     );
     switch (exp.type) {
     case TOKEN_IDENT:
         jaq_assert(
             strcmp(exp.inner.ident, actual.inner.ident) == 0,
-            "inner.ident not equal: Expected %s, got %s",
+            "inner.ident not equal: Expected %s, got %s.",
             exp.inner.ident,
             actual.inner.ident
         );
@@ -29,7 +30,7 @@ char *tok_equal(Token exp, Token actual) {
     case TOKEN_STRING:
         jaq_assert(
             strcmp(exp.inner.string, actual.inner.string) == 0,
-            "inner.string not equal: Expected %s, got %s",
+            "inner.string not equal: Expected %s, got %s.",
             exp.inner.string,
             actual.inner.string
         );
@@ -37,7 +38,7 @@ char *tok_equal(Token exp, Token actual) {
     case TOKEN_NUMBER:
         jaq_assert(
             fabs(exp.inner.number - actual.inner.number) < 0.0001,
-            "inner.number not equal: Expected %f, got %f",
+            "inner.number not equal: Expected %f, got %f.",
             exp.inner.number,
             actual.inner.number
         );
@@ -45,7 +46,7 @@ char *tok_equal(Token exp, Token actual) {
     case TOKEN_KEYWORD:
         jaq_assert(
             exp.inner.keyword == actual.inner.keyword,
-            "inner.keyword not equal: Expected %d, got %d",
+            "inner.keyword not equal: Expected %d, got %d.",
             exp.inner.keyword,
             actual.inner.keyword
         );
@@ -95,19 +96,27 @@ void lex(char *inp, Token *expected, int len) {
         }
     }
     LexResult res = lex_next_tok(&l);
-    assert(res.finished);
+    assert(res.finished && "lexer should be done");
 }
 
 void test_simple_lex() {
-    lex("hii",
+    lex("h  hdhd",
         LIST((Token[]) {
 			(Token) {
 				.range = (Range) {
 					.start = (Position) {.col = 1, .line = 1},
-					.end = (Position) {.col = 4, .line = 1},
+					.end = (Position) {.col = 1, .line = 1},
 				},
 				.type = TOKEN_IDENT,
-				.inner.ident = "hii",
+				.inner.ident = "h",
+			},
+			(Token) {
+				.range = (Range) {
+					.start = (Position) {.col = 4, .line = 1},
+					.end = (Position) {.col = 7, .line = 1},
+				},
+				.type = TOKEN_IDENT,
+				.inner.ident = "hdhd",
 			},
 		}));
     //     lex("10",
