@@ -81,10 +81,4 @@ typedef struct {
 Lexer lex_init(char *);
 LexResult lex_next_tok(Lexer *);
 
-#ifndef JAQ_TEST
-bool tok_equal(Token exp, Token actual);
-#else
-char *tok_equal(Token exp, Token actual);
-#endif // JAQ_TEST
-
 #endif // _LEXER_H
