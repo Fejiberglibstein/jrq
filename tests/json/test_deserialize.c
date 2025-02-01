@@ -20,7 +20,7 @@ typedef struct {
 } JsonData;
 
 extern char *validate_json(char *json, JsonData *data);
-extern char *skip_whitespace(char *json);
+extern char *json_skip_whitespace(char *json);
 
 struct ret {
     char *end;
@@ -40,7 +40,7 @@ struct ret validate(char *json) {
         return (struct ret) {0};
     }
 
-    json = skip_whitespace(json);
+    json = json_skip_whitespace(json);
     if (*json != '\0') {
         free(data.buf.data);
         return (struct ret) {0};

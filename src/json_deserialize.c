@@ -61,14 +61,14 @@ void buf_append(IntBuffer *buf, int val) {
 
 ValidateResult validate_json(char *json, JsonData *data);
 
-ParsedValue parse_string(char *str, JsonData *data);
-ParsedValue parse_number(char *str, JsonData *_);
-ParsedValue parse_keyword(char *str, JsonData *_);
-ParsedValue parse_list(char *str, JsonData *data, int buf_idx);
-ParsedValue parse_struct(char *str, JsonData *data, int buf_idx);
-ParsedValue parse_json(char *str, JsonData *data, int buf_idx, int arena_idx, char *field_name);
+ParsedValue json_parse_string(char *str, JsonData *data);
+ParsedValue json_parse_number(char *str, JsonData *_);
+ParsedValue json_parse_keyword(char *str, JsonData *_);
+ParsedValue json_parse_list(char *str, JsonData *data, int buf_idx);
+ParsedValue json_parse_struct(char *str, JsonData *data, int buf_idx);
+ParsedValue json_parse_json(char *str, JsonData *data, int buf_idx, int arena_idx, char *field_name);
 
-char *skip_whitespace(char *json) {
+char *json_skip_whitespace(char *json) {
     while (is_whitespace(*json)) {
         json++;
     }
@@ -82,7 +82,7 @@ char *skip_whitespace(char *json) {
 // end location means the character after the string " terminator:
 // "hello world",
 // function will return where the comma is
-ParsedValue parse_string(char *str, JsonData *data) {
+ParsedValue json_parse_string(char *str, JsonData *data) {
     bool backslashed = false;
     char *new_str = NULL;
     char *start = str;
@@ -122,7 +122,7 @@ ParsedValue parse_string(char *str, JsonData *data) {
 // end location means the character after the last part of the number:
 // 291028.298103,
 // function will return where the comma is
-ParsedValue parse_number(char *str, JsonData *_) {
+ParsedValue json_parse_number(char *str, JsonData *_) {
     bool finished_decimal = false;
 
     char *start = str;
@@ -182,8 +182,8 @@ ParsedValue parse_number(char *str, JsonData *_) {
     return ret;
 }
 
-ParsedValue parse_keyword(char *json, JsonData *_) {
-    json = skip_whitespace(json);
+ParsedValue json_parse_keyword(char *json, JsonData *_) {
+    json = json_skip_whitespace(json);
 #define KEYWORD(v, l...)                                                                           \
     /* use sizeof(v) - 1 to remove the null terminator */                                          \
     if (strncmp(json, v, sizeof(v) - 1) == 0) {                                                    \
@@ -199,8 +199,8 @@ ParsedValue parse_keyword(char *json, JsonData *_) {
     };
 }
 
-ParsedValue parse_list(char *str, JsonData *data, int buf_idx) {
-    str = skip_whitespace(str);
+ParsedValue json_parse_list(char *str, JsonData *data, int buf_idx) {
+    str = json_skip_whitespace(str);
 
     int list_items = 0;
     // start it at 1, we need to reserve the 0th index for the start of the json
@@ -217,7 +217,7 @@ ParsedValue parse_list(char *str, JsonData *data, int buf_idx) {
         // are validated like we did in the validator function
 
         // parse the next json item in the list
-        ParsedValue ret = parse_json(
+        ParsedValue ret = json_parse_json(
             str,
             data,
             buf_idx + data->buf.length - current_length,
@@ -227,11 +227,11 @@ ParsedValue parse_list(char *str, JsonData *data, int buf_idx) {
         str = ret.end;
 
         // Skip past the comma if there is one
-        str = skip_whitespace(str);
+        str = json_skip_whitespace(str);
         if (*str == ',') {
             str++;
         }
-        str = skip_whitespace(str);
+        str = json_skip_whitespace(str);
 
         list_items++;
     }
@@ -247,8 +247,8 @@ ParsedValue parse_list(char *str, JsonData *data, int buf_idx) {
     };
 }
 
-ParsedValue parse_struct(char *str, JsonData *data, int buf_idx) {
-    str = skip_whitespace(str);
+ParsedValue json_parse_struct(char *str, JsonData *data, int buf_idx) {
+    str = json_skip_whitespace(str);
 
     int fields = 0;
     // start it at 1, we need to reserve the 0th index for the start of the json
@@ -267,17 +267,17 @@ ParsedValue parse_struct(char *str, JsonData *data, int buf_idx) {
         // skip past the " character
         str++;
 
-        ParsedValue ret = parse_string(str, data);
+        ParsedValue ret = json_parse_string(str, data);
         str = ret.end;
         char *field_name = ret.json.v.String;
 
         // Skip past the colon after the field name: {"foo"   :   3}
-        str = skip_whitespace(str);
+        str = json_skip_whitespace(str);
         str++;
-        str = skip_whitespace(str);
+        str = json_skip_whitespace(str);
 
         // parse the next json item in the list
-        ret = parse_json(
+        ret = json_parse_json(
             str,
             data,
             buf_idx + data->buf.length - current_length,
@@ -287,11 +287,11 @@ ParsedValue parse_struct(char *str, JsonData *data, int buf_idx) {
         str = ret.end;
 
         // Skip past the comma if there is one
-        str = skip_whitespace(str);
+        str = json_skip_whitespace(str);
         if (*str == ',') {
             str++;
         }
-        str = skip_whitespace(str);
+        str = json_skip_whitespace(str);
 
         fields++;
     }
@@ -308,7 +308,7 @@ ParsedValue parse_struct(char *str, JsonData *data, int buf_idx) {
 }
 
 ValidateResult validate_struct(char *json, JsonData *data) {
-    json = skip_whitespace(json);
+    json = json_skip_whitespace(json);
     bool trailing_comma = false;
 
     int fields = 0;
@@ -329,17 +329,17 @@ ValidateResult validate_struct(char *json, JsonData *data) {
         if (*(json++) != '"') {
             return (ValidateResult) {.err = "Invalid json object key"};
         }
-        json = parse_string(json, data).end;
+        json = json_parse_string(json, data).end;
         if (json == NULL) {
             return (ValidateResult) {.err = "Invalid json object key"};
         }
-        json = skip_whitespace(json);
+        json = json_skip_whitespace(json);
 
         // We need a : after the field: {"foo": true}
         if (*(json++) != ':') {
             return (ValidateResult) {.err = "Missing ':' after key in json object"};
         }
-        json = skip_whitespace(json);
+        json = json_skip_whitespace(json);
 
         // parse the next json item in the list
         ValidateResult res = validate_json(json, data);
@@ -347,7 +347,7 @@ ValidateResult validate_struct(char *json, JsonData *data) {
             return res;
         }
         json = res.res;
-        json = skip_whitespace(json);
+        json = json_skip_whitespace(json);
 
         // ensure the json has a comma after the item. If it has no comma and we
         // already have a trailing comma, the json is invalid
@@ -360,7 +360,7 @@ ValidateResult validate_struct(char *json, JsonData *data) {
         } else {
             json++; // skip past the comma
         }
-        json = skip_whitespace(json);
+        json = json_skip_whitespace(json);
 
         fields++;
     }
@@ -372,7 +372,7 @@ ValidateResult validate_struct(char *json, JsonData *data) {
 }
 
 ValidateResult validate_list(char *json, JsonData *data) {
-    json = skip_whitespace(json);
+    json = json_skip_whitespace(json);
     bool trailing_comma = false;
 
     int list_items = 0;
@@ -395,7 +395,7 @@ ValidateResult validate_list(char *json, JsonData *data) {
             return res;
         }
         json = res.res;
-        json = skip_whitespace(json);
+        json = json_skip_whitespace(json);
 
         // ensure the json has a comma after the item. If it has no comma and we
         // already have a trailing comma, the json is invalid
@@ -408,7 +408,7 @@ ValidateResult validate_list(char *json, JsonData *data) {
         } else {
             json++; // skip past the comma
         }
-        json = skip_whitespace(json);
+        json = json_skip_whitespace(json);
         list_items++;
     }
 
@@ -456,7 +456,7 @@ ValidateResult validate_list(char *json, JsonData *data) {
 // in the case where the json is simply `"hello"` or `10`, the function will
 // return []
 ValidateResult validate_json(char *json, JsonData *data) {
-    json = skip_whitespace(json);
+    json = json_skip_whitespace(json);
 
     ParsedValue res;
 
@@ -467,16 +467,16 @@ ValidateResult validate_json(char *json, JsonData *data) {
     case '{':
         return validate_struct(json + 1, data);
     case '"':
-        res = parse_string(json + 1, data);
+        res = json_parse_string(json + 1, data);
         return (ValidateResult) {.res = res.end, .err = res.error_message};
     }
 
     if (('0' <= *json && *json <= '9') || *json == '-' || *json == '.') {
-        res = parse_number(json, data);
+        res = json_parse_number(json, data);
         return (ValidateResult) {.res = res.end, .err = res.error_message};
     }
     if ('A' < *json && *json < 'z') {
-        res = parse_keyword(json, data);
+        res = json_parse_keyword(json, data);
         return (ValidateResult) {.res = res.end, .err = res.error_message};
     }
 
@@ -501,29 +501,29 @@ void allocate_json(JsonData *data) {
     // printf("(json)%d, (strings)%d", len, data->str_len);
 }
 
-ParsedValue parse_json(char *str, JsonData *data, int buf_idx, int arena_idx, char *field_name) {
-    str = skip_whitespace(str);
+ParsedValue json_parse_json(char *str, JsonData *data, int buf_idx, int arena_idx, char *field_name) {
+    str = json_skip_whitespace(str);
     ParsedValue ret;
 
     switch (*str) {
     // json++ to skip past the [, {, or "
     case '[':
-        ret = parse_list(str + 1, data, buf_idx);
+        ret = json_parse_list(str + 1, data, buf_idx);
         goto stop;
     case '{':
-        ret = parse_struct(str + 1, data, buf_idx);
+        ret = json_parse_struct(str + 1, data, buf_idx);
         goto stop;
     case '"':
-        ret = parse_string(str + 1, data);
+        ret = json_parse_string(str + 1, data);
         goto stop;
     }
 
     if (('0' <= *str && *str <= '9') || *str == '-' || *str == '.') {
-        ret = parse_number(str, data);
+        ret = json_parse_number(str, data);
         goto stop;
     }
     if ('A' < *str && *str < 'z') {
-        ret = parse_keyword(str, data);
+        ret = json_parse_keyword(str, data);
         goto stop;
     }
 
@@ -562,7 +562,7 @@ Json *json_deserialize(char *str) {
         free(data.buf.data);
         return NULL;
     }
-    str = skip_whitespace(str);
+    str = json_skip_whitespace(str);
     if (*str != '\0') {
         free(data.buf.data);
         return NULL;
@@ -573,7 +573,7 @@ Json *json_deserialize(char *str) {
     // Reset the length so that while parsing we can use it to store where to
     // place the next complex type (struct/lists)
     data.buf.length = 0;
-    parse_json(start, &data, 0, 0, NULL);
+    json_parse_json(start, &data, 0, 0, NULL);
 
     free(data.buf.data);
     return data.arena;
