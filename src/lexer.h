@@ -1,6 +1,7 @@
 #ifndef _LEXER_H
 #define _LEXER_H
 
+#include <stdbool.h>
 #include <sys/types.h>
 typedef enum uint8_t {
 
@@ -41,6 +42,10 @@ typedef enum uint8_t {
 
 } TokenType;
 
+typedef enum {
+    KEYWORD_,
+} Keyword;
+
 typedef struct {
     uint line;
     uint col;
@@ -56,7 +61,7 @@ typedef struct {
     union {
         char *ident;
         char *string;
-        char *keyword;
+        Keyword keyword;
         double number;
     } inner;
     TokenType type;
@@ -70,9 +75,16 @@ typedef struct {
 typedef struct {
     Token token;
     char *error_message;
+    bool finished;
 } LexResult;
 
 Lexer lex_init(char *);
 LexResult lex_next_tok(Lexer *);
+
+#ifndef JAQ_TEST
+bool tok_equal(Token exp, Token actual);
+#else
+char *tok_equal(Token exp, Token actual);
+#endif // JAQ_TEST
 
 #endif // _LEXER_H
