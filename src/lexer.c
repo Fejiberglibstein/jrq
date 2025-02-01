@@ -18,7 +18,7 @@ typedef struct {
 typedef struct {
     Token token;
     char *error_message;
-} ParseResult;
+} LexResult;
 
 char *next_char(Lexer *l) {
     if (*l->str == '\n') {
@@ -47,24 +47,23 @@ bool is_alpha(char c) {
     return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
 }
 
-ParseResult parse_ident(Lexer *l) {
+LexResult parse_ident(Lexer *l) {
     char *start = l->str;
     Position start_position = l->position;
 
-    char c = *peek_char(l);
+    char c = *start;
     while (is_alpha(c) || is_digit(c)) {
-        next_char(l);
-        c = *peek_char(l);
+        c = *next_char(l);
     }
 
-    uint size = (uint)(l->str - start) + 1;
+    uint size = (uint)(l->str - start);
 
     char *ident = malloc(size + 1);
     assert_ptr(ident);
     strncpy(ident, start, size);
     ident[size] = '\0';
 
-    return (ParseResult) {
+    return (LexResult) {
         .token = (Token) {
             .type = TOKEN_IDENT, 
             .inner.ident = ident,
@@ -76,7 +75,7 @@ ParseResult parse_ident(Lexer *l) {
     };
 }
 
-ParseResult parse_string(Lexer *l) {
+LexResult parse_string(Lexer *l) {
     char *start = l->str;
     Position start_position = l->position;
 
@@ -93,17 +92,17 @@ ParseResult parse_string(Lexer *l) {
         c = *peek_char(l);
     }
 
-    uint size = (uint)(l->str - start) + 1;
+    uint size = (uint)(l->str - start);
 
-    char *ident = malloc(size + 1);
-    assert_ptr(ident);
-    strncpy(ident, start, size);
-    ident[size] = '\0';
+    char *string = malloc(size + 1);
+    assert_ptr(string);
+    strncpy(string, start, size);
+    string[size] = '\0';
 
-    return (ParseResult) {
+    return (LexResult) {
         .token = (Token) {
-            .type = TOKEN_IDENT, 
-            .inner.ident = ident,
+            .type = TOKEN_STRING, 
+            .inner.string = string,
             .range = (Range) {
                 .start = start_position,
                 .end = l->position,
@@ -112,33 +111,56 @@ ParseResult parse_string(Lexer *l) {
     };
 }
 
-Token *lex(char *input) {
-    Lexer l = (Lexer) {
+LexResult parse_number(Lexer *l) {
+    char *start = l->str;
+    Position start_position = l->position;
+    bool has_decimal = false;
+
+    char c = *start;
+    for (;;) {
+
+        next_char(l);
+        c = *peek_char(l);
+    }
+
+    uint size = (uint)(l->str - start) + 1;
+
+    char *ident = malloc(size + 1);
+    assert_ptr(ident);
+    strncpy(ident, start, size);
+    ident[size] = '\0';
+
+    return (LexResult) {
+        .token = (Token) {
+            .type = TOKEN_NUMBER, 
+            .inner.number = 0.0,
+            .range = (Range) {
+                .start = start_position,
+                .end = l->position,
+            }
+        },
+    };
+}
+
+LexResult lex_next_tok(Lexer *l) {
+    switch (*l->str) {
+    case 'a' ... 'z':
+    case 'A' ... 'Z':
+    case '_':
+        return parse_ident(l);
+    case '"':
+        return parse_string(l);
+    case '0' ... '9':
+        return parse_number(l);
+    }
+}
+
+Lexer lex_init(char *input) {
+    return (Lexer) {
         .position = (Position) {
             .line = 1,
             .col = 1,
         },
         .str = input,
     };
-    const int INITIAL_CAPACITY = sizeof(Token) * 4;
-    TokenBuf b = (TokenBuf) {
-        .data = malloc(INITIAL_CAPACITY),
-        .length = 0,
-        .capacity = INITIAL_CAPACITY,
-    };
-
-    for (;;) {
-        switch (*l.str) {
-        case 'a' ... 'z':
-        case 'A' ... 'Z':
-        case '_':
-            parse_ident(&l);
-            break;
-        case '"':
-            parse_string(&l);
-            break;
-        case '0' ... '9':
-            break;
-        }
-    }
 }
