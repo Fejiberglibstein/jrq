@@ -5,20 +5,10 @@
 #include <sys/types.h>
 
 typedef struct {
-    char *str;
-    Position position;
-} Lexer;
-
-typedef struct {
     Token *data;
     uint length;
     uint capacity;
 } TokenBuf;
-
-typedef struct {
-    Token token;
-    char *error_message;
-} LexResult;
 
 char *next_char(Lexer *l) {
     if (*l->str == '\n') {

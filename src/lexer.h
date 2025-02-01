@@ -62,6 +62,17 @@ typedef struct {
     TokenType type;
 } Token;
 
-Token *lex(char *input);
+typedef struct {
+    char *str;
+    Position position;
+} Lexer;
+
+typedef struct {
+    Token token;
+    char *error_message;
+} LexResult;
+
+Lexer lex_init(char *);
+LexResult lex_next_tok(Lexer *);
 
 #endif // _LEXER_H
