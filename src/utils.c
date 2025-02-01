@@ -1,3 +1,5 @@
+#include <stdlib.h>
+#include <string.h>
 
 typedef struct {
     char *data;
@@ -21,4 +23,3 @@ void string_append(String *str, char *buf, int buf_len) {
     // - 1 for the null terminator
     str->length += buf_len - 1;
 }
-
