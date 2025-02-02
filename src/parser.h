@@ -6,19 +6,7 @@ typedef enum {
     AST_TYPE_PRIMARY,
     AST_TYPE_NOT,
     AST_TYPE_NEGATIVE,
-    AST_TYPE_MULTIPLY,
-    AST_TYPE_DIVIDE,
-    AST_TYPE_MODULO,
-    AST_TYPE_SUM,
-    AST_TYPE_DIFFERENCE,
-    AST_TYPE_LESS_THAN,
-    AST_TYPE_GREATER_THAN,
-    AST_TYPE_LESS_THAN_OR_EQ,
-    AST_TYPE_GREATER_THAN_OR_EQ,
-    AST_TYPE_EQUAL,
-    AST_TYPE_NOT_EQUAL,
-    AST_TYPE_AND,
-    AST_TYPE_OR,
+    AST_TYPE_BINARY,
     AST_TYPE_FUNCTION,
     AST_TYPE_CLOSURE,
     AST_TYPE_ACCESS,
@@ -51,96 +39,13 @@ typedef struct ASTNode {
         /// -<expr>
         struct ASTNode *negative;
 
-        /// Multiply:
-        /// <expr: lhs> * <expr: rhs>
+        /// Binary operation:
+        /// <expr: lhs> operator  <expr: rhs>
         struct {
             struct ASTNode *lhs;
+            TokenType operator;
             struct ASTNode *rhs;
-        } multiply;
-
-        /// Divide:
-        /// <expr: lhs> / <expr: rhs>
-        struct {
-            struct ASTNode *lhs;
-            struct ASTNode *rhs;
-        } divide;
-
-        /// Modulo:
-        /// <expr: lhs> % <expr: rhs>
-        struct {
-            struct ASTNode *lhs;
-            struct ASTNode *rhs;
-        } modulo;
-
-        /// Sum:
-        /// <expr: lhs> + <expr: rhs>
-        struct {
-            struct ASTNode *lhs;
-            struct ASTNode *rhs;
-        } sum;
-
-        /// Difference:
-        /// <expr: lhs> - <expr: rhs>
-        struct {
-            struct ASTNode *lhs;
-            struct ASTNode *rhs;
-        } difference;
-
-        /// Less than:
-        /// <expr: lhs> < <expr: rhs>
-        struct {
-            struct ASTNode *lhs;
-            struct ASTNode *rhs;
-        } less_than;
-
-        /// Greater than:
-        /// <expr: lhs> > <expr: rhs>
-        struct {
-            struct ASTNode *lhs;
-            struct ASTNode *rhs;
-        } greater_than;
-
-        /// Less than or equal to:
-        /// <expr: lhs> <= <expr: rhs>
-        struct {
-            struct ASTNode *lhs;
-            struct ASTNode *rhs;
-        } less_than_or_eq;
-
-        /// Greater than or equal to:
-        /// <expr: lhs> >= <expr: rhs>
-        struct {
-            struct ASTNode *lhs;
-            struct ASTNode *rhs;
-        } greater_than_or_eq;
-
-        /// Equal:
-        /// <expr: lhs> == <expr: rhs>
-        struct {
-            struct ASTNode *lhs;
-            struct ASTNode *rhs;
-        } equal;
-
-        /// Not equal:
-        /// <expr: lhs> != <expr: rhs>
-        struct {
-            struct ASTNode *lhs;
-            struct ASTNode *rhs;
-        } not_equal;
-
-        /// And:
-        /// <expr: lhs> && <expr: rhs>
-        struct {
-            struct ASTNode *lhs;
-            struct ASTNode *rhs;
-        } and;
-
-        /// Or:
-        /// <expr: lhs> || <expr: rhs>
-        struct {
-            struct ASTNode *lhs;
-            struct ASTNode *rhs;
-        } or ;
+        } binary;
 
         /// Function call:
         /// identifier "(" (expr ",")* ")"
