@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <sys/types.h>
 typedef enum uint8_t {
-    TOKEN_NULL, // Not a valid token
+    TOKEN_INVALID, // Not a valid token
 
     TOKEN_EQUAL,     // ==
     TOKEN_NOT_EQUAL, // !=
@@ -40,15 +40,14 @@ typedef enum uint8_t {
     TOKEN_STRING,
     TOKEN_DOUBLE,
     TOKEN_INT,
-    TOKEN_KEYWORD,
+
+    TOKEN_TRUE,
+    TOKEN_FALSE,
+    TOKEN_NULL,
 
     TOKEN_EOF,
 
 } TokenType;
-
-typedef enum {
-    KEYWORD_,
-} Keyword;
 
 typedef struct {
     uint line;
@@ -65,7 +64,6 @@ typedef struct {
     union {
         char *ident;
         char *string;
-        Keyword keyword;
         double Double;
         int Int;
     } inner;

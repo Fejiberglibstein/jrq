@@ -13,7 +13,11 @@ typedef enum {
     AST_TYPE_INDEX,
     AST_TYPE_JSON_FIELD,
     AST_TYPE_JSON_OBJECT,
+    AST_TYPE_GROUPING,
 
+    AST_TYPE_FALSE,
+    AST_TYPE_TRUE,
+    AST_TYPE_NULL,
 } ASTNodeType;
 
 typedef struct {
@@ -44,6 +48,10 @@ typedef struct ASTNode {
             TokenType operator;
             struct ASTNode *rhs;
         } binary;
+
+        /// A grouping of an expression (aka parenthesis):
+        /// "(" expr ")"
+        struct ASTNode *grouping;
 
         /// Function call:
         /// identifier "(" (expr ",")* ")"

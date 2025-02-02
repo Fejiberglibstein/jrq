@@ -51,14 +51,6 @@ char *tok_equal(Token exp, Token actual) {
             actual.inner.Int
         );
         break;
-    case TOKEN_KEYWORD:
-        jaq_assert(
-            exp.inner.keyword == actual.inner.keyword,
-            "inner.keyword not equal: Expected %d, got %d.",
-            exp.inner.keyword,
-            actual.inner.keyword
-        );
-        break;
     default:
         break;
     }
