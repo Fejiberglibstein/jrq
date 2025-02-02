@@ -35,7 +35,7 @@ void test_validate_lists() {
                     .type = JSONTYPE_STRING,
                     .v.String = "",
                 },
-                0 // end of list
+                {0} // end of list
             },
         },
         (Json) {
@@ -46,7 +46,7 @@ void test_validate_lists() {
             .type = JSONTYPE_STRING,
             .v.String = "hello",
         },
-        0 // end of list
+        {0} // end of list
     };
     // clang-format on
 
@@ -78,7 +78,7 @@ void test_validate_structs() {
             .type = JSONTYPE_INT,
             .v.Int = 4,
         },
-        0,
+        {0},
     };
     Json list = (Json) {
         .type = JSONTYPE_STRUCT,
@@ -111,10 +111,10 @@ void test_validate_structs() {
                         .type = JSONTYPE_LIST,
                         .v.List = inner_list,
                     },
-                    0,
+                    {0},
                 }
             },
-            0,
+            {0},
         },
     };
 
