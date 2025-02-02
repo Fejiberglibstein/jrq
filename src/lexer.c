@@ -136,25 +136,40 @@ static LexResult parse_number(Lexer *l) {
     assert_ptr(number);
     strncpy(number, start, size);
 
-    double res = atof(number);
-    free(number);
-
     // Go to character after the number
     next_char(l);
 
-    return (LexResult) {
-        .token = (Token) {
-            .type = TOKEN_NUMBER, 
-            .inner.number = res,
-            .range = (Range) {
-                .start = start_position,
-                .end = end_position,
-            }
-        },
-    };
+    if (has_decimal) {
+        double res = atof(number);
+        free(number);
+        return (LexResult) {
+            .token = (Token) {
+                .type = TOKEN_DOUBLE, 
+                .inner.Double = res,
+                .range = (Range) {
+                    .start = start_position,
+                    .end = end_position,
+                }
+            },
+        };
+    } else {
+        int res = atoi(number);
+        free(number);
+        return (LexResult) {
+            .token = (Token) {
+                .type = TOKEN_INT, 
+                .inner.Int = res,
+                .range = (Range) {
+                    .start = start_position,
+                    .end = end_position,
+                }
+            },
+        };
+    }
 }
 
-static LexResult parse_double_char(Lexer *l, TokenType single_type, char next, TokenType double_type) {
+static LexResult
+parse_double_char(Lexer *l, TokenType single_type, char next, TokenType double_type) {
     Position start_position = l->position;
     char n = *next_char(l);
 
