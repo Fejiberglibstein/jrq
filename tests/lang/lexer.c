@@ -35,12 +35,20 @@ char *tok_equal(Token exp, Token actual) {
             actual.inner.string
         );
         break;
-    case TOKEN_NUMBER:
+    case TOKEN_DOUBLE:
         jaq_assert(
-            fabs(exp.inner.number - actual.inner.number) < 0.0001,
-            "inner.number not equal: Expected %f, got %f.",
-            exp.inner.number,
-            actual.inner.number
+            fabs(exp.inner.Double - actual.inner.Double) < 0.0001,
+            "inner.Double not equal: Expected %f, got %f.",
+            exp.inner.Double,
+            actual.inner.Double
+        );
+        break;
+    case TOKEN_INT:
+        jaq_assert(
+            exp.inner.Int == actual.inner.Int,
+            "inner.number not equal: Expected %d, got %d.",
+            exp.inner.Int,
+            actual.inner.Int
         );
         break;
     case TOKEN_KEYWORD:
@@ -142,16 +150,16 @@ void test_simple_lex() {
                 .start = (Position) {.col = 2, .line = 1},
                 .end = (Position) {.col = 7, .line = 1},
             },
-            .type = TOKEN_NUMBER,
-            .inner.number =10.221,
+            .type = TOKEN_DOUBLE,
+            .inner.Double =10.221,
         },
         (Token) {
             .range = (Range) {
                 .start = (Position) {.col = 10, .line = 1},
                 .end = (Position) {.col = 19, .line = 1},
             },
-            .type = TOKEN_NUMBER,
-            .inner.number = 1023459678,
+            .type = TOKEN_INT,
+            .inner.Int = 1023459678,
         },
     }));
 }
