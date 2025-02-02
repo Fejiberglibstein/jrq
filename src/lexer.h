@@ -41,6 +41,8 @@ typedef enum uint8_t {
     TOKEN_NUMBER,
     TOKEN_KEYWORD,
 
+    TOKEN_EOF,
+
 } TokenType;
 
 typedef enum {
@@ -76,7 +78,6 @@ typedef struct {
 typedef struct {
     Token token;
     char *error_message;
-    bool finished;
 } LexResult;
 
 Lexer lex_init(char *);

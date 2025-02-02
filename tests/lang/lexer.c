@@ -85,7 +85,7 @@ void lex(char *inp, Token *expected, int len) {
     for (int i = 0; i < len; i++) {
         LexResult res = lex_next_tok(&l);
         assert(!res.error_message);
-        assert(!res.finished);
+        assert(res.token.type != TOKEN_EOF);
         Token tok = res.token;
         Token exp = expected[i];
 
@@ -96,7 +96,7 @@ void lex(char *inp, Token *expected, int len) {
         }
     }
     LexResult res = lex_next_tok(&l);
-    assert(res.finished && "lexer should be done");
+    assert(res.token.type == TOKEN_EOF);
 }
 
 void test_simple_lex() {

@@ -223,13 +223,6 @@ LexResult lex_next_tok(Lexer *l) {
     case ']': return parse_single_char(l, TOKEN_RBRACKET);
     case '[': return parse_single_char(l, TOKEN_LBRACKET);
 
-
-    // TOKEN_NOT_EQUAL, // !=
-    // TOKEN_LT_EQUAL,  // <=
-    // TOKEN_GT_EQUAL,  // >=
-    // TOKEN_OR,        // ||
-    // TOKEN_AND,       // &&
-
     case '=': return parse_double_char(l, TOKEN_NULL, '=', TOKEN_EQUAL); 
     case '!': return parse_double_char(l, TOKEN_BANG, '=', TOKEN_NOT_EQUAL);
     case '|': return parse_double_char(l, TOKEN_BAR, '|', TOKEN_OR);
@@ -238,7 +231,7 @@ LexResult lex_next_tok(Lexer *l) {
     case '>': return parse_double_char(l, TOKEN_RANGLE, '=', TOKEN_EQUAL);
         // clang-format on
     case '\0':
-        return (LexResult) {.finished = true};
+        return (LexResult) {.token.type = TOKEN_EOF};
     default:
         return (LexResult) {.error_message = "Illegal character"};
     }
