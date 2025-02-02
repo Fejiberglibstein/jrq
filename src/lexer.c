@@ -174,13 +174,14 @@ parse_double_char(Lexer *l, TokenType single_type, char next, TokenType double_t
     char n = *next_char(l);
 
     if (n == next) {
+        Position end_position = l->position;
         next_char(l);
         return (LexResult) {
             .token = (Token) {
                 .type = double_type,
                 .range = (Range) {
                     .start = start_position,
-                    .end = l->position,
+                    .end = end_position,
                 },
             },
         };
@@ -191,7 +192,7 @@ parse_double_char(Lexer *l, TokenType single_type, char next, TokenType double_t
             .type = single_type,
             .range = (Range) {
                 .start = start_position,
-                .end = l->position,
+                .end = start_position,
             },
         },
     };
@@ -205,7 +206,7 @@ static LexResult parse_single_char(Lexer *l, TokenType type) {
             .type = type,
             .range = (Range) {
                 .start = start_position,
-                .end = l->position,
+                .end = start_position,
             },
         },
     };
@@ -239,7 +240,7 @@ LexResult lex_next_tok(Lexer *l) {
     case ']': return parse_single_char(l, TOKEN_RBRACKET);
     case '[': return parse_single_char(l, TOKEN_LBRACKET);
 
-    case '=': return parse_double_char(l, TOKEN_NULL, '=', TOKEN_EQUAL); 
+    case '=': return parse_double_char(l, TOKEN_INVALID, '=', TOKEN_EQUAL); 
     case '!': return parse_double_char(l, TOKEN_BANG, '=', TOKEN_NOT_EQUAL);
     case '|': return parse_double_char(l, TOKEN_BAR, '|', TOKEN_OR);
     case '&': return parse_double_char(l, TOKEN_AMPERSAND, '&', TOKEN_AND);

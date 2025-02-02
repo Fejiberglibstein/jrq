@@ -155,6 +155,8 @@ ParseResult ast_parse(Lexer *l) {
         .l = l,
     };
 
+    next(&p);
+
     ASTNode *node = expression(&p);
     if (p.error != NULL) {
         return (ParseResult) {.error_message = p.error};

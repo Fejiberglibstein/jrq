@@ -1,5 +1,6 @@
 #include "src/lexer.h"
 #include "../test.h"
+#include <assert.h>
 
 void foo(char *, int, int);
 
@@ -103,7 +104,7 @@ void test_simple_lex() {
             },
         }));
 
-    lex(" 10.221  1023459678", LIST((Token[]) {
+    lex(" 10.221 - 1023459678", LIST((Token[]) {
         (Token) {
             .range = (Range) {
                 .start = (Position) {.col = 2, .line = 1},
@@ -114,8 +115,15 @@ void test_simple_lex() {
         },
         (Token) {
             .range = (Range) {
-                .start = (Position) {.col = 10, .line = 1},
-                .end = (Position) {.col = 19, .line = 1},
+                .start = (Position) {.col = 9, .line = 1},
+                .end = (Position) {.col = 9, .line = 1},
+            },
+            .type = TOKEN_MINUS,
+        },
+        (Token) {
+            .range = (Range) {
+                .start = (Position) {.col = 11, .line = 1},
+                .end = (Position) {.col = 20, .line = 1},
             },
             .type = TOKEN_INT,
             .inner.Int = 1023459678,

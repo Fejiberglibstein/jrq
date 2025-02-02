@@ -8,19 +8,22 @@
 static char *validate_ast_node(ASTNode *exp, ASTNode *actual);
 static char *validate_ast_list(Vec_ASTNode exp, Vec_ASTNode actual);
 
-static bool parse(char *input, ASTNode *exp) {
+static void parse(char *input, ASTNode *exp) {
     Lexer l = lex_init("10 - 2");
 
     ParseResult res = ast_parse(&l);
-    assert(res.error_message == NULL);
+
+    if (res.error_message != NULL) {
+        printf("%s\n", res.error_message);
+        assert(false);
+    }
 
     char *err = validate_ast_node(exp, res.node);
     if (err != NULL) {
-        printf("%s", err);
+        printf("%s\n", err);
         free(err);
-        return false;
+        assert(false);
     }
-    return true;
 }
 
 void test_simple_expr() {
@@ -41,7 +44,7 @@ void test_simple_expr() {
             .type = AST_TYPE_PRIMARY,
             .inner.primary = (Token) {
                 .type = TOKEN_INT,
-                .inner.Int = 10,
+                .inner.Int = 2,
             },
         }
     });
