@@ -1,59 +1,34 @@
 #include "src/lexer.h"
 #include "../test.h"
-#include <assert.h>
-#include <math.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+
+void foo(char *, int, int);
 
 char *tok_equal(Token exp, Token actual) {
-    jaq_assert(
-        actual.type == exp.type, "Types not equal: Expected %d, got %d.", exp.type, actual.type
-    );
+    jaq_assert(INT, exp, actual, .type);
+
     switch (exp.type) {
     case TOKEN_IDENT:
-        jaq_assert(
-            strcmp(exp.inner.ident, actual.inner.ident) == 0,
-            "inner.ident not equal: Expected %s, got %s.",
-            exp.inner.ident,
-            actual.inner.ident
-        );
+        jaq_assert(STRING, exp, actual, .inner.ident);
         break;
     case TOKEN_STRING:
-        jaq_assert(
-            strcmp(exp.inner.string, actual.inner.string) == 0,
-            "inner.string not equal: Expected %s, got %s.",
-            exp.inner.string,
-            actual.inner.string
-        );
+        jaq_assert(STRING, exp, actual, .inner.string);
         break;
     case TOKEN_DOUBLE:
-        jaq_assert(
-            fabs(exp.inner.Double - actual.inner.Double) < 0.0001,
-            "inner.Double not equal: Expected %f, got %f.",
-            exp.inner.Double,
-            actual.inner.Double
-        );
+        jaq_assert(DOUBLE, exp, actual, .inner.Double);
         break;
     case TOKEN_INT:
-        jaq_assert(
-            exp.inner.Int == actual.inner.Int,
-            "inner.number not equal: Expected %d, got %d.",
-            exp.inner.Int,
-            actual.inner.Int
-        );
+        jaq_assert(INT, exp, actual, .inner.Int);
         break;
     default:
         break;
     }
 
-    jaq_assert(
+    __jaq_assert(
         exp.range.start.col == actual.range.start.col
             && exp.range.start.line == actual.range.start.line
             && exp.range.end.col == actual.range.end.col
             && exp.range.end.line == actual.range.end.line,
-        "range not equal: Expected (%d:%d-%d:%d), got (%d:%d-%d:%d)",
+        ".range not equal: Expected (%d:%d-%d:%d), got (%d:%d-%d:%d)",
 
         exp.range.start.line,
         exp.range.start.col,
@@ -67,7 +42,6 @@ char *tok_equal(Token exp, Token actual) {
 
     return NULL;
 }
-#undef jaq_assert
 
 #define LIST(v...) (v), (sizeof(v) / sizeof(*v))
 #define EPSILON 0.0001

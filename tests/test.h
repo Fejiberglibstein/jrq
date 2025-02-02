@@ -1,13 +1,29 @@
 #ifndef _TEST_H
 #define _TEST_H
 
-#define jaq_assert(v, msg, args...)                                                                \
-    if (!(v)) {                                                                                    \
-        size_t buf_size = snprintf(NULL, 0, msg, args) + 1;                                        \
-        char *res = malloc(buf_size);                                                              \
-        snprintf(res, buf_size, msg, args);                                                        \
-        return res;                                                                                \
-    };
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
+#define __jaq_assert(v, msg...)                                                                    \
+    if (!(v)) {                                                                                    \
+        size_t buf_size = snprintf(NULL, 0, msg) + 1;                                              \
+        char *res = malloc(buf_size);                                                              \
+        snprintf(res, buf_size, msg);                                                              \
+        return res;                                                                                \
+    }
+
+#define __COMPARE_INT(exp, act, t) (exp t == act t)
+#define __PRINT_INT(exp, act, t) (#t " not equal. Expected '%d' but got '%d'"), exp t, act t
+
+#define __COMPARE_DOUBLE(exp, act, t) (fabs(exp t - actual t) < 0.0001)
+#define __PRINT_DOUBLE(exp, act, t) (#t " not equal. Expected '%f' but got '%f'"), exp t, act t
+
+#define __COMPARE_STRING(exp, act, t) strcmp(exp t, act t) == 0
+#define __PRINT_STRING(exp, act, t) (#t " not equal. Expected '%s' but got '%s'"), exp t, act t
+
+#define jaq_assert(type, exp, act, t)                                                              \
+    __jaq_assert(__COMPARE_##type(exp, act, t), __PRINT_##type(exp, act, t))
 
 #endif // _TEST_H
