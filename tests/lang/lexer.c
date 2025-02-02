@@ -102,58 +102,58 @@ void lex(char *inp, Token *expected, int len) {
 void test_simple_lex() {
     lex("h  hdhd \"fo\\\"o\" j",
         LIST((Token[]) {
-			(Token) {
-				.range = (Range) {
-					.start = (Position) {.col = 1, .line = 1},
-					.end = (Position) {.col = 1, .line = 1},
-				},
-				.type = TOKEN_IDENT,
-				.inner.ident = "h",
-			},
-			(Token) {
-				.range = (Range) {
-					.start = (Position) {.col = 4, .line = 1},
-					.end = (Position) {.col = 7, .line = 1},
-				},
-				.type = TOKEN_IDENT,
-				.inner.ident = "hdhd",
-			},
-			(Token) {
-				.range = (Range) {
-					.start = (Position) {.col = 9, .line = 1},
-					.end = (Position) {.col = 15, .line = 1},
-				},
-				.type = TOKEN_STRING,
-				.inner.ident = "\"fo\\\"o\"",
-			},
-			(Token) {
-				.range = (Range) {
-					.start = (Position) {.col = 17, .line = 1},
-					.end = (Position) {.col = 17, .line = 1},
-				},
-				.type = TOKEN_IDENT,
-				.inner.ident = "j",
-			},
-		}));
+            (Token) {
+                .range = (Range) {
+                    .start = (Position) {.col = 1, .line = 1},
+                    .end = (Position) {.col = 1, .line = 1},
+                },
+                .type = TOKEN_IDENT,
+                .inner.ident = "h",
+            },
+            (Token) {
+                .range = (Range) {
+                    .start = (Position) {.col = 4, .line = 1},
+                    .end = (Position) {.col = 7, .line = 1},
+                },
+                .type = TOKEN_IDENT,
+                .inner.ident = "hdhd",
+            },
+            (Token) {
+                .range = (Range) {
+                    .start = (Position) {.col = 9, .line = 1},
+                    .end = (Position) {.col = 15, .line = 1},
+                },
+                .type = TOKEN_STRING,
+                .inner.ident = "\"fo\\\"o\"",
+            },
+            (Token) {
+                .range = (Range) {
+                    .start = (Position) {.col = 17, .line = 1},
+                    .end = (Position) {.col = 17, .line = 1},
+                },
+                .type = TOKEN_IDENT,
+                .inner.ident = "j",
+            },
+        }));
 
     lex(" 10.221  1023459678", LIST((Token[]) {
-		(Token) {
-			.range = (Range) {
-				.start = (Position) {.col = 2, .line = 1},
-				.end = (Position) {.col = 7, .line = 1},
-			},
-			.type = TOKEN_NUMBER,
-			.inner.number =10.221,
-		},
-		(Token) {
-			.range = (Range) {
-				.start = (Position) {.col = 10, .line = 1},
-				.end = (Position) {.col = 19, .line = 1},
-			},
-			.type = TOKEN_NUMBER,
-			.inner.number = 1023459678,
-		},
-	}));
+        (Token) {
+            .range = (Range) {
+                .start = (Position) {.col = 2, .line = 1},
+                .end = (Position) {.col = 7, .line = 1},
+            },
+            .type = TOKEN_NUMBER,
+            .inner.number =10.221,
+        },
+        (Token) {
+            .range = (Range) {
+                .start = (Position) {.col = 10, .line = 1},
+                .end = (Position) {.col = 19, .line = 1},
+            },
+            .type = TOKEN_NUMBER,
+            .inner.number = 1023459678,
+        },
+    }));
 }
 
 int main() {
