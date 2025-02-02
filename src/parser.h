@@ -57,7 +57,7 @@ typedef struct ASTNode {
         /// identifier "(" (expr ",")* ")"
         struct {
             Token name;
-            Vec_ASTNode inner;
+            Vec_ASTNode args;
         } function;
 
         /// Closure body:

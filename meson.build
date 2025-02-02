@@ -17,6 +17,7 @@ tests = [
   ['json', 'serde', './tests/json/test_both.c'],
 
   ['lang', 'lexer', './tests/lang/lexer.c'],
+  ['lang', 'parser', './tests/lang/parser.c'],
 ]
 foreach test : tests
   exe = executable('test_' + test[1], files + test[2])
