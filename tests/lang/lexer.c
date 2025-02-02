@@ -1,18 +1,11 @@
-#include "../src/lexer.h"
+#include "src/lexer.h"
+#include "../test.h"
 #include <assert.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define jaq_assert(v, msg, args...)                                                                \
-    if (!(v)) {                                                                                    \
-        size_t buf_size = snprintf(NULL, 0, msg, args) + 1;                                        \
-        char *res = malloc(buf_size);                                                              \
-        snprintf(res, buf_size, msg, args);                                                        \
-        return res;                                                                                \
-    };
 
 char *tok_equal(Token exp, Token actual) {
     jaq_assert(
