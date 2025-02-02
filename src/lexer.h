@@ -14,7 +14,7 @@ typedef enum uint8_t {
     TOKEN_AND,       // &&
 
     TOKEN_PLUS,      // +
-    TOKEN_DASH,      // -
+    TOKEN_MINUS,     // -
     TOKEN_ASTERISK,  // *
     TOKEN_SLASH,     // /
     TOKEN_PERC,      // %

@@ -73,7 +73,7 @@ static bool matches(Parser *p, TokenType types[], int length) {
 
 // clang-format off
 PARSE_BINARY_OP(binary_factor, unary, {TOKEN_SLASH, TOKEN_ASTERISK});
-PARSE_BINARY_OP(binary_term, binary_factor, {TOKEN_PLUS, TOKEN_DASH});
+PARSE_BINARY_OP(binary_term, binary_factor, {TOKEN_PLUS, TOKEN_MINUS});
 PARSE_BINARY_OP(binary_comparison, binary_term, {TOKEN_LT_EQUAL, TOKEN_LANGLE, TOKEN_GT_EQUAL, TOKEN_RANGLE});
 PARSE_BINARY_OP(binary_equality, binary_comparison, {TOKEN_EQUAL, TOKEN_NOT_EQUAL});
 PARSE_BINARY_OP(binary_logical_and, binary_equality, {TOKEN_AND});

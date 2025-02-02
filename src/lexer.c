@@ -224,7 +224,7 @@ LexResult lex_next_tok(Lexer *l) {
         return parse_number(l);
         // clang-format off
     case '+': return parse_single_char(l, TOKEN_PLUS);
-    case '-': return parse_single_char(l, TOKEN_DASH);
+    case '-': return parse_single_char(l, TOKEN_MINUS);
     case '*': return parse_single_char(l, TOKEN_ASTERISK);
     case '/': return parse_single_char(l, TOKEN_SLASH);
     case '%': return parse_single_char(l, TOKEN_PERC);
