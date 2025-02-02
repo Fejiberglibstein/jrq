@@ -9,6 +9,8 @@ static char *validate_ast_node(ASTNode *exp, ASTNode *actual);
 static char *validate_ast_list(Vec_ASTNode exp, Vec_ASTNode actual);
 
 static void parse(char *input, ASTNode *exp) {
+    printf("Testing '%s'\n", input);
+
     Lexer l = lex_init("10 - 2");
 
     ParseResult res = ast_parse(&l);
@@ -28,7 +30,7 @@ static void parse(char *input, ASTNode *exp) {
 
 void test_simple_expr() {
 
-    parse("10 - 2", &(ASTNode) {
+    ASTNode *initial = &(ASTNode) {
         .type = AST_TYPE_BINARY,
         .inner.binary.operator = TOKEN_MINUS,
 
@@ -47,6 +49,24 @@ void test_simple_expr() {
                 .inner.Int = 2,
             },
         }
+
+    };
+
+    parse("10 - 2", initial);
+
+    parse(" 10    -2==  4.3 ", &(ASTNode) {
+        .type = AST_TYPE_BINARY,
+        .inner.binary.operator = TOKEN_EQUAL,
+        .inner.binary.lhs = initial,
+
+        .inner.binary.rhs = &(ASTNode) {
+            .type = AST_TYPE_PRIMARY,
+            .inner.primary = (Token) {
+                .type = TOKEN_DOUBLE,
+                .inner.Double = 4.3,
+            },
+        }
+
     });
 }
 
@@ -56,6 +76,7 @@ int main() {
 
 static char *validate_ast_node(ASTNode *exp, ASTNode *actual) {
     jaq_assert(INT, exp, actual, ->type);
+    printf("hii\n");
 
     char *err;
 

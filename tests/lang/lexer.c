@@ -129,6 +129,46 @@ void test_simple_lex() {
             .inner.Int = 1023459678,
         },
     }));
+
+    lex("tghh == (hh)", LIST((Token[]) {
+        (Token) {
+            .range = (Range) {
+                .start = (Position) {.col = 1, .line = 1},
+                .end = (Position) {.col = 4, .line = 1},
+            },
+            .type = TOKEN_IDENT,
+            .inner.string = "tghh",
+        },
+        (Token) {
+            .range = (Range) {
+                .start = (Position) {.col = 6, .line = 1},
+                .end = (Position) {.col = 7, .line = 1},
+            },
+            .type = TOKEN_EQUAL,
+        },
+        (Token) {
+            .range = (Range) {
+                .start = (Position) {.col = 9, .line = 1},
+                .end = (Position) {.col = 9, .line = 1},
+            },
+            .type = TOKEN_LPAREN,
+        },
+        (Token) {
+            .range = (Range) {
+                .start = (Position) {.col = 10, .line = 1},
+                .end = (Position) {.col = 11, .line = 1},
+            },
+            .type = TOKEN_IDENT,
+            .inner.ident = "hh",
+        },
+        (Token) {
+            .range = (Range) {
+                .start = (Position) {.col = 12, .line = 1},
+                .end = (Position) {.col = 12, .line = 1},
+            },
+            .type = TOKEN_RPAREN,
+        },
+    }));
 }
 
 int main() {
