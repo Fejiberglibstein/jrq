@@ -3,7 +3,30 @@
 
 #include "src/lexer.h"
 typedef enum {
-    AST_BINARY,
+    AST_TYPE_PRIMARY,
+    AST_TYPE_NOT,
+    AST_TYPE_NEGATIVE,
+    AST_TYPE_MULTIPLY,
+    AST_TYPE_DIVIDE,
+    AST_TYPE_MODULO,
+    AST_TYPE_SUM,
+    AST_TYPE_DIFFERENCE,
+    AST_TYPE_LESS_THAN,
+    AST_TYPE_GREATER_THAN,
+    AST_TYPE_LESS_THAN_OR_EQ,
+    AST_TYPE_GREATER_THAN_OR_EQ,
+    AST_TYPE_EQUAL,
+    AST_TYPE_NOT_EQUAL,
+    AST_TYPE_AND,
+    AST_TYPE_OR,
+    AST_TYPE_FUNCTION,
+    AST_TYPE_CLOSURE,
+    AST_TYPE_ACCESS,
+    AST_TYPE_LIST,
+    AST_TYPE_INDEX,
+    AST_TYPE_JSON_FIELD,
+    AST_TYPE_JSON_OBJECT,
+
 } ASTNodeType;
 
 typedef struct {
@@ -120,7 +143,7 @@ typedef struct ASTNode {
         } or ;
 
         /// Function call:
-        /// identifier "(" (expr "," )* ")"
+        /// identifier "(" (expr ",")* ")"
         struct {
             Token name;
             Vec_ASTNode inner;
