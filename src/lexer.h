@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <sys/types.h>
 typedef enum uint8_t {
+    TOKEN_NULL, // Not a valid token
 
     TOKEN_EQUAL,     // ==
     TOKEN_NOT_EQUAL, // !=

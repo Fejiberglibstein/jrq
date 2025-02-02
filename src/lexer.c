@@ -21,9 +21,8 @@ char *next_char(Lexer *l) {
     return ++l->str;
 }
 
-static inline char peek_char(Lexer *l) {
-    return l->str[1];
-}
+#define peek_char(l) (l)->str[1]
+#define char(l) *(l)->str
 
 void skip_whitespace(Lexer *l) {
     while (is_whitespace(*l->str)) {
@@ -154,6 +153,48 @@ LexResult parse_number(Lexer *l) {
     };
 }
 
+LexResult parse_double_char(Lexer *l, TokenType single_type, char next, TokenType double_type) {
+    Position start_position = l->position;
+    char n = *next_char(l);
+
+    if (n == next) {
+        next_char(l);
+        return (LexResult) {
+            .token = (Token) {
+                .type = double_type,
+                .range = (Range) {
+                    .start = start_position,
+                    .end = l->position,
+                },
+            },
+        };
+    }
+
+    return (LexResult) {
+        .token = (Token) {
+            .type = single_type,
+            .range = (Range) {
+                .start = start_position,
+                .end = l->position,
+            },
+        },
+    };
+}
+
+LexResult parse_single_char(Lexer *l, TokenType type) {
+    Position start_position = l->position;
+    next_char(l);
+    return (LexResult) {
+        .token = (Token) {
+            .type = type,
+            .range = (Range) {
+                .start = start_position,
+                .end = l->position,
+            },
+        },
+    };
+}
+
 LexResult lex_next_tok(Lexer *l) {
     skip_whitespace(l);
     switch (*l->str) {
@@ -165,6 +206,37 @@ LexResult lex_next_tok(Lexer *l) {
         return parse_string(l);
     case '0' ... '9':
         return parse_number(l);
+        // clang-format off
+    case '+': return parse_single_char(l, TOKEN_PLUS);
+    case '-': return parse_single_char(l, TOKEN_DASH);
+    case '*': return parse_single_char(l, TOKEN_ASTERISK);
+    case '/': return parse_single_char(l, TOKEN_SLASH);
+    case '%': return parse_single_char(l, TOKEN_PERC);
+    case ',': return parse_single_char(l, TOKEN_COMMA);
+    case '.': return parse_single_char(l, TOKEN_DOT);
+    case ';': return parse_single_char(l, TOKEN_SEMICOLON);
+    case ':': return parse_single_char(l, TOKEN_COLON);
+    case '{': return parse_single_char(l, TOKEN_LBRACE);
+    case '}': return parse_single_char(l, TOKEN_RBRACE);
+    case '(': return parse_single_char(l, TOKEN_LPAREN);
+    case ')': return parse_single_char(l, TOKEN_RPAREN);
+    case ']': return parse_single_char(l, TOKEN_RBRACKET);
+    case '[': return parse_single_char(l, TOKEN_LBRACKET);
+
+
+    // TOKEN_NOT_EQUAL, // !=
+    // TOKEN_LT_EQUAL,  // <=
+    // TOKEN_GT_EQUAL,  // >=
+    // TOKEN_OR,        // ||
+    // TOKEN_AND,       // &&
+
+    case '=': return parse_double_char(l, TOKEN_NULL, '=', TOKEN_EQUAL); 
+    case '!': return parse_double_char(l, TOKEN_BANG, '=', TOKEN_NOT_EQUAL);
+    case '|': return parse_double_char(l, TOKEN_BAR, '|', TOKEN_OR);
+    case '&': return parse_double_char(l, TOKEN_AMPERSAND, '&', TOKEN_AND);
+    case '<': return parse_double_char(l, TOKEN_LANGLE, '=', TOKEN_EQUAL);
+    case '>': return parse_double_char(l, TOKEN_RANGLE, '=', TOKEN_EQUAL);
+        // clang-format on
     case '\0':
         return (LexResult) {.finished = true};
     default:
