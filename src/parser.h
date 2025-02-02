@@ -91,7 +91,7 @@ typedef struct ASTNode {
 } ASTNode;
 
 typedef struct {
-    ASTNode node;
+    ASTNode *node;
     char *error_message;
 } ParseResult;
 
