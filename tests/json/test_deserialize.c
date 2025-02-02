@@ -1,4 +1,5 @@
 #include "../src/json.h"
+#include "src/utils.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,7 +21,12 @@ typedef struct {
 } JsonData;
 
 extern char *validate_json(char *json, JsonData *data);
-extern char *json_skip_whitespace(char *json);
+char *skip_whitespace(char *json) {
+    while (is_whitespace(*json)) {
+        json++;
+    }
+    return json;
+}
 
 struct ret {
     char *end;
@@ -40,7 +46,7 @@ struct ret validate(char *json) {
         return (struct ret) {0};
     }
 
-    json = json_skip_whitespace(json);
+    json = skip_whitespace(json);
     if (*json != '\0') {
         free(data.buf.data);
         return (struct ret) {0};
@@ -104,12 +110,13 @@ void test_validate_structs() {
     assert(validate("{\"foo\": true}").end != NULL);
     assert(validate("{     \"foo\"    : true  , }").end != NULL);
     assert(
-        validate("{\"foo\": true, \"bleh\": {\"car\": [10, 2, 3], \"h\": 10}, \"bl\": null}").end !=
-        NULL
+        validate("{\"foo\": true, \"bleh\": {\"car\": [10, 2, 3], \"h\": 10}, \"bl\": null}").end
+        != NULL
     );
     assert(
         validate("{\"foo\": true, \"bleh\": {\"car\": [10, 2, 3], \"h\": 10}, \"bl\": null}")
-            .str_len == 18
+            .str_len
+        == 18
     );
 
     assert(validate("{\"foo\": true]").end == NULL);

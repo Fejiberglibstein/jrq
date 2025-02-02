@@ -1,7 +1,5 @@
 #include "./lexer.h"
 #include "utils.h"
-#include <math.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -24,21 +22,21 @@ char *next_char(Lexer *l) {
 #define peek_char(l) (l)->str[1]
 #define char(l) *(l)->str
 
-void skip_whitespace(Lexer *l) {
+static void skip_whitespace(Lexer *l) {
     while (is_whitespace(*l->str)) {
         next_char(l);
     }
 }
 
-bool is_digit(char c) {
+static bool is_digit(char c) {
     return '0' <= c && c <= '9';
 }
 
-bool is_alpha(char c) {
+static bool is_alpha(char c) {
     return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
 }
 
-LexResult parse_ident(Lexer *l) {
+static LexResult parse_ident(Lexer *l) {
     char *start = l->str;
     Position start_position = l->position;
 
@@ -67,7 +65,7 @@ LexResult parse_ident(Lexer *l) {
     };
 }
 
-LexResult parse_string(Lexer *l) {
+static LexResult parse_string(Lexer *l) {
     char *start = l->str;
     Position start_position = l->position;
 
@@ -81,6 +79,9 @@ LexResult parse_string(Lexer *l) {
         backslashed = false;
         if (c == '\\') {
             backslashed = true;
+        }
+        if (c == '\0') {
+            return (LexResult) {.error_message = "Unterminated string"};
         }
     }
 
@@ -107,7 +108,7 @@ LexResult parse_string(Lexer *l) {
     };
 }
 
-LexResult parse_number(Lexer *l) {
+static LexResult parse_number(Lexer *l) {
     char *start = l->str;
     Position start_position = l->position;
     bool has_decimal = false;
@@ -153,7 +154,7 @@ LexResult parse_number(Lexer *l) {
     };
 }
 
-LexResult parse_double_char(Lexer *l, TokenType single_type, char next, TokenType double_type) {
+static LexResult parse_double_char(Lexer *l, TokenType single_type, char next, TokenType double_type) {
     Position start_position = l->position;
     char n = *next_char(l);
 
@@ -181,7 +182,7 @@ LexResult parse_double_char(Lexer *l, TokenType single_type, char next, TokenTyp
     };
 }
 
-LexResult parse_single_char(Lexer *l, TokenType type) {
+static LexResult parse_single_char(Lexer *l, TokenType type) {
     Position start_position = l->position;
     next_char(l);
     return (LexResult) {
@@ -245,4 +246,17 @@ Lexer lex_init(char *input) {
         },
         .str = input,
     };
+}
+
+static void tok_free(Token *tok) {
+    switch (tok->type) {
+    case TOKEN_IDENT:
+        free(tok->inner.ident);
+        break;
+    case TOKEN_STRING:
+        free(tok->inner.string);
+        break;
+    default:
+        break;
+    }
 }
