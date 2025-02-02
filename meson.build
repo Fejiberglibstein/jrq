@@ -1,10 +1,12 @@
 project('jaq', 'c')
 
+# .!find src/ -name "*.c" | grep -v "main.c" | xargs -I{} echo "'{}',"
 files = [
-  './src/json_serialize.c',
-  './src/json_deserialize.c',
-  './src/lexer.c',
-  './src/utils.c',
+  'src/json_serialize.c',
+  'src/lexer.c',
+  'src/json_deserialize.c',
+  'src/parser.c',
+  'src/utils.c',
 ]
 
 executable('jaq', files + './src/main.c')
