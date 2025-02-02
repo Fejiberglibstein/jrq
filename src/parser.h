@@ -120,46 +120,53 @@ typedef struct ASTNode {
         } or ;
 
         /// Function call:
-        /// <name: ident> <inner: [expr]>
+        /// identifier "(" (expr "," )* ")"
         struct {
             Token name;
             Vec_ASTNode inner;
         } function;
 
         /// Closure body:
-        /// |<args: [expr]>| <body: expr>
+        /// "|" (identifier ",")* "|" expr
         struct {
             Vec_ASTNode args;
             struct ASTNode *body;
         } closure;
 
         /// Access chain:
-        /// <ident | function>.*
+        /// primary ( "." identifier)*
         Vec_ASTNode access;
 
-        /// Access chain:
-        /// [<expr>, <expr>, ...]
+        /// List:
+        /// "[" (expr ",")* "]"
         Vec_ASTNode list;
 
         /// Indexing a list:
-        /// <array: expr>[<access: expr>]
+        /// expr "[" expr "]"
         struct {
             struct ASTNode *array;
             struct ASTNode *access;
         } index;
 
         /// Field in a json object:
-        /// <key: expr | string>: <value: expr>
+        /// expr ":" expr
         struct {
             struct ASTNode *key;
             struct ASTNode *value;
         } json_field;
 
         /// A json object:
-        /// { <json_field>,* }
+        /// "{" (json_field",")* "}"
         Vec_ASTNode json_object;
 
     } inner;
 } ASTNode;
+
+typedef struct {
+    ASTNode node;
+    char *error_message;
+} ParseResult;
+
+ParseResult ast_parse(Lexer *l);
 
 #endif // _PARSER_H
