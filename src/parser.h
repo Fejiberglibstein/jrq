@@ -4,8 +4,7 @@
 #include "src/lexer.h"
 typedef enum {
     AST_TYPE_PRIMARY,
-    AST_TYPE_NOT,
-    AST_TYPE_NEGATIVE,
+    AST_TYPE_UNARY,
     AST_TYPE_BINARY,
     AST_TYPE_FUNCTION,
     AST_TYPE_CLOSURE,
@@ -31,13 +30,12 @@ typedef struct ASTNode {
         /// Strings ("foo"), numbers (1029), idents (foo_bar), etc
         Token primary;
 
-        /// Not:
-        /// !<expr>
-        struct ASTNode * not;
-
-        /// Negate:
-        /// -<expr>
-        struct ASTNode *negative;
+        /// Unary Operator:
+        /// ("!" |"-") expr
+        struct {
+            TokenType operator;
+            struct ASTNode *rhs;
+        } unary;
 
         /// Binary operation:
         /// <expr: lhs> operator  <expr: rhs>
@@ -62,7 +60,7 @@ typedef struct ASTNode {
         } closure;
 
         /// Access chain:
-        /// primary ( "." identifier)*
+        /// primary? ( "." (identifier | function))*
         Vec_ASTNode access;
 
         /// List:
