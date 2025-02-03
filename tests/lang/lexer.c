@@ -169,6 +169,46 @@ void test_simple_lex() {
             .type = TOKEN_RPAREN,
         },
     }));
+    lex( " 10    -2 ==  4.3 " , LIST((Token[]) {
+        (Token) {
+            .range = (Range) {
+                .start = (Position) {.col = 2, .line = 1},
+                .end = (Position) {.col = 3, .line = 1},
+            },
+            .type = TOKEN_INT,
+            .inner.Int = 10,
+        },
+        (Token) {
+            .range = (Range) {
+                .start = (Position) {.col = 8, .line = 1},
+                .end = (Position) {.col = 8, .line = 1},
+            },
+            .type = TOKEN_MINUS,
+        },
+        (Token) {
+            .range = (Range) {
+                .start = (Position) {.col = 9, .line = 1},
+                .end = (Position) {.col = 9, .line = 1},
+            },
+            .type = TOKEN_INT,
+            .inner.Int = 2,
+        },
+        (Token) {
+            .range = (Range) {
+                .start = (Position) {.col = 11, .line = 1},
+                .end = (Position) {.col = 12, .line = 1},
+            },
+            .type = TOKEN_EQUAL,
+        },
+        (Token) {
+            .range = (Range) {
+                .start = (Position) {.col = 15, .line = 1},
+                .end = (Position) {.col = 17, .line = 1},
+            },
+            .type = TOKEN_DOUBLE,
+            .inner.Double = 4.3
+        },
+    }));
 }
 
 int main() {
