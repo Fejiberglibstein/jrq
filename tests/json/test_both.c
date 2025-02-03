@@ -25,7 +25,6 @@ void test(char *input, char *expected, int str_len) {
 
     free(ser);
     free(json);
-    // printf("hiii\n");
 }
 
 void test_simple() {

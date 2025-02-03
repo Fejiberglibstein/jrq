@@ -498,7 +498,6 @@ void allocate_json(JsonData *data) {
     // Skip past the json allocation part and put it in the string allocation
     // part
     data->str_ptr = mem + len * sizeof(Json);
-    // printf("(json)%d, (strings)%d", len, data->str_len);
 }
 
 ParsedValue parse_json(char *str, JsonData *data, int buf_idx, int arena_idx, char *field_name) {
@@ -528,7 +527,6 @@ ParsedValue parse_json(char *str, JsonData *data, int buf_idx, int arena_idx, ch
     }
 
 stop:
-    // printf("%s | %d\n", str, ret.json.type);
     if (field_name != NULL) {
         ret.json.field_name = field_name;
     }

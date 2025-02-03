@@ -50,7 +50,6 @@ void serialize(Json *json, String *string, char *depth, bool colors, bool parsin
         }
     }
 
-    // printf("%d\n", json->type);
 
     // When parsing lists/structs, use a bool to determine what braces should be
     // used.
