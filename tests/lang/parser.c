@@ -11,7 +11,7 @@ static char *validate_ast_list(Vec_ASTNode exp, Vec_ASTNode actual);
 static void parse(char *input, ASTNode *exp) {
     printf("Testing '%s'\n", input);
 
-    Lexer l = lex_init("10 - 2");
+    Lexer l = lex_init(input);
 
     ParseResult res = ast_parse(&l);
 
