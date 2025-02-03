@@ -61,12 +61,16 @@ static void expect(Parser *p, TokenType expected, char *err) {
 
 #define PARSE_BINARY_OP(_name_, _next_, _ops_...)                                                  \
     static ASTNode *_name_(Parser *p) {                                                            \
+        /* printf(#_name_ "  pre: %d\n", p->curr.type); */                                         \
         ASTNode *expr = _next_(p);                                                                 \
+        /* printf(#_name_ "  post: %d\n", p->curr.type); */                                        \
                                                                                                    \
         while (matches(p, LIST((TokenType[])_ops_))) {                                             \
+            /* printf(#_name_ "  inner: %d\n", p->curr.type); */                                   \
             TokenType operator= p->prev.type;                                                      \
                                                                                                    \
             ASTNode *rhs = _next_(p);                                                              \
+            /* printf(#_name_ "  inner: %d\n", p->curr.type); */                                   \
             ASTNode *new_expr = calloc(sizeof(ASTNode), 1);                                        \
             assert_ptr(new_expr);                                                                  \
                                                                                                    \
@@ -118,12 +122,15 @@ static ASTNode *keyword(Parser *p, ASTNodeType t) {
 }
 
 static ASTNode *primary(Parser *p) {
+    // printf("primary %d\n", p->curr.type);
+
     // clang-format off
     if (matches(p, LIST((TokenType[]) {TOKEN_TRUE}))) return keyword(p, AST_TYPE_TRUE);
     if (matches(p, LIST((TokenType[]) {TOKEN_FALSE}))) return keyword(p, AST_TYPE_FALSE);
     if (matches(p, LIST((TokenType[]) {TOKEN_NULL}))) return keyword(p, AST_TYPE_NULL);
     // clang-format on
 
+    // printf(" primary %d\n", p->curr.type);
     if (matches(p, LIST((TokenType[]) {TOKEN_STRING, TOKEN_INT, TOKEN_DOUBLE, TOKEN_IDENT}))) {
         ASTNode *new_expr = calloc(sizeof(ASTNode), 1);
         assert_ptr(new_expr);
@@ -133,6 +140,7 @@ static ASTNode *primary(Parser *p) {
         return new_expr;
     }
 
+    // printf("  primary %d\n", p->curr.type);
     if (matches(p, LIST((TokenType[]) {TOKEN_LPAREN}))) {
         ASTNode *expr = expression(p);
         expect(p, TOKEN_RPAREN, ERROR_MISSING_RPAREN);
@@ -146,23 +154,30 @@ static ASTNode *primary(Parser *p) {
         return grouping;
     }
 
-    // todo
+    // printf("   primary %d\n", p->curr.type);
     p->error = ERROR_UNEXPECTED_TOKEN;
 
     return NULL;
 }
 
 ParseResult ast_parse(Lexer *l) {
-    Parser p = (Parser) {
+    Parser *p = &(Parser) {
         .l = l,
     };
 
-    next(&p);
+    next(p);
 
-    ASTNode *node = expression(&p);
-    if (p.error != NULL) {
-        return (ParseResult) {.error_message = p.error};
+    ASTNode *node = expression(p);
+
+    if (p->error != NULL) {
+        return (ParseResult) {.error_message = p->error};
     } else {
+        // If we don't already have an error, make sure that the last token is
+        // an EOF and then error if it's not
+        expect(p, TOKEN_EOF, ERROR_UNEXPECTED_TOKEN);
+        if (p->error != NULL) {
+            return (ParseResult) {.error_message = p->error};
+        }
         return (ParseResult) {.node = node};
     }
 }

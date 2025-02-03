@@ -1,5 +1,6 @@
 #include "src/parser.h"
 #include "../test.h"
+#include "src/errors.h"
 #include "src/lexer.h"
 #include <assert.h>
 #include <stdio.h>
@@ -8,12 +9,18 @@
 static char *validate_ast_node(ASTNode *exp, ASTNode *actual);
 static char *validate_ast_list(Vec_ASTNode exp, Vec_ASTNode actual);
 
-static void parse(char *input, ASTNode *exp) {
+static void test_parse(char *input, char *expected_err, ASTNode *exp) {
     printf("Testing '%s'\n", input);
 
     Lexer l = lex_init(input);
 
     ParseResult res = ast_parse(&l);
+
+    if (expected_err != NULL) {
+        printf("'%s' should equal '%s'\n", expected_err, res.error_message);
+        assert(strcmp(expected_err, res.error_message) == 0);
+        return;
+    }
 
     if (res.error_message != NULL) {
         printf("%s\n", res.error_message);
@@ -22,8 +29,8 @@ static void parse(char *input, ASTNode *exp) {
 
     char *err = validate_ast_node(exp, res.node);
     if (err != NULL) {
-        printf("%s\n", err);
-        free(err);
+        printf("%s\n", expected_err);
+        free(expected_err);
         assert(false);
     }
 }
@@ -53,9 +60,9 @@ void test_simple_expr() {
 
     };
 
-    parse("10 - 2", initial);
+    test_parse("10 - 2", NULL, initial);
 
-    parse(" 10    -2==  ofoobar ", &(ASTNode) {
+    test_parse(" 10    -2==  ofoobar ", NULL, &(ASTNode) {
         .type = AST_TYPE_BINARY,
 
         .inner.binary.lhs = initial,
@@ -70,7 +77,7 @@ void test_simple_expr() {
         }
     });
 
-    parse(" \"foo\" * (10 - 2  )", &(ASTNode) {
+    test_parse(" \"foo\" * (10 - 2  )", NULL, &(ASTNode) {
             .type = AST_TYPE_BINARY,
 
             .inner.binary.lhs = &(ASTNode) {
@@ -90,8 +97,15 @@ void test_simple_expr() {
     });
 }
 
+static void test_errors() {
+    test_parse("foo .", ERROR_UNEXPECTED_TOKEN, NULL);
+    test_parse("(foo (foo + bar)", ERROR_MISSING_RPAREN, NULL);
+}
+
 int main() {
     test_simple_expr();
+
+    test_errors();
 }
 
 static char *validate_ast_node(ASTNode *exp, ASTNode *actual) {
