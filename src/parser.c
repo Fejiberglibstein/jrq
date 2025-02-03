@@ -142,6 +142,8 @@ static ASTNode *primary(Parser *p) {
 
         grouping->type = AST_TYPE_GROUPING;
         grouping->inner.grouping = expr;
+
+        return grouping;
     }
 
     // todo

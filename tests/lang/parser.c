@@ -32,7 +32,6 @@ void test_simple_expr() {
 
     ASTNode *initial = &(ASTNode) {
         .type = AST_TYPE_BINARY,
-        .inner.binary.operator = TOKEN_MINUS,
 
         .inner.binary.lhs = &(ASTNode) {
             .type = AST_TYPE_PRIMARY,
@@ -41,6 +40,8 @@ void test_simple_expr() {
                 .inner.Int = 10,
             },
         },
+
+        .inner.binary.operator = TOKEN_MINUS,
 
         .inner.binary.rhs = &(ASTNode) {
             .type = AST_TYPE_PRIMARY,
@@ -54,19 +55,38 @@ void test_simple_expr() {
 
     parse("10 - 2", initial);
 
-    parse(" 10    -2==  4.3 ", &(ASTNode) {
+    parse(" 10    -2==  ofoobar ", &(ASTNode) {
         .type = AST_TYPE_BINARY,
-        .inner.binary.operator = TOKEN_EQUAL,
+
         .inner.binary.lhs = initial,
+        .inner.binary.operator = TOKEN_EQUAL,
 
         .inner.binary.rhs = &(ASTNode) {
             .type = AST_TYPE_PRIMARY,
             .inner.primary = (Token) {
-                .type = TOKEN_DOUBLE,
-                .inner.Double = 4.3,
+                .type = TOKEN_IDENT,
+                .inner.ident = "ofoobar",
             },
         }
+    });
 
+    parse(" \"foo\" * (10 - 2  )", &(ASTNode) {
+            .type = AST_TYPE_BINARY,
+
+            .inner.binary.lhs = &(ASTNode) {
+                .type = AST_TYPE_PRIMARY,
+                .inner.primary = (Token) {
+                    .type = TOKEN_STRING,
+                    .inner.string = "\"foo\"",
+                },
+            },
+
+            .inner.binary.operator = TOKEN_ASTERISK,
+
+            .inner.binary.rhs = &(ASTNode) {
+                .type = AST_TYPE_GROUPING,
+                .inner.grouping = initial,
+            },
     });
 }
 
@@ -76,7 +96,6 @@ int main() {
 
 static char *validate_ast_node(ASTNode *exp, ASTNode *actual) {
     jaq_assert(INT, exp, actual, ->type);
-    printf("hii\n");
 
     char *err;
 
