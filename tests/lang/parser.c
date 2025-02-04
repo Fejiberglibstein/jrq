@@ -146,7 +146,10 @@ static char *validate_ast_node(ASTNode *exp, ASTNode *actual) {
         }
         return validate_ast_node(exp->inner.binary.lhs, actual->inner.binary.lhs);
     case AST_TYPE_FUNCTION:
-        jaq_assert(STRING, exp, actual, ->inner.function.name.inner.ident);
+        err = validate_ast_node(exp->inner.function.callee, actual->inner.function.callee);
+        if (err != NULL) {
+            return err;
+        }
         return validate_ast_list(exp->inner.function.args, actual->inner.function.args);
     case AST_TYPE_CLOSURE:
         err = validate_ast_node(exp->inner.closure.body, actual->inner.closure.body);
@@ -155,11 +158,8 @@ static char *validate_ast_node(ASTNode *exp, ASTNode *actual) {
         }
         return validate_ast_list(exp->inner.closure.args, actual->inner.closure.args);
     case AST_TYPE_ACCESS:
-        err = validate_ast_node(exp->inner.access.primary, actual->inner.access.primary);
-        if (err != NULL) {
-            return err;
-        }
-        return validate_ast_list(exp->inner.access.chain, actual->inner.access.chain);
+        jaq_assert(STRING, exp, actual, ->inner.access.ident.inner.ident);
+        err = validate_ast_node(exp->inner.access.inner, actual->inner.access.inner);
     case AST_TYPE_LIST:
         return validate_ast_list(exp->inner.list, actual->inner.list);
     case AST_TYPE_INDEX:

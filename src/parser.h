@@ -51,11 +51,18 @@ typedef struct ASTNode {
         /// "(" expr ")"
         struct ASTNode *grouping;
 
+        /// Access chain:
+        /// <expr: inner> "." identifier
+        struct {
+            struct ASTNode *inner;
+            Token ident;
+        } access;
+
         /// Function call:
-        /// identifier "(" (expr ",")* ")"
+        /// <expr: callee> "(" <(expr ",")*: args> ")"
         struct {
             Vec_ASTNode args;
-            Token name;
+            struct ASTNode *callee;
         } function;
 
         /// Closure body:
@@ -64,13 +71,6 @@ typedef struct ASTNode {
             Vec_ASTNode args;
             struct ASTNode *body;
         } closure;
-
-        /// Access chain:
-        /// primary? ( "." (identifier | function))*
-        struct {
-            struct ASTNode *primary;
-            Vec_ASTNode chain;
-        } access;
 
         /// List:
         /// "[" (expr ",")* "]"
