@@ -15,7 +15,7 @@
     }
 
 #define __COMPARE_INT(exp, act, t) (exp t == act t)
-#define __PRINT_INT(exp, act, t) (#t " not equal. Expected '%d' but got '%d'"), exp t, act t
+#define __PRINT_INT(exp, act, t) (#t " not equal. Expected '%d' but got '%d'"), (int) exp t, (int) act t
 
 #define __COMPARE_DOUBLE(exp, act, t) (fabs(exp t - actual t) < 0.0001)
 #define __PRINT_DOUBLE(exp, act, t) (#t " not equal. Expected '%f' but got '%f'"), exp t, act t

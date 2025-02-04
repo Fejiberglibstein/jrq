@@ -1,5 +1,6 @@
 #include "./json.h"
 #include "./utils.h"
+#include "vector.h"
 #include <memory.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,14 +13,10 @@ enum keyword {
     KEYWORD_NULL,
 };
 
-typedef struct {
-    int *data;
-    int length;
-    int capacity;
-} IntBuffer;
+typedef Vec(int) Vec_int;
 
 typedef struct {
-    IntBuffer buf;
+    Vec_int buf;
     // The size of all strings in the json
     int str_len;
     // Pointer to the region of memory we allocate to hold the strings
@@ -41,23 +38,6 @@ typedef struct {
     char *res;
     char *err;
 } ValidateResult;
-
-void buf_grow(IntBuffer *buf, int amt) {
-    if (buf->capacity - buf->length * sizeof(int) < amt * sizeof(int)) {
-        do {
-            buf->capacity *= 2;
-        } while (buf->capacity - buf->length * sizeof(int) < amt * sizeof(int));
-
-        int *tmp = realloc(buf->data, buf->capacity);
-        assert_ptr(tmp);
-        buf->data = tmp;
-    }
-}
-
-void buf_append(IntBuffer *buf, int val) {
-    buf_grow(buf, 1);
-    buf->data[buf->length++] = val;
-}
 
 ValidateResult validate_json(char *json, JsonData *data);
 
@@ -209,7 +189,7 @@ ParsedValue parse_list(char *str, JsonData *data, int buf_idx) {
         base_arena_idx += data->buf.data[i];
     }
 
-    int current_length = data->buf.length;
+    int current_length = (int)data->buf.length;
     data->buf.length += 1;
 
     while (*str != ']') {
@@ -220,7 +200,7 @@ ParsedValue parse_list(char *str, JsonData *data, int buf_idx) {
         ParsedValue ret = parse_json(
             str,
             data,
-            buf_idx + data->buf.length - current_length,
+            buf_idx + (int)data->buf.length - current_length,
             base_arena_idx + list_items,
             NULL
         );
@@ -315,8 +295,9 @@ ValidateResult validate_struct(char *json, JsonData *data) {
 
     // Save the current index and add 1 so that we can insert our length
     // properly
-    int buf_index = data->buf.length;
-    buf_grow(&data->buf, 1);
+
+    uint buf_index = data->buf.length;
+    vec_grow(data->buf, 1);
     data->buf.length += 1;
 
     while (*json != '}') {
@@ -379,8 +360,8 @@ ValidateResult validate_list(char *json, JsonData *data) {
 
     // Save the current index and add 1 so that we can insert our length
     // properly
-    int buf_index = data->buf.length;
-    buf_grow(&data->buf, sizeof(int));
+    int buf_index = (int)data->buf.length;
+    vec_grow(data->buf, 1);
     data->buf.length += 1;
 
     while (*json != ']') {
@@ -542,7 +523,7 @@ stop:
 // only creates one allocation.
 Json *json_deserialize(char *str) {
     JsonData data = {
-        .buf = (IntBuffer) {
+        .buf = (Vec_int) {
             .data = malloc(INITIAL_CAPACITY),
             .capacity = INITIAL_CAPACITY,
             .length = 0,

@@ -1,17 +1,14 @@
 #include "../src/json.h"
 #include "src/utils.h"
+#include "src/vector.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct {
-    int *data;
-    int length;
-    int capacity;
-} IntBuffer;
+typedef Vec(int) Vec_int;
 
 typedef struct {
-    IntBuffer buf;
+    Vec_int buf;
     // The size of all strings in the json
     int str_len;
     // Pointer to the region of memory we allocate to hold the strings
