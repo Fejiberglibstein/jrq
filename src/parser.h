@@ -2,6 +2,8 @@
 #define _PARSER_H
 
 #include "src/lexer.h"
+#include "src/vector.h"
+
 typedef enum {
     AST_TYPE_PRIMARY,
     AST_TYPE_UNARY,
@@ -20,11 +22,7 @@ typedef enum {
     AST_TYPE_NULL,
 } ASTNodeType;
 
-typedef struct {
-    struct ASTNode *data;
-    int length;
-    int capacity;
-} Vec_ASTNode;
+typedef Vec(struct ASTNode) Vec_ASTNode;
 
 // note that `expr` is just any AST node
 typedef struct ASTNode {
@@ -56,8 +54,8 @@ typedef struct ASTNode {
         /// Function call:
         /// identifier "(" (expr ",")* ")"
         struct {
-            Token name;
             Vec_ASTNode args;
+            Token name;
         } function;
 
         /// Closure body:
@@ -69,7 +67,10 @@ typedef struct ASTNode {
 
         /// Access chain:
         /// primary? ( "." (identifier | function))*
-        Vec_ASTNode access;
+        struct {
+            struct ASTNode *primary;
+            Vec_ASTNode chain;
+        } access;
 
         /// List:
         /// "[" (expr ",")* "]"

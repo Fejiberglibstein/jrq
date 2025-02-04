@@ -155,7 +155,11 @@ static char *validate_ast_node(ASTNode *exp, ASTNode *actual) {
         }
         return validate_ast_list(exp->inner.closure.args, actual->inner.closure.args);
     case AST_TYPE_ACCESS:
-        return validate_ast_list(exp->inner.access, actual->inner.access);
+        err = validate_ast_node(exp->inner.access.primary, actual->inner.access.primary);
+        if (err != NULL) {
+            return err;
+        }
+        return validate_ast_list(exp->inner.access.chain, actual->inner.access.chain);
     case AST_TYPE_LIST:
         return validate_ast_list(exp->inner.list, actual->inner.list);
     case AST_TYPE_INDEX:
