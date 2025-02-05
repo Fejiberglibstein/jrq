@@ -22,7 +22,7 @@ typedef enum {
     AST_TYPE_NULL,
 } ASTNodeType;
 
-typedef Vec(struct ASTNode) Vec_ASTNode;
+typedef Vec(struct ASTNode *) Vec_ASTNode;
 
 // note that `expr` is just any AST node
 typedef struct ASTNode {

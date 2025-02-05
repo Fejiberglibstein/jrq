@@ -2,7 +2,6 @@
 #include "src/errors.h"
 #include "src/lexer.h"
 #include "src/utils.h"
-#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -13,9 +12,6 @@ typedef struct {
     char *error;
 } Parser;
 
-// clang-format off
-#define ERR(p) ({if ((p)->error) {return NULL;}})
-// clang-format on
 #define LIST(v...) (v), (sizeof(v) / sizeof(*v))
 
 static ASTNode *binary_factor(Parser *p);
@@ -29,6 +25,9 @@ static ASTNode *expression(Parser *p);
 static ASTNode *unary(Parser *p);
 static ASTNode *primary(Parser *p);
 
+static ASTNode *access(Parser *p);
+static ASTNode *closure(Parser *p);
+
 static void next(Parser *p) {
     LexResult t = lex_next_tok(p->l);
     if (t.error_message != NULL) {
@@ -41,7 +40,9 @@ static void next(Parser *p) {
 }
 
 static bool matches(Parser *p, TokenType types[], int length) {
-    ERR(p);
+    if ((p)->error) {
+        return false;
+    }
     for (int i = 0; i < length; i++) {
         if (p->curr.type == types[i]) {
             next(p);
@@ -110,7 +111,76 @@ static ASTNode *unary(Parser *p) {
         new_expr->inner.unary = (typeof(new_expr->inner.unary)) {.rhs = rhs, .operator= operator, };
         return new_expr;
     }
-    return primary(p);
+    return access(p);
+}
+
+static ASTNode *closure(Parser *p) {
+    if (matches(p, LIST((TokenType[]) {TOKEN_BAR, TOKEN_OR}))) {
+        Vec_ASTNode closure_args = (Vec_ASTNode) {0};
+
+        // If we had a token_or "||" then there are no arguments to the closure.
+        // On the other hand, if we had just a "|", then we have arguments in
+        // the closure and must have a closing bar after the arguments.
+        if (p->prev.type == TOKEN_BAR) {
+            do {
+                vec_append(closure_args, expression(p));
+            } while (matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
+            expect(p, TOKEN_BAR, ERROR_MISSING_CLOSURE);
+        }
+        ASTNode *closure_body = expression(p);
+
+        ASTNode *closure = calloc(sizeof(ASTNode), 1);
+        closure->type = AST_TYPE_CLOSURE;
+        closure->inner.closure.args = closure_args;
+        closure->inner.closure.body = closure_body;
+
+        return closure;
+    }
+
+    return expression(p);
+}
+
+static ASTNode *function_call(Parser *p, ASTNode *callee) {
+    Vec_ASTNode args = (Vec_ASTNode) {0};
+
+    // If we don't have a closing paren immediately after the open paren
+    if (p->curr.type != TOKEN_RPAREN) {
+        do {
+            vec_append(args, closure(p));
+        } while (matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
+    }
+
+    expect(p, TOKEN_RPAREN, ERROR_MISSING_RPAREN);
+
+    ASTNode *function = calloc(sizeof(ASTNode), 1);
+    function->type = AST_TYPE_FUNCTION;
+    function->inner.function.args = args;
+    function->inner.function.callee = callee;
+
+    return function;
+}
+
+static ASTNode *access(Parser *p) {
+    ASTNode *expr = primary(p);
+
+    for (;;) {
+        if (matches(p, LIST((TokenType[]) {TOKEN_LPAREN}))) {
+            expr = function_call(p, expr);
+        } else if (matches(p, LIST((TokenType[]) {TOKEN_DOT}))) {
+            expect(p, TOKEN_IDENT, ERROR_EXPECTED_IDENT);
+            Token ident = p->prev;
+
+            ASTNode *new_expr = calloc(sizeof(ASTNode), 1);
+            new_expr->type = AST_TYPE_ACCESS;
+            new_expr->inner.access.ident = ident;
+            new_expr->inner.access.inner = expr;
+
+            expr = new_expr;
+        } else {
+            break;
+        }
+    }
+    return expr;
 }
 
 static ASTNode *keyword(Parser *p, ASTNodeType t) {
