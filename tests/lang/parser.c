@@ -97,15 +97,27 @@ void test_simple_expr() {
     });
 }
 
+static void test_complex_expr() {
+    ASTNode *foo = &(ASTNode) {
+        .type = AST_TYPE_PRIMARY,
+        .inner.primary = (Token) {
+            .type = TOKEN_IDENT,
+            .inner.ident = "foo",
+        },
+    };
+
+    test_parse("foo", NULL, foo);
+}
+
 static void test_errors() {
-    test_parse("foo .", ERROR_UNEXPECTED_TOKEN, NULL);
+    test_parse("foo .", ERROR_EXPECTED_IDENT, NULL);
     test_parse("(foo (foo + bar)", ERROR_MISSING_RPAREN, NULL);
 }
 
 int main() {
     test_simple_expr();
-
     test_errors();
+    test_complex_expr();
 }
 
 static char *validate_ast_node(ASTNode *exp, ASTNode *actual) {
@@ -192,7 +204,7 @@ static char *validate_ast_node(ASTNode *exp, ASTNode *actual) {
 static char *validate_ast_list(Vec_ASTNode exp, Vec_ASTNode actual) {
     jaq_assert(INT, exp, actual, .length);
     for (int i = 0; i < exp.length; i++) {
-        char *err = validate_ast_node(&exp.data[i], &actual.data[i]);
+        char *err = validate_ast_node(exp.data[i], actual.data[i]);
         if (err != NULL) {
             return err;
         }
