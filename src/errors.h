@@ -6,5 +6,6 @@
 #define ERROR_MISSING_CLOSURE "Missing closing closure bar '|'"
 #define ERROR_UNEXPECTED_TOKEN "Unexpected token"
 #define ERROR_EXPECTED_IDENT "Expected identifier"
+#define ERROR_EXPECTED_EOF "Expected eof"
 
 #endif // _ERRORS_H

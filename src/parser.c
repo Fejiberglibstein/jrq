@@ -303,7 +303,7 @@ ParseResult ast_parse(Lexer *l) {
     } else {
         // If we don't already have an error, make sure that the last token is
         // an EOF and then error if it's not
-        expect(p, TOKEN_EOF, ERROR_UNEXPECTED_TOKEN);
+        expect(p, TOKEN_EOF, ERROR_EXPECTED_EOF);
         if (p->error != NULL) {
             return (ParseResult) {.error_message = p->error};
         }
