@@ -54,7 +54,7 @@ typedef struct ASTNode {
         /// expr "." (identifier | number)
         ///
         /// Can also be written as
-        /// expr "[" token "]"
+        /// expr "[" expr "]"
         struct {
             struct ASTNode *inner;
             struct ASTNode *accessor;

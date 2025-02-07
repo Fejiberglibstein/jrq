@@ -46,8 +46,11 @@ static ASTNode *access(Parser *p);
 // (string | number | identifier | keyword | json | list)
 static ASTNode *primary(Parser *p);
 
-// "|" (ident ("," ident)*)? "|" expr
-static ASTNode *closure(Parser *p);
+// "[" (expr ("," expr)*)? "]"
+static ASTNode *list(Parser *p);
+
+// "{" (json_field ("," json_field)*)? "]"
+static ASTNode *json(Parser *p);
 
 static void next(Parser *p) {
     LexResult t = lex_next_tok(p->l);
@@ -148,6 +151,7 @@ static ASTNode *closure(Parser *p) {
                 Token tok = p->prev;
 
                 ASTNode *arg = calloc(sizeof(ASTNode), 1);
+                assert_ptr(arg);
                 arg->type = AST_TYPE_PRIMARY;
                 arg->inner.primary = tok;
 
@@ -159,6 +163,7 @@ static ASTNode *closure(Parser *p) {
         ASTNode *closure_body = expression(p);
 
         ASTNode *closure = calloc(sizeof(ASTNode), 1);
+        assert_ptr(closure);
         closure->type = AST_TYPE_CLOSURE;
         closure->inner.closure.args = closure_args;
         closure->inner.closure.body = closure_body;
@@ -182,6 +187,7 @@ static ASTNode *function_call(Parser *p, ASTNode *callee) {
     expect(p, TOKEN_RPAREN, ERROR_MISSING_RPAREN);
 
     ASTNode *function = calloc(sizeof(ASTNode), 1);
+    assert_ptr(function);
     function->type = AST_TYPE_FUNCTION;
     function->inner.function.args = args;
     function->inner.function.callee = callee;
@@ -211,10 +217,12 @@ static ASTNode *access(Parser *p) {
             }
             Token ident = p->prev;
             ASTNode *inner = calloc(sizeof(ASTNode), 1);
+            assert_ptr(inner);
             inner->type = AST_TYPE_PRIMARY;
             inner->inner.primary = ident;
 
             ASTNode *new_expr = calloc(sizeof(ASTNode), 1);
+            assert_ptr(new_expr);
             new_expr->type = AST_TYPE_ACCESS;
             new_expr->inner.access.accessor = inner;
             new_expr->inner.access.inner = expr;
@@ -228,6 +236,7 @@ static ASTNode *access(Parser *p) {
             expect(p, TOKEN_RBRACKET, ERROR_MISSING_RBRACKET);
 
             ASTNode *new_expr = calloc(sizeof(ASTNode), 1);
+            assert_ptr(new_expr);
             new_expr->type = AST_TYPE_ACCESS;
             new_expr->inner.access.accessor = inner;
             new_expr->inner.access.inner = expr;
@@ -255,6 +264,9 @@ static ASTNode *primary(Parser *p) {
     if (matches(p, LIST((TokenType[]) {TOKEN_TRUE}))) return keyword(p, AST_TYPE_TRUE);
     if (matches(p, LIST((TokenType[]) {TOKEN_FALSE}))) return keyword(p, AST_TYPE_FALSE);
     if (matches(p, LIST((TokenType[]) {TOKEN_NULL}))) return keyword(p, AST_TYPE_NULL);
+
+    if (matches(p, LIST((TokenType[]) {TOKEN_LBRACKET}))) return list(p);
+    if (matches(p, LIST((TokenType[]) {TOKEN_LBRACE}))) return json(p);
     // clang-format on
 
     // printf(" primary %d\n", p->curr.type);
@@ -287,6 +299,71 @@ static ASTNode *primary(Parser *p) {
     }
 
     return NULL;
+}
+
+ASTNode *list(Parser *p) {
+    Vec_ASTNode items = (Vec_ASTNode) {0};
+
+    // If we don't have a closing paren immediately after the open paren
+    if (p->curr.type != TOKEN_RBRACKET) {
+        do {
+            vec_append(items, expression(p));
+        } while (matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
+    }
+
+    expect(p, TOKEN_RBRACKET, ERROR_MISSING_RBRACKET);
+
+    ASTNode *list = calloc(sizeof(ASTNode), 1);
+    assert_ptr(list);
+    list->type = AST_TYPE_LIST;
+    list->inner.list = items;
+    return list;
+}
+
+ASTNode *json_field(Parser *p) {
+    // Make sure we have a string/identifier first in the json
+    if (!matches(p, LIST((TokenType[]) {TOKEN_IDENT, TOKEN_STRING}))) {
+        expect(p, -1, ERROR_EXPECTED_STRING_OR_IDENT);
+        return NULL;
+    }
+
+    Token tok = p->prev;
+
+    ASTNode *key = calloc(sizeof(ASTNode), 1);
+    assert_ptr(key);
+    key->type = AST_TYPE_PRIMARY;
+    key->inner.primary = tok;
+
+    expect(p, TOKEN_COLON, ERROR_EXPECTED_COLON);
+
+    ASTNode *value = expression(p);
+
+    ASTNode *res = calloc(sizeof(ASTNode), 1);
+    assert_ptr(res);
+    res->type = AST_TYPE_JSON_FIELD;
+    res->inner.json_field.key = key;
+    res->inner.json_field.value = value;
+
+    return res;
+}
+
+ASTNode *json(Parser *p) {
+    Vec_ASTNode fields = (Vec_ASTNode) {0};
+
+    // If we don't have a closing paren immediately after the open paren
+    if (p->curr.type != TOKEN_RBRACE) {
+        do {
+            vec_append(fields, json_field(p));
+        } while (matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
+    }
+
+    expect(p, TOKEN_RBRACKET, ERROR_MISSING_RBRACE);
+
+    ASTNode *json = calloc(sizeof(ASTNode), 1);
+    assert_ptr(json);
+    json->type = AST_TYPE_JSON_OBJECT;
+    json->inner.json_object = fields;
+    return json;
 }
 
 ParseResult ast_parse(Lexer *l) {
