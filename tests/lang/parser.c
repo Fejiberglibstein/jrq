@@ -126,6 +126,12 @@ static void test_complex_expr() {
         },
     };
 
+    ASTNode *ten = &(ASTNode) {
+        .type = AST_TYPE_PRIMARY,
+        .inner.primary.type = TOKEN_NUMBER,
+        .inner.primary.inner.number = 10,
+    };
+
     test_parse("foo", NULL, foo);
     test_parse("foo.bar", NULL, foo_bar);
     test_parse("foo.bar.baz", NULL, foo_bar_baz);
@@ -144,15 +150,57 @@ static void test_complex_expr() {
             .data = (ASTNode*[]) {
                 foo,
                 foo_bar,
-                &(ASTNode) {
-                    .type = AST_TYPE_PRIMARY,
-                    .inner.primary.type = TOKEN_INT,
-                    .inner.primary.inner.Int = 10,
-                },
+                ten,
             },
             .length = 3,
         },
         .inner.function.callee = foo_bar,
+    });
+
+    test_parse("foo.bar(|| 10, 10, |foo| (foo.bar))", NULL, &(ASTNode) {
+        .type = AST_TYPE_FUNCTION,
+        .inner.function.args = (Vec_ASTNode) {
+            .data = (ASTNode*[]) {
+                &(ASTNode) {
+                    .type = AST_TYPE_CLOSURE,
+                    .inner.closure.args = (Vec_ASTNode) {
+                        .length = 0,
+                    },
+                    .inner.closure.body = ten,
+                },
+                ten,
+                &(ASTNode) {
+                    .type = AST_TYPE_CLOSURE,
+                    .inner.closure.args = (Vec_ASTNode) {
+                        .data = (ASTNode*[]) {
+                            foo,
+                        },
+                        .length = 1,
+                    },
+                    .inner.closure.body = &(ASTNode) {
+                        .type = AST_TYPE_GROUPING,
+                        .inner.grouping = foo_bar,
+                    },
+                }
+            },
+            .length = 3,
+        },
+        .inner.function.callee = foo_bar,
+    });
+
+    test_parse("foo.bar().baz", NULL, &(ASTNode) {
+        .type = AST_TYPE_ACCESS,
+        .inner.access.ident = (Token) {
+            .type = TOKEN_IDENT,
+            .inner.ident = "baz",
+        },
+        .inner.access.inner = &(ASTNode) {
+            .type = AST_TYPE_FUNCTION,
+            .inner.function.args = {
+                .length = 0,
+            },
+            .inner.function.callee = foo_bar,
+        },
     });
 }
 
