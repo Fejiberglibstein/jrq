@@ -214,8 +214,15 @@ static void test_access_function_expr() {
     });
 }
 
+static void test_json_literals() {
+    // todo: i should probably add tests
+}
+
 static void test_errors() {
     test_parse("foo .", ERROR_EXPECTED_IDENT, NULL);
+    test_parse("foo 2", ERROR_EXPECTED_EOF, NULL);
+    test_parse("foo + ", ERROR_UNEXPECTED_TOKEN, NULL);
+    test_parse("foo[10", ERROR_MISSING_RBRACKET, NULL);
     test_parse("(foo (foo + bar)", ERROR_MISSING_RPAREN, NULL);
     test_parse("bar(|)", ERROR_MISSING_CLOSURE, NULL);
 }
@@ -224,6 +231,7 @@ int main() {
     test_primary_expr();
     test_errors();
     test_access_function_expr();
+    test_json_literals();
 }
 
 static char *validate_ast_node(ASTNode *exp, ASTNode *actual) {
