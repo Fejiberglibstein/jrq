@@ -17,8 +17,10 @@ static void test_parse(char *input, char *expected_err, ASTNode *exp) {
     ParseResult res = ast_parse(&l);
 
     if (expected_err != NULL) {
-        printf("'%s' should equal '%s'\n", expected_err, res.error_message);
-        assert(strcmp(expected_err, res.error_message) == 0);
+        if (strcmp(expected_err, res.error_message) != 0) {
+            printf("'%s' should equal '%s'\n", expected_err, res.error_message);
+            assert(false);
+        }
         return;
     }
 
@@ -106,7 +108,52 @@ static void test_complex_expr() {
         },
     };
 
+    ASTNode *foo_bar = &(ASTNode) {
+        .type = AST_TYPE_ACCESS,
+        .inner.access.inner = foo,
+        .inner.access.ident = (Token) {
+            .type = TOKEN_IDENT,
+            .inner.ident = "bar",
+        },
+    };
+
+    ASTNode *foo_bar_baz = &(ASTNode) {
+        .type = AST_TYPE_ACCESS,
+        .inner.access.inner = foo_bar,
+        .inner.access.ident = (Token) {
+            .type = TOKEN_IDENT,
+            .inner.ident = "baz",
+        },
+    };
+
     test_parse("foo", NULL, foo);
+    test_parse("foo.bar", NULL, foo_bar);
+    test_parse("foo.bar.baz", NULL, foo_bar_baz);
+
+    test_parse("foo.bar.baz()", NULL, &(ASTNode) {
+        .type = AST_TYPE_FUNCTION,
+        .inner.function.args = (Vec_ASTNode) {
+            .length = 0,
+        },
+        .inner.function.callee = foo_bar_baz,
+    });
+
+    test_parse("foo.bar(foo, foo.bar, 10)", NULL, &(ASTNode) {
+        .type = AST_TYPE_FUNCTION,
+        .inner.function.args = (Vec_ASTNode) {
+            .data = (ASTNode*[]) {
+                foo,
+                foo_bar,
+                &(ASTNode) {
+                    .type = AST_TYPE_PRIMARY,
+                    .inner.primary.type = TOKEN_INT,
+                    .inner.primary.inner.Int = 10,
+                },
+            },
+            .length = 3,
+        },
+        .inner.function.callee = foo_bar,
+    });
 }
 
 static void test_errors() {
@@ -171,7 +218,7 @@ static char *validate_ast_node(ASTNode *exp, ASTNode *actual) {
         return validate_ast_list(exp->inner.closure.args, actual->inner.closure.args);
     case AST_TYPE_ACCESS:
         jaq_assert(STRING, exp, actual, ->inner.access.ident.inner.ident);
-        err = validate_ast_node(exp->inner.access.inner, actual->inner.access.inner);
+        return validate_ast_node(exp->inner.access.inner, actual->inner.access.inner);
     case AST_TYPE_LIST:
         return validate_ast_list(exp->inner.list, actual->inner.list);
     case AST_TYPE_INDEX:
