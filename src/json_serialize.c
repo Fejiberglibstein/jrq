@@ -50,7 +50,6 @@ void serialize(Json *json, String *string, char *depth, bool colors, bool parsin
         }
     }
 
-
     // When parsing lists/structs, use a bool to determine what braces should be
     // used.
     bool is_struct = false;
@@ -74,34 +73,22 @@ void serialize(Json *json, String *string, char *depth, bool colors, bool parsin
         break;
     case JSONTYPE_BOOL:
         APPEND_COLOR(BOOL_COLOR);
-        if (json->v.Bool) {
+        if (json->v.boolean) {
             string_append(string, "true", sizeof("true"));
         } else {
             string_append(string, "false", sizeof("false"));
         }
         APPEND_COLOR(RESET_COLOR);
         break;
-    case JSONTYPE_INT:
+    case JSONTYPE_NUMBER:
         APPEND_COLOR(NUM_COLOR);
 
-        // Buffer for int and float types when converting to string
         char buf[32];
         int buf_len;
 
-        buf_len = snprintf(NULL, 0, "%d", json->v.Int) + 1;
+        buf_len = snprintf(NULL, 0, "%f", json->v.number) + 1;
         buf[buf_len] = '\0';
-        snprintf(buf, buf_len, "%d", json->v.Int);
-        string_append(string, buf, buf_len);
-
-        APPEND_COLOR(RESET_COLOR);
-        break;
-
-    case JSONTYPE_FLOAT:
-        APPEND_COLOR(NUM_COLOR);
-
-        buf_len = snprintf(NULL, 0, "%f", json->v.Double) + 1;
-        buf[buf_len] = '\0';
-        snprintf(buf, buf_len, "%f", json->v.Double);
+        snprintf(buf, buf_len, "%f", json->v.number);
         string_append(string, buf, buf_len);
 
         APPEND_COLOR(RESET_COLOR);
@@ -111,13 +98,13 @@ void serialize(Json *json, String *string, char *depth, bool colors, bool parsin
         APPEND_COLOR(STRING_COLOR);
 
         string_append(string, "\"", 2);
-        string_append(string, json->v.String, (int)strlen(json->v.String) + 1);
+        string_append(string, json->v.string, (int)strlen(json->v.string) + 1);
         string_append(string, "\"", 2);
 
         APPEND_COLOR(RESET_COLOR);
         break;
 
-    case JSONTYPE_STRUCT:
+    case JSONTYPE_OBJECT:
         is_struct = true;
     case JSONTYPE_LIST:
         // Parsing a struct and list are effectively the same thing, so we just
@@ -127,8 +114,8 @@ void serialize(Json *json, String *string, char *depth, bool colors, bool parsin
 #define L_PAREN(...) is_struct ? "{" __VA_ARGS__ : "[" __VA_ARGS__
 #define R_PAREN(...) is_struct ? "}" __VA_ARGS__ : "]" __VA_ARGS__
         ;
-        bool skip_depth = json->v.List[0].type == JSONTYPE_END_LIST;
-        Json *list = json->v.List;
+        bool skip_depth = json->v.list[0].type == JSONTYPE_END_LIST;
+        Json *list = json->v.list;
 
         if (depth == NULL || skip_depth) {
             string_append(string, L_PAREN(), 2);

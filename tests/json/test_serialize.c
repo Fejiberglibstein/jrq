@@ -7,7 +7,7 @@
 void test_validate_lists() {
     Json string = (Json) {
         .type = JSONTYPE_STRING,
-        .v.String = "000000000000000000000000000000000000000000000000000000000000000",
+        .v.string = "000000000000000000000000000000000000000000000000000000000000000",
     };
 
     char *data = json_serialize(&string, FLAGS);
@@ -18,39 +18,39 @@ void test_validate_lists() {
     Json list_data[] = {
         (Json) {
             .type = JSONTYPE_STRING,
-            .v.String = "hello",
+            .v.string = "hello",
         },
         (Json) {
             .type = JSONTYPE_LIST,
-            .v.List = (Json[]) {
+            .v.list = (Json[]) {
                 (Json) {
                     .type = JSONTYPE_STRING,
-                    .v.String = "hello",
+                    .v.string = "hello",
                 },
                 (Json) {
                     .type = JSONTYPE_STRING,
-                    .v.String = "world",
+                    .v.string = "world",
                 },
                 (Json) {
                     .type = JSONTYPE_STRING,
-                    .v.String = "",
+                    .v.string = "",
                 },
                 {0} // end of list
             },
         },
         (Json) {
-            .type = JSONTYPE_INT,
-            .v.Int = 4,
+            .type = JSONTYPE_NUMBER,
+            .v.number = 4,
         },
         (Json) {
             .type = JSONTYPE_STRING,
-            .v.String = "hello",
+            .v.string = "hello",
         },
         {0} // end of list
     };
     // clang-format on
 
-    Json list = (Json) {.type = JSONTYPE_LIST, .v.List = list_data};
+    Json list = (Json) {.type = JSONTYPE_LIST, .v.list = list_data};
 
     data = json_serialize(&list, FLAGS);
     printf("%s\n\n", data);
@@ -69,29 +69,29 @@ void test_validate_lists() {
 
 void test_validate_structs() {
     Json *inner_list = (Json[]) {
-        (Json) {.type = JSONTYPE_STRING, .v.String = "Heyyy"},
+        (Json) {.type = JSONTYPE_STRING, .v.string = "Heyyy"},
         (Json) {
-            .type = JSONTYPE_FLOAT,
-            .v.Double = 3.4F,
+            .type = JSONTYPE_NUMBER,
+            .v.number = 3.4F,
         },
         (Json) {
-            .type = JSONTYPE_INT,
-            .v.Int = 4,
+            .type = JSONTYPE_NUMBER,
+            .v.number = 4,
         },
         {0},
     };
     Json list = (Json) {
-        .type = JSONTYPE_STRUCT,
-        .v.Struct = (Json[]) {
+        .type = JSONTYPE_OBJECT,
+        .v.object = (Json[]) {
             (Json) {
                 .field_name = "foo",
-                .type = JSONTYPE_INT,
-                .v.Int = 2
+                .type = JSONTYPE_NUMBER,
+                .v.number = 2
             },
             (Json) {
                 .field_name = "bar",
                 .type = JSONTYPE_LIST,
-                .v.List = inner_list,
+                .v.list = inner_list,
             },
             (Json) {
                 .field_name = "bazz",
@@ -99,17 +99,17 @@ void test_validate_structs() {
             },
             (Json) {
                 .field_name = "nested object",
-                .type = JSONTYPE_STRUCT,
-                .v.Struct = (Json []) {
+                .type = JSONTYPE_OBJECT,
+                .v.object = (Json []) {
                     (Json) {
                         .field_name = "double foo",
                         .type = JSONTYPE_BOOL,
-                        .v.Bool = true,
+                        .v.boolean = true,
                     },
                     (Json) {
                         .field_name = "blehah",
                         .type = JSONTYPE_LIST,
-                        .v.List = inner_list,
+                        .v.list = inner_list,
                     },
                     {0},
                 }

@@ -7,9 +7,8 @@
 
 enum JsonType : char {
     JSONTYPE_END_LIST,
-    JSONTYPE_INT,
-    JSONTYPE_FLOAT,
-    JSONTYPE_STRUCT,
+    JSONTYPE_NUMBER,
+    JSONTYPE_OBJECT,
     JSONTYPE_STRING,
     JSONTYPE_LIST,
     JSONTYPE_BOOL,
@@ -19,13 +18,12 @@ enum JsonType : char {
 typedef struct Json {
     char *field_name;
     union {
-        int Int;
-        double Double;
-        bool Bool;
-        void *Null; /* this won't ever have meaningful data */
-        char *String;
-        struct Json *Struct;
-        struct Json *List;
+        double number;
+        bool boolean;
+        void *null; /* this won't ever have meaningful data */
+        char *string;
+        struct Json *object;
+        struct Json *list;
     } v;
     enum JsonType type;
 } Json;

@@ -85,7 +85,7 @@ ParsedValue parse_string(char *str, JsonData *data) {
                 .end = str + 1, // add 1 to go past the " character
                 .json = (Json) {
                     .type = JSONTYPE_STRING,
-                    .v.String = new_str,
+                    .v.string = new_str,
                 },
             };
         }
@@ -134,32 +134,18 @@ ParsedValue parse_number(char *str, JsonData *_) {
         break;
     }
 
-    ParsedValue ret;
-
     int num_length = (int)(str - start);
     char buf[num_length + 1];
     memcpy(buf, start, num_length);
     buf[num_length] = '\0';
 
-    if (finished_decimal) {
-        ret = (ParsedValue) {
+    return (ParsedValue) {
             .end = str,
             .json = (Json) {
-                .type = JSONTYPE_FLOAT,
-                .v.Double = atof(buf),
+                .type = JSONTYPE_NUMBER,
+                .v.number = atof(buf),
             },
         };
-    } else {
-        ret = (ParsedValue) {
-            .end = str,
-            .json = (Json) {
-                .type = JSONTYPE_INT,
-                .v.Int = atoi(buf),
-            },
-        };
-    }
-
-    return ret;
 }
 
 ParsedValue parse_keyword(char *json, JsonData *_) {
@@ -169,9 +155,9 @@ ParsedValue parse_keyword(char *json, JsonData *_) {
     if (strncmp(json, v, sizeof(v) - 1) == 0) {                                                    \
         return (ParsedValue) {.end = json + sizeof(v) - 1, .json = {l}};                           \
     }
-    KEYWORD("true", .type = JSONTYPE_BOOL, .v.Bool = true);
-    KEYWORD("false", .type = JSONTYPE_BOOL, .v.Bool = false);
-    KEYWORD("null", .type = JSONTYPE_NULL, .v.Null = NULL);
+    KEYWORD("true", .type = JSONTYPE_BOOL, .v.boolean = true);
+    KEYWORD("false", .type = JSONTYPE_BOOL, .v.boolean = false);
+    KEYWORD("null", .type = JSONTYPE_NULL, .v.null = NULL);
 #undef KEYWORD
 
     return (ParsedValue) {
@@ -221,7 +207,7 @@ ParsedValue parse_list(char *str, JsonData *data, int buf_idx) {
     return (ParsedValue) {
         .end = str + 1,
         .json = (Json) {
-            .v.List = data->arena + base_arena_idx,
+            .v.list = data->arena + base_arena_idx,
             .type = JSONTYPE_LIST,
         },
     };
@@ -249,7 +235,7 @@ ParsedValue parse_struct(char *str, JsonData *data, int buf_idx) {
 
         ParsedValue ret = parse_string(str, data);
         str = ret.end;
-        char *field_name = ret.json.v.String;
+        char *field_name = ret.json.v.string;
 
         // Skip past the colon after the field name: {"foo"   :   3}
         str = skip_whitespace(str);
@@ -281,8 +267,8 @@ ParsedValue parse_struct(char *str, JsonData *data, int buf_idx) {
     return (ParsedValue) {
         .end = str + 1,
         .json = (Json) {
-            .v.Struct = data->arena + base_arena_idx,
-            .type = JSONTYPE_STRUCT,
+            .v.object = data->arena + base_arena_idx,
+            .type = JSONTYPE_OBJECT,
         },
     };
 }
