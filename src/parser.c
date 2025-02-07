@@ -201,7 +201,7 @@ static ASTNode *primary(Parser *p) {
     // clang-format on
 
     // printf(" primary %d\n", p->curr.type);
-    if (matches(p, LIST((TokenType[]) {TOKEN_STRING, TOKEN_INT, TOKEN_DOUBLE, TOKEN_IDENT}))) {
+    if (matches(p, LIST((TokenType[]) {TOKEN_STRING, TOKEN_NUMBER, TOKEN_IDENT}))) {
         ASTNode *new_expr = calloc(sizeof(ASTNode), 1);
         assert_ptr(new_expr);
 

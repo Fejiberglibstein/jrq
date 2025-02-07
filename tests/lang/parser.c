@@ -45,8 +45,8 @@ void test_simple_expr() {
         .inner.binary.lhs = &(ASTNode) {
             .type = AST_TYPE_PRIMARY,
             .inner.primary = (Token) {
-                .type = TOKEN_INT,
-                .inner.Int = 10,
+                .type = TOKEN_NUMBER,
+                .inner.number = 10,
             },
         },
 
@@ -55,8 +55,8 @@ void test_simple_expr() {
         .inner.binary.rhs = &(ASTNode) {
             .type = AST_TYPE_PRIMARY,
             .inner.primary = (Token) {
-                .type = TOKEN_INT,
-                .inner.Int = 2,
+                .type = TOKEN_NUMBER,
+                .inner.number = 2,
             },
         }
 
@@ -183,11 +183,8 @@ static char *validate_ast_node(ASTNode *exp, ASTNode *actual) {
         case TOKEN_STRING:
             jaq_assert(STRING, exp, actual, ->inner.primary.inner.string);
             break;
-        case TOKEN_DOUBLE:
-            jaq_assert(DOUBLE, exp, actual, ->inner.primary.inner.Double);
-            break;
-        case TOKEN_INT:
-            jaq_assert(INT, exp, actual, ->inner.primary.inner.Int);
+        case TOKEN_NUMBER:
+            jaq_assert(DOUBLE, exp, actual, ->inner.primary.inner.number);
             break;
         default:
             break;

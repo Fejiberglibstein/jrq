@@ -144,8 +144,8 @@ static LexResult parse_number(Lexer *l) {
         free(number);
         return (LexResult) {
             .token = (Token) {
-                .type = TOKEN_DOUBLE, 
-                .inner.Double = res,
+                .type = TOKEN_NUMBER, 
+                .inner.number = res,
                 .range = (Range) {
                     .start = start_position,
                     .end = end_position,
@@ -157,8 +157,8 @@ static LexResult parse_number(Lexer *l) {
         free(number);
         return (LexResult) {
             .token = (Token) {
-                .type = TOKEN_INT, 
-                .inner.Int = res,
+                .type = TOKEN_NUMBER, 
+                .inner.number = res,
                 .range = (Range) {
                     .start = start_position,
                     .end = end_position,

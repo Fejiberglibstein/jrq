@@ -38,8 +38,7 @@ typedef enum uint8_t {
     // All of these have a `.inner` in the token
     TOKEN_IDENT,
     TOKEN_STRING,
-    TOKEN_DOUBLE,
-    TOKEN_INT,
+    TOKEN_NUMBER,
 
     TOKEN_TRUE,
     TOKEN_FALSE,
@@ -64,8 +63,7 @@ typedef struct {
     union {
         char *ident;
         char *string;
-        double Double;
-        int Int;
+        double number;
     } inner;
     TokenType type;
 } Token;

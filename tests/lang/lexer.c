@@ -14,11 +14,8 @@ char *tok_equal(Token exp, Token actual) {
     case TOKEN_STRING:
         jaq_assert(STRING, exp, actual, .inner.string);
         break;
-    case TOKEN_DOUBLE:
-        jaq_assert(DOUBLE, exp, actual, .inner.Double);
-        break;
-    case TOKEN_INT:
-        jaq_assert(INT, exp, actual, .inner.Int);
+    case TOKEN_NUMBER:
+        jaq_assert(INT, exp, actual, .inner.number);
         break;
     default:
         break;
@@ -110,8 +107,8 @@ void test_simple_lex() {
                 .start = (Position) {.col = 2, .line = 1},
                 .end = (Position) {.col = 7, .line = 1},
             },
-            .type = TOKEN_DOUBLE,
-            .inner.Double =10.221,
+            .type = TOKEN_NUMBER,
+            .inner.number =10.221,
         },
         (Token) {
             .range = (Range) {
@@ -125,8 +122,8 @@ void test_simple_lex() {
                 .start = (Position) {.col = 11, .line = 1},
                 .end = (Position) {.col = 20, .line = 1},
             },
-            .type = TOKEN_INT,
-            .inner.Int = 1023459678,
+            .type = TOKEN_NUMBER,
+            .inner.number = 1023459678,
         },
     }));
 
@@ -175,8 +172,8 @@ void test_simple_lex() {
                 .start = (Position) {.col = 2, .line = 1},
                 .end = (Position) {.col = 3, .line = 1},
             },
-            .type = TOKEN_INT,
-            .inner.Int = 10,
+            .type = TOKEN_NUMBER,
+            .inner.number = 10,
         },
         (Token) {
             .range = (Range) {
@@ -190,8 +187,8 @@ void test_simple_lex() {
                 .start = (Position) {.col = 9, .line = 1},
                 .end = (Position) {.col = 9, .line = 1},
             },
-            .type = TOKEN_INT,
-            .inner.Int = 2,
+            .type = TOKEN_NUMBER,
+            .inner.number = 2,
         },
         (Token) {
             .range = (Range) {
@@ -205,8 +202,8 @@ void test_simple_lex() {
                 .start = (Position) {.col = 15, .line = 1},
                 .end = (Position) {.col = 17, .line = 1},
             },
-            .type = TOKEN_DOUBLE,
-            .inner.Double = 4.3
+            .type = TOKEN_NUMBER,
+            .inner.number = 4.3
         },
     }));
 }
