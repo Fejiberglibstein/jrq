@@ -181,7 +181,7 @@ static ASTNode *access(Parser *p) {
 
             ASTNode *new_expr = calloc(sizeof(ASTNode), 1);
             new_expr->type = AST_TYPE_ACCESS;
-            new_expr->inner.access.ident = ident;
+            new_expr->inner.access.accessor = ident;
             new_expr->inner.access.inner = expr;
 
             expr = new_expr;

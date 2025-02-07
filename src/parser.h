@@ -12,7 +12,6 @@ typedef enum {
     AST_TYPE_CLOSURE,
     AST_TYPE_ACCESS,
     AST_TYPE_LIST,
-    AST_TYPE_INDEX,
     AST_TYPE_JSON_FIELD,
     AST_TYPE_JSON_OBJECT,
     AST_TYPE_GROUPING,
@@ -52,10 +51,13 @@ typedef struct ASTNode {
         struct ASTNode *grouping;
 
         /// Access chain:
-        /// <expr: inner> "." identifier
+        /// expr "." (identifier | number)
+        ///
+        /// Can also be written as
+        /// expr "[" token "]"
         struct {
             struct ASTNode *inner;
-            Token ident;
+            Token accessor;
         } access;
 
         /// Function call:
@@ -75,13 +77,6 @@ typedef struct ASTNode {
         /// List:
         /// "[" (expr ",")* "]"
         Vec_ASTNode list;
-
-        /// Indexing a list:
-        /// expr "[" expr "]"
-        struct {
-            struct ASTNode *array;
-            struct ASTNode *access;
-        } index;
 
         /// Field in a json object:
         /// expr ":" expr
