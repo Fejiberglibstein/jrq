@@ -176,12 +176,41 @@ static ASTNode *access(Parser *p) {
         if (matches(p, LIST((TokenType[]) {TOKEN_LPAREN}))) {
             expr = function_call(p, expr);
         } else if (matches(p, LIST((TokenType[]) {TOKEN_DOT}))) {
-            expect(p, TOKEN_IDENT, ERROR_EXPECTED_IDENT);
+            // When using the "." operator, we can access ONLY identifiers OR
+            // numbers:
+            //
+            // {"foo": {"bar": 10}}.foo.bar - ok
+            // [10, 2].1 - ok
+            // [10, 48, 2].2.2 - technically ok, gets index 2
+            //
+            // [10]."fooo" - not ok, its a string
+            // {"foo": 10}.true - not ok, true is a keyword
+            if (!matches(p, LIST((TokenType[]) {TOKEN_NUMBER, TOKEN_IDENT}))) {
+                // Expect -1 because this bit should never be happening
+                expect(p, -1, ERROR_EXPECTED_IDENT);
+                return NULL;
+            }
             Token ident = p->prev;
+            ASTNode *inner = calloc(sizeof(ASTNode), 1);
+            inner->type = AST_TYPE_PRIMARY;
+            inner->inner.primary = ident;
 
             ASTNode *new_expr = calloc(sizeof(ASTNode), 1);
             new_expr->type = AST_TYPE_ACCESS;
-            new_expr->inner.access.accessor = ident;
+            new_expr->inner.access.accessor = inner;
+            new_expr->inner.access.inner = expr;
+
+            expr = new_expr;
+
+        } else if (matches(p, LIST((TokenType[]) {TOKEN_LBRACKET}))) {
+            // When using the [] access operator, we can evaluate any expression
+            // inside the [].
+            ASTNode *inner = expression(p);
+            expect(p, TOKEN_RBRACKET, ERROR_MISSING_RBRACKET);
+
+            ASTNode *new_expr = calloc(sizeof(ASTNode), 1);
+            new_expr->type = AST_TYPE_ACCESS;
+            new_expr->inner.access.accessor = inner;
             new_expr->inner.access.inner = expr;
 
             expr = new_expr;

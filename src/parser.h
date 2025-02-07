@@ -57,7 +57,7 @@ typedef struct ASTNode {
         /// expr "[" token "]"
         struct {
             struct ASTNode *inner;
-            Token accessor;
+            struct ASTNode *accessor;
         } access;
 
         /// Function call:
