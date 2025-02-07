@@ -37,7 +37,7 @@ static void test_parse(char *input, char *expected_err, ASTNode *exp) {
     }
 }
 
-void test_simple_expr() {
+void test_primary_expr() {
 
     ASTNode *initial = &(ASTNode) {
         .type = AST_TYPE_BINARY,
@@ -99,7 +99,7 @@ void test_simple_expr() {
     });
 }
 
-static void test_complex_expr() {
+static void test_access_function_expr() {
     ASTNode *foo = &(ASTNode) {
         .type = AST_TYPE_PRIMARY,
         .inner.primary = (Token) {
@@ -207,12 +207,13 @@ static void test_complex_expr() {
 static void test_errors() {
     test_parse("foo .", ERROR_EXPECTED_IDENT, NULL);
     test_parse("(foo (foo + bar)", ERROR_MISSING_RPAREN, NULL);
+    test_parse("bar(|)", ERROR_MISSING_CLOSURE, NULL);
 }
 
 int main() {
-    test_simple_expr();
+    test_primary_expr();
     test_errors();
-    test_complex_expr();
+    test_access_function_expr();
 }
 
 static char *validate_ast_node(ASTNode *exp, ASTNode *actual) {

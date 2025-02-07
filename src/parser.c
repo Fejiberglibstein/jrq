@@ -2,6 +2,7 @@
 #include "src/errors.h"
 #include "src/lexer.h"
 #include "src/utils.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -123,7 +124,15 @@ static ASTNode *closure(Parser *p) {
         // the closure and must have a closing bar after the arguments.
         if (p->prev.type == TOKEN_BAR) {
             do {
-                vec_append(closure_args, expression(p));
+                expect(p, TOKEN_IDENT, ERROR_EXPECTED_IDENT);
+                Token tok = p->prev;
+
+                ASTNode *arg = calloc(sizeof(ASTNode), 1);
+                arg->type = AST_TYPE_PRIMARY;
+                arg->inner.primary = tok;
+
+                vec_append(closure_args, arg);
+
             } while (matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
             expect(p, TOKEN_BAR, ERROR_MISSING_CLOSURE);
         }
@@ -225,7 +234,9 @@ static ASTNode *primary(Parser *p) {
     }
 
     // printf("   primary %d\n", p->curr.type);
-    p->error = ERROR_UNEXPECTED_TOKEN;
+    if (p->error == NULL) {
+        p->error = ERROR_UNEXPECTED_TOKEN;
+    }
 
     return NULL;
 }
