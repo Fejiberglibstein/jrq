@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 typedef struct {
     Token curr;
@@ -15,18 +16,37 @@ typedef struct {
 
 #define LIST(v...) (v), (sizeof(v) / sizeof(*v))
 
-static ASTNode *binary_factor(Parser *p);
-static ASTNode *binary_term(Parser *p);
-static ASTNode *binary_comparison(Parser *p);
-static ASTNode *binary_equality(Parser *p);
-static ASTNode *binary_logical_and(Parser *p);
+// (binary_logical_or)
+static ASTNode *expression(Parser *p);
+
+// (binary_logical_and) ("||" (binary_logical_and))*
 static ASTNode *binary_logical_or(Parser *p);
 
-static ASTNode *expression(Parser *p);
+// (binary_equality) ("&&" (binary_equality))*
+static ASTNode *binary_logical_and(Parser *p);
+
+// (binary_comparison) ("==" | "!=" (binary_comparison))*
+static ASTNode *binary_equality(Parser *p);
+
+// (binary_term) (">" | "<" | ">=" | "<=" (binary_term))*
+static ASTNode *binary_comparison(Parser *p);
+
+// (binary_factor) ("+" | "-" (binary_factor))*
+static ASTNode *binary_term(Parser *p);
+
+// (unary) ("*" | "/" (unary))*
+static ASTNode *binary_factor(Parser *p);
+
+// ("-" | "!" unary) | access
 static ASTNode *unary(Parser *p);
+
+// (primary) (("." (ident | number)) | ( "(" (function_args) ")") | ("[" expr "]"))*
+static ASTNode *access(Parser *p);
+
+// (string | number | identifier | keyword | json | list)
 static ASTNode *primary(Parser *p);
 
-static ASTNode *access(Parser *p);
+// "|" (ident ("," ident)*)? "|" expr
 static ASTNode *closure(Parser *p);
 
 static void next(Parser *p) {
@@ -87,18 +107,18 @@ static void expect(Parser *p, TokenType expected, char *err) {
         return expr;                                                                               \
     }
 
-// clang-format off
-PARSE_BINARY_OP(binary_factor, unary, {TOKEN_SLASH, TOKEN_ASTERISK});
-PARSE_BINARY_OP(binary_term, binary_factor, {TOKEN_PLUS, TOKEN_MINUS});
-PARSE_BINARY_OP(binary_comparison, binary_term, {TOKEN_LT_EQUAL, TOKEN_LANGLE, TOKEN_GT_EQUAL, TOKEN_RANGLE});
-PARSE_BINARY_OP(binary_equality, binary_comparison, {TOKEN_EQUAL, TOKEN_NOT_EQUAL});
-PARSE_BINARY_OP(binary_logical_and, binary_equality, {TOKEN_AND});
-PARSE_BINARY_OP(binary_logical_or, binary_logical_and, {TOKEN_OR});
-// clang-format on
-
 static ASTNode *expression(Parser *p) {
     return binary_logical_or(p);
 }
+
+// clang-format off
+PARSE_BINARY_OP(binary_logical_or, binary_logical_and, {TOKEN_OR});
+PARSE_BINARY_OP(binary_logical_and, binary_equality, {TOKEN_AND});
+PARSE_BINARY_OP(binary_equality, binary_comparison, {TOKEN_EQUAL, TOKEN_NOT_EQUAL});
+PARSE_BINARY_OP(binary_comparison, binary_term, {TOKEN_LT_EQUAL, TOKEN_LANGLE, TOKEN_GT_EQUAL, TOKEN_RANGLE});
+PARSE_BINARY_OP(binary_term, binary_factor, {TOKEN_PLUS, TOKEN_MINUS});
+PARSE_BINARY_OP(binary_factor, unary, {TOKEN_SLASH, TOKEN_ASTERISK});
+// clang-format on
 
 static ASTNode *unary(Parser *p) {
     if (matches(p, LIST((TokenType[]) {TOKEN_MINUS, TOKEN_BANG}))) {
@@ -165,7 +185,6 @@ static ASTNode *function_call(Parser *p, ASTNode *callee) {
     function->type = AST_TYPE_FUNCTION;
     function->inner.function.args = args;
     function->inner.function.callee = callee;
-
     return function;
 }
 

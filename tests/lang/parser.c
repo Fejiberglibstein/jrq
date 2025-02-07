@@ -111,18 +111,25 @@ static void test_access_function_expr() {
     ASTNode *foo_bar = &(ASTNode) {
         .type = AST_TYPE_ACCESS,
         .inner.access.inner = foo,
-        .inner.access.accessor = (Token) {
-            .type = TOKEN_IDENT,
-            .inner.ident = "bar",
-        },
+        .inner.access.accessor = &(ASTNode) {
+            .type = AST_TYPE_PRIMARY,
+            .inner.primary = (Token) {
+                .type = TOKEN_IDENT,
+                .inner.ident = "bar",
+            },
+
+        }
     };
 
     ASTNode *foo_bar_baz = &(ASTNode) {
         .type = AST_TYPE_ACCESS,
         .inner.access.inner = foo_bar,
-        .inner.access.accessor = (Token) {
-            .type = TOKEN_IDENT,
-            .inner.ident = "baz",
+        .inner.access.accessor = &(ASTNode) {
+            .type = AST_TYPE_PRIMARY,
+            .inner.primary = (Token) {
+                .type = TOKEN_IDENT,
+                .inner.ident = "baz",
+            },
         },
     };
 
@@ -190,9 +197,12 @@ static void test_access_function_expr() {
 
     test_parse("foo.bar().baz", NULL, &(ASTNode) {
         .type = AST_TYPE_ACCESS,
-        .inner.access.accessor = (Token) {
-            .type = TOKEN_IDENT,
-            .inner.ident = "baz",
+        .inner.access.accessor = &(ASTNode) {
+            .type = AST_TYPE_PRIMARY,
+            .inner.primary = (Token) {
+                .type = TOKEN_IDENT,
+                .inner.ident = "baz",
+            },
         },
         .inner.access.inner = &(ASTNode) {
             .type = AST_TYPE_FUNCTION,
@@ -263,7 +273,10 @@ static char *validate_ast_node(ASTNode *exp, ASTNode *actual) {
         }
         return validate_ast_list(exp->inner.closure.args, actual->inner.closure.args);
     case AST_TYPE_ACCESS:
-        jaq_assert(STRING, exp, actual, ->inner.access.accessor.inner.ident);
+        err = validate_ast_node(exp->inner.access.accessor, actual->inner.access.accessor);
+        if (err != NULL) {
+            return err;
+        }
         return validate_ast_node(exp->inner.access.inner, actual->inner.access.inner);
     case AST_TYPE_LIST:
         return validate_ast_list(exp->inner.list, actual->inner.list);
