@@ -1,5 +1,7 @@
 #include "./json.h"
+#include "src/errors.h"
 #include "src/lexer.h"
+#include "src/utils.h"
 #include "vector.h"
 #include <memory.h>
 #include <stdio.h>
@@ -13,6 +15,10 @@ typedef struct {
     Token prev;
     char *error;
 } Parser;
+
+static Json parse_json(Parser *p);
+static Json parse_list(Parser *p);
+static Json parse_object(Parser *p);
 
 static void next(Parser *p) {
     if (p->error != NULL) {
@@ -49,38 +55,125 @@ static void expect(Parser *p, TokenType expected, char *err) {
     p->error = err;
 }
 
-static Json parse_string(Lexer *l);
-static Json parse_number(Lexer *l);
-static Json parse_keyword(Lexer *l);
-static Json parse_list(Lexer *l);
-static Json parse_struct(Lexer *l);
-static Json parse_json(Lexer *l);
+Json parse_object(Parser *p) {
+    Json *items = calloc(4, sizeof(Json));
+    assert_ptr(items);
 
-// Will return a pointer to the root element in a json string.
-// If the json string is not properly formatted, the function will return NULL.
-//
-// The pointer returned can be freed by *just* calling free(ptr). This function
-// only creates one allocation.
+    if (p->curr.type != TOKEN_RBRACE) {
+        int list_length = 1;
+        int list_capacity = 4;
+        do {
+            if (list_length >= list_capacity) {
+                list_capacity *= 2;
+                void *tmp = realloc(items, list_capacity * sizeof(Json));
+                assert_ptr(tmp);
+                items = tmp;
+            }
+
+            expect(p, TOKEN_STRING, ERROR_EXPECTED_STRING);
+            char *key = p->prev.inner.string;
+
+            expect(p, TOKEN_COLON, ERROR_EXPECTED_COLON);
+
+            Json j = parse_json(p);
+            j.field_name = key;
+
+            items[list_capacity++] = j;
+        } while (matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
+    }
+
+    expect(p, TOKEN_RBRACE, ERROR_MISSING_RBRACE);
+
+    return (Json) {
+        .type = JSONTYPE_OBJECT,
+        .inner.object = items,
+    };
+}
+
+Json parse_list(Parser *p) {
+    Json *items = calloc(4, sizeof(Json));
+    assert_ptr(items);
+
+    if (p->curr.type != TOKEN_RBRACKET) {
+        int list_length = 1;
+        int list_capacity = 4;
+        do {
+            if (list_length >= list_capacity) {
+                list_capacity *= 2;
+                void *tmp = realloc(items, list_capacity * sizeof(Json));
+                assert_ptr(tmp);
+                items = tmp;
+            }
+            items[list_capacity++] = parse_json(p);
+        } while (matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
+    }
+
+    expect(p, TOKEN_RBRACKET, ERROR_MISSING_RBRACKET);
+
+    return (Json) {
+        .type = JSONTYPE_LIST,
+        .inner.list = items,
+    };
+}
+
+static Json keyword(Parser *p, JsonType t, bool val) {
+    Json n = (Json) {
+        .type = t,
+    };
+
+    if (t == JSONTYPE_BOOL) {
+        n.inner.boolean = val;
+    }
+
+    return n;
+}
+
+static Json parse_json(Parser *p) {
+    // clang-format off
+    if (matches(p, LIST((TokenType[]) {TOKEN_TRUE}))) return keyword(p, JSONTYPE_BOOL, true);
+    if (matches(p, LIST((TokenType[]) {TOKEN_FALSE}))) return keyword(p, JSONTYPE_BOOL, false);
+    if (matches(p, LIST((TokenType[]) {TOKEN_NULL}))) return keyword(p, JSONTYPE_NULL, -1);
+
+    if (matches(p, LIST((TokenType[]) {TOKEN_LBRACE}))) return parse_list(p);
+    if (matches(p, LIST((TokenType[]) {TOKEN_LBRACKET}))) return parse_object(p);
+    // clang-format on
+
+    if (matches(p, LIST((TokenType[]) {TOKEN_STRING, TOKEN_NUMBER}))) {
+        Token t = p->prev;
+
+        switch (t.type) {
+        case TOKEN_STRING:
+            return (Json) {
+                .type = JSONTYPE_STRING,
+                .inner.string = t.inner.string,
+            };
+        case TOKEN_NUMBER:
+            return (Json) {
+                .type = JSONTYPE_NUMBER,
+                .inner.number = t.inner.number,
+            };
+        default:
+            // unreachable
+            break;
+        }
+    }
+
+    expect(p, -1, ERROR_UNEXPECTED_TOKEN);
+    return (Json) {0};
+}
+
 Json *json_deserialize(char *str) {
-    str = res.res;
-    if (res.err != NULL) {
-        fprintf(stderr, "jaq: Parse error: %s\n", res.err);
-        free(data.buf.data);
-        return NULL;
-    }
-    str = skip_whitespace(str);
-    if (*str != '\0') {
-        free(data.buf.data);
-        return NULL;
-    }
+    Lexer l = lex_init(str);
 
-    allocate_json(&data);
+    Parser p = {
+        .l = &l,
+    };
 
-    // Reset the length so that while parsing we can use it to store where to
-    // place the next complex type (struct/lists)
-    data.buf.length = 0;
-    parse_json(start, &data, 0, 0, NULL);
+    next(&p);
+    Json j = parse_json(&p);
 
-    free(data.buf.data);
-    return data.arena;
+    Json *d = calloc(sizeof(Json), 1);
+    *d = j;
+
+    return d;
 }
