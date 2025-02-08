@@ -1,6 +1,7 @@
 #ifndef _UTILS_H
 #define _UTILS_H
 
+#include "vector.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,14 +20,13 @@ static inline void assert_ptr(void *p) {
     }
 }
 
-typedef struct {
-    char *data;
-    int length;
-    int capacity;
-} String;
+typedef Vec(char) String;
 
-void string_grow(String *str, int amt);
+#define string_grow(str, amt) vec_grow(str, amt)
 
-void string_append(String *str, char *buf, int buf_len);
+#define string_append(str, buf)                                                                    \
+    string_grow(str, sizeof(buf));                                                                 \
+    strcpy(((str).data + (str).length), buf);                                                      \
+    (str).length += buf_len - 1;
 
 #endif // _UTILS_H
