@@ -7,7 +7,6 @@ files = [
   'src/lexer.c',
   'src/json_deserialize.c',
   'src/parser.c',
-  'src/utils.c',
 ]
 
 executable('jaq', files + './src/main.c')
