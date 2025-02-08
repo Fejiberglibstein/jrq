@@ -36,6 +36,19 @@ static bool is_alpha(char c) {
     return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
 }
 
+static LexResult parse_keyword(char *ident, Range range) {
+#define KEYWORD(keyword, tok)                                                                      \
+    if (strncmp(ident, keyword, sizeof(keyword) - 1) == 0)                                         \
+        return (LexResult) {.token.type = (tok), .token.range = range};
+
+    KEYWORD("true", TOKEN_TRUE);
+    KEYWORD("false", TOKEN_FALSE);
+    KEYWORD("null", TOKEN_NULL);
+    return (LexResult) {.error_message = "not a keyword"};
+
+#undef KEYWORD
+}
+
 static LexResult parse_ident(Lexer *l) {
     char *start = l->str;
     Position start_position = l->position;
@@ -53,14 +66,21 @@ static LexResult parse_ident(Lexer *l) {
 
     next_char(l);
 
+    Range range = (Range) {
+        .start = start_position,
+        .end = end_position,
+    };
+
+    LexResult keyword = parse_keyword(ident, range);
+    if (keyword.error_message == NULL) {
+        return keyword;
+    }
+
     return (LexResult) {
         .token = (Token) {
             .type = TOKEN_IDENT, 
             .inner.ident = ident,
-            .range = (Range) {
-                .start = start_position,
-                .end = end_position,
-            }
+            .range = range,
         },
     };
 }
