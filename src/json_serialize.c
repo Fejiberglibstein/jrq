@@ -86,9 +86,9 @@ void serialize(Json *json, String *string, char *depth, bool colors, bool parsin
         char buf[32];
         int buf_len;
 
-        buf_len = snprintf(NULL, 0, "%f", json->v.number) + 1;
+        buf_len = snprintf(NULL, 0, "%g", json->v.number) + 1;
         buf[buf_len] = '\0';
-        snprintf(buf, buf_len, "%f", json->v.number);
+        snprintf(buf, buf_len, "%g", json->v.number);
         string_append(string, buf, buf_len);
 
         APPEND_COLOR(RESET_COLOR);

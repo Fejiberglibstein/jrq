@@ -31,7 +31,7 @@ void test_simple() {
     test("   10", string("10"));
     test("true    ", string("true"));
     test("\"foo \"   ", string("\"foo \""));
-    test("   10.200000   ", string("10.200000"));
+    test("   10.200000   ", string("10.2"));
     test("   -492   ", string("-492"));
     test("null  ", string("null"));
 
