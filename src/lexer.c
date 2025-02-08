@@ -107,11 +107,11 @@ static LexResult parse_string(Lexer *l) {
 
     Position end_position = l->position;
 
-    uint size = (uint)(l->str - start) + 1;
+    uint size = (uint)(l->str - 1 - start);
 
     char *string = calloc(1, size + 1);
     assert_ptr(string);
-    strncpy(string, start, size);
+    strncpy(string, start + 1, size);
 
     // Skip past the "
     next_char(l);

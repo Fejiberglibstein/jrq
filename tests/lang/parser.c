@@ -86,7 +86,7 @@ void test_primary_expr() {
                 .type = AST_TYPE_PRIMARY,
                 .inner.primary = (Token) {
                     .type = TOKEN_STRING,
-                    .inner.string = "\"foo\"",
+                    .inner.string = "foo",
                 },
             },
 

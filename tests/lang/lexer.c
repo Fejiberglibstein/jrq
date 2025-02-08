@@ -89,7 +89,7 @@ void test_simple_lex() {
                     .end = (Position) {.col = 15, .line = 1},
                 },
                 .type = TOKEN_STRING,
-                .inner.ident = "\"fo\\\"o\"",
+                .inner.ident = "fo\\\"o",
             },
             (Token) {
                 .range = (Range) {
