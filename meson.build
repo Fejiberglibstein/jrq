@@ -2,6 +2,7 @@ project('jaq', 'c')
 
 # .!find src/ -name "*.c" | grep -v "main.c" | xargs -I{} echo "'{}',"
 files = [
+  'src/eval.c',
   'src/json_serialize.c',
   'src/lexer.c',
   'src/json_deserialize.c',
