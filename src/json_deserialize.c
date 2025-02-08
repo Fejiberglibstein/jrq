@@ -138,7 +138,7 @@ static Json parse_json(Parser *p) {
     if (matches(p, LIST((TokenType[]) {TOKEN_LBRACKET}))) return parse_object(p);
     // clang-format on
 
-    if (matches(p, LIST((TokenType[]) {TOKEN_STRING, TOKEN_NUMBER}))) {
+    if (matches(p, LIST((TokenType[]) {TOKEN_STRING, TOKEN_MINUS, TOKEN_NUMBER}))) {
         Token t = p->prev;
 
         switch (t.type) {
@@ -152,6 +152,14 @@ static Json parse_json(Parser *p) {
                 .type = JSONTYPE_NUMBER,
                 .inner.number = t.inner.number,
             };
+        case TOKEN_MINUS:
+            expect(p, TOKEN_NUMBER, "Invalid numerical literal");
+            t = p->prev;
+            return (Json) {
+                .type = JSONTYPE_NUMBER,
+                .inner.number = -t.inner.number,
+            };
+
         default:
             // unreachable
             break;
@@ -171,6 +179,10 @@ Json *json_deserialize(char *str) {
 
     next(&p);
     Json j = parse_json(&p);
+    expect(&p, TOKEN_EOF, ERROR_EXPECTED_EOF);
+    if (p.error != NULL) {
+        return NULL;
+    }
 
     Json *d = calloc(sizeof(Json), 1);
     *d = j;
