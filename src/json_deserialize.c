@@ -5,6 +5,49 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define LIST(v...) (v), (sizeof(v) / sizeof(*v))
+
+typedef struct {
+    Lexer *l;
+    Token curr;
+    Token prev;
+    char *error;
+} Parser;
+
+static void next(Parser *p) {
+    if (p->error != NULL) {
+        return;
+    }
+    LexResult t = lex_next_tok(p->l);
+    if (t.error_message != NULL) {
+        p->error = t.error_message;
+        return;
+    }
+
+    p->prev = p->curr;
+    p->curr = t.token;
+}
+
+static bool matches(Parser *p, TokenType types[], int length) {
+    if ((p)->error) {
+        return false;
+    }
+    for (int i = 0; i < length; i++) {
+        if (p->curr.type == types[i]) {
+            next(p);
+            return true;
+        }
+    }
+    return false;
+}
+
+static void expect(Parser *p, TokenType expected, char *err) {
+    if (p->curr.type == expected) {
+        next(p);
+        return;
+    }
+    p->error = err;
+}
 
 static Json parse_string(Lexer *l);
 static Json parse_number(Lexer *l);
@@ -19,15 +62,6 @@ static Json parse_json(Lexer *l);
 // The pointer returned can be freed by *just* calling free(ptr). This function
 // only creates one allocation.
 Json *json_deserialize(char *str) {
-    JsonData data = {
-        .buf = (Vec_int) {0},
-        .str_len = 0,
-        .arena = NULL,
-        .str_ptr = NULL,
-    };
-    char *start = str;
-
-    ValidateResult res = validate_json(str, &data);
     str = res.res;
     if (res.err != NULL) {
         fprintf(stderr, "jaq: Parse error: %s\n", res.err);
