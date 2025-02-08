@@ -73,7 +73,7 @@ void serialize(Json *json, String *string, char *depth, bool colors, bool parsin
         break;
     case JSONTYPE_BOOL:
         APPEND_COLOR(BOOL_COLOR);
-        if (json->v.boolean) {
+        if (json->inner.boolean) {
             string_append(string, "true", sizeof("true"));
         } else {
             string_append(string, "false", sizeof("false"));
@@ -86,9 +86,9 @@ void serialize(Json *json, String *string, char *depth, bool colors, bool parsin
         char buf[32];
         int buf_len;
 
-        buf_len = snprintf(NULL, 0, "%g", json->v.number) + 1;
+        buf_len = snprintf(NULL, 0, "%g", json->inner.number) + 1;
         buf[buf_len] = '\0';
-        snprintf(buf, buf_len, "%g", json->v.number);
+        snprintf(buf, buf_len, "%g", json->inner.number);
         string_append(string, buf, buf_len);
 
         APPEND_COLOR(RESET_COLOR);
@@ -98,7 +98,7 @@ void serialize(Json *json, String *string, char *depth, bool colors, bool parsin
         APPEND_COLOR(STRING_COLOR);
 
         string_append(string, "\"", 2);
-        string_append(string, json->v.string, (int)strlen(json->v.string) + 1);
+        string_append(string, json->inner.string, (int)strlen(json->inner.string) + 1);
         string_append(string, "\"", 2);
 
         APPEND_COLOR(RESET_COLOR);
@@ -114,8 +114,8 @@ void serialize(Json *json, String *string, char *depth, bool colors, bool parsin
 #define L_PAREN(...) is_struct ? "{" __VA_ARGS__ : "[" __VA_ARGS__
 #define R_PAREN(...) is_struct ? "}" __VA_ARGS__ : "]" __VA_ARGS__
         ;
-        bool skip_depth = json->v.list[0].type == JSONTYPE_END_LIST;
-        Json *list = json->v.list;
+        bool skip_depth = json->inner.list[0].type == JSONTYPE_END_LIST;
+        Json *list = json->inner.list;
 
         if (depth == NULL || skip_depth) {
             string_append(string, L_PAREN(), 2);

@@ -5,7 +5,7 @@
 #define JSON_NO_COMPACT 0b00000001
 #define JSON_COLOR 0b00000010
 
-enum JsonType : char {
+typedef enum JsonType {
     JSONTYPE_END_LIST,
     JSONTYPE_NUMBER,
     JSONTYPE_OBJECT,
@@ -13,19 +13,18 @@ enum JsonType : char {
     JSONTYPE_LIST,
     JSONTYPE_BOOL,
     JSONTYPE_NULL,
-};
+} JsonType;
 
 typedef struct Json {
     char *field_name;
     union {
         double number;
         bool boolean;
-        void *null; /* this won't ever have meaningful data */
         char *string;
         struct Json *object;
         struct Json *list;
-    } v;
-    enum JsonType type;
+    } inner;
+    JsonType type;
 } Json;
 
 char *json_serialize(Json *json, char flags);

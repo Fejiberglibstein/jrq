@@ -85,7 +85,7 @@ ParsedValue parse_string(char *str, JsonData *data) {
                 .end = str + 1, // add 1 to go past the " character
                 .json = (Json) {
                     .type = JSONTYPE_STRING,
-                    .v.string = new_str,
+                    .inner.string = new_str,
                 },
             };
         }
@@ -143,7 +143,7 @@ ParsedValue parse_number(char *str, JsonData *_) {
             .end = str,
             .json = (Json) {
                 .type = JSONTYPE_NUMBER,
-                .v.number = atof(buf),
+                .inner.number = atof(buf),
             },
         };
 }
@@ -155,9 +155,9 @@ ParsedValue parse_keyword(char *json, JsonData *_) {
     if (strncmp(json, v, sizeof(v) - 1) == 0) {                                                    \
         return (ParsedValue) {.end = json + sizeof(v) - 1, .json = {l}};                           \
     }
-    KEYWORD("true", .type = JSONTYPE_BOOL, .v.boolean = true);
-    KEYWORD("false", .type = JSONTYPE_BOOL, .v.boolean = false);
-    KEYWORD("null", .type = JSONTYPE_NULL, .v.null = NULL);
+    KEYWORD("true", .type = JSONTYPE_BOOL, .inner.boolean = true);
+    KEYWORD("false", .type = JSONTYPE_BOOL, .inner.boolean = false);
+    KEYWORD("null", .type = JSONTYPE_NULL);
 #undef KEYWORD
 
     return (ParsedValue) {
@@ -207,7 +207,7 @@ ParsedValue parse_list(char *str, JsonData *data, int buf_idx) {
     return (ParsedValue) {
         .end = str + 1,
         .json = (Json) {
-            .v.list = data->arena + base_arena_idx,
+            .inner.list = data->arena + base_arena_idx,
             .type = JSONTYPE_LIST,
         },
     };
@@ -235,7 +235,7 @@ ParsedValue parse_struct(char *str, JsonData *data, int buf_idx) {
 
         ParsedValue ret = parse_string(str, data);
         str = ret.end;
-        char *field_name = ret.json.v.string;
+        char *field_name = ret.json.inner.string;
 
         // Skip past the colon after the field name: {"foo"   :   3}
         str = skip_whitespace(str);
@@ -267,7 +267,7 @@ ParsedValue parse_struct(char *str, JsonData *data, int buf_idx) {
     return (ParsedValue) {
         .end = str + 1,
         .json = (Json) {
-            .v.object = data->arena + base_arena_idx,
+            .inner.object = data->arena + base_arena_idx,
             .type = JSONTYPE_OBJECT,
         },
     };
