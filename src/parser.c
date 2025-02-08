@@ -53,6 +53,9 @@ static ASTNode *list(Parser *p);
 static ASTNode *json(Parser *p);
 
 static void next(Parser *p) {
+    if (p->error != NULL) {
+        return;
+    }
     LexResult t = lex_next_tok(p->l);
     if (t.error_message != NULL) {
         p->error = t.error_message;
