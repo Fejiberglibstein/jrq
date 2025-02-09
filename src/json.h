@@ -1,7 +1,7 @@
 #ifndef _JSON_H
 #define _JSON_H
 
-#include "src/parser.h"
+#include "src/vector.h"
 #include <stdbool.h>
 
 typedef enum {
@@ -33,7 +33,12 @@ typedef struct Json {
     JsonType type;
 } Json;
 
+typedef struct {
+    char *error;
+    Json *result;
+} DeserializeResult;
+
 char *json_serialize(Json *json, JsonSerializeFlags flags);
-Json *json_deserialize(char *json);
+DeserializeResult json_deserialize(char *json);
 
 #endif // _JSON_H

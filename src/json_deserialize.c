@@ -115,8 +115,8 @@ static Json parse_json(Parser *p) {
     if (matches(p, LIST((TokenType[]) {TOKEN_FALSE}))) return keyword(p, JSON_TYPE_BOOL, false);
     if (matches(p, LIST((TokenType[]) {TOKEN_NULL}))) return keyword(p, JSON_TYPE_NULL, -1);
 
-    if (matches(p, LIST((TokenType[]) {TOKEN_LBRACE}))) return parse_list(p);
-    if (matches(p, LIST((TokenType[]) {TOKEN_LBRACKET}))) return parse_object(p);
+    if (matches(p, LIST((TokenType[]) {TOKEN_LBRACE}))) return parse_object(p);
+    if (matches(p, LIST((TokenType[]) {TOKEN_LBRACKET}))) return parse_list(p);
     // clang-format on
 
     if (matches(p, LIST((TokenType[]) {TOKEN_STRING, TOKEN_MINUS, TOKEN_NUMBER}))) {
@@ -151,7 +151,7 @@ static Json parse_json(Parser *p) {
     return (Json) {0};
 }
 
-Json *json_deserialize(char *str) {
+DeserializeResult json_deserialize(char *str) {
     Lexer l = lex_init(str);
 
     Parser p = {
@@ -162,11 +162,11 @@ Json *json_deserialize(char *str) {
     Json j = parse_json(&p);
     expect(&p, TOKEN_EOF, ERROR_EXPECTED_EOF);
     if (p.error != NULL) {
-        return NULL;
+        return (DeserializeResult) {.error = p.error};
     }
 
     Json *d = calloc(sizeof(Json), 1);
     *d = j;
 
-    return d;
+    return (DeserializeResult) {.result = d};
 }
