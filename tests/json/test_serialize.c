@@ -8,8 +8,6 @@
 #define TAB_FLAGS JSON_FLAG_SPACES | JSON_FLAG_TAB
 
 void test(char *expected, Json *input, JsonSerializeFlags flags) {
-    printf("testing %s\n", expected);
-
     char *res = json_serialize(input, flags);
 
     if (strcmp(res, expected) != 0) {
@@ -135,7 +133,102 @@ void test_list() {
     );
 }
 
+void test_objects() {
+    test("{}", &(Json) {.type = JSON_TYPE_OBJECT, .inner.list = {0}}, DEFAULT_FLAGS);
+
+    test(
+        "{\"foo\": true}",
+        &(Json) {
+            .type = JSON_TYPE_OBJECT,
+            .inner.list = (JsonIterator){
+                .data = (Json[]) {
+                    (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = true, .field_name = "foo"},
+                },
+                .length = 1,
+            },
+        },
+        DEFAULT_FLAGS
+    );
+
+    test(
+        "{\"foo\": true, \"bar\": [{\"foo\": 10.2, \"bleh\": null}]}",
+        &(Json) {
+            .type = JSON_TYPE_OBJECT,
+            .inner.list = (JsonIterator){
+                .data = (Json[]) {
+                    (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = true, .field_name = "foo"},
+                    (Json) {
+                        .field_name = "bar", 
+                        .type = JSON_TYPE_LIST, 
+                        .inner.list = (JsonIterator) {
+                            .length = 1,
+                            .data = (Json[]) {
+                                (Json) {
+                                    .type = JSON_TYPE_OBJECT, 
+                                    .inner.object = (JsonIterator) {
+                                        .length = 2,
+                                        .data = (Json[]) {
+                                            (Json) {.type = JSON_TYPE_NUMBER, .inner.number = 10.2, .field_name = "foo"},
+                                            (Json) {.type = JSON_TYPE_NULL,  .field_name = "bleh"},
+                                        }
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                .length = 2,
+            },
+        },
+        DEFAULT_FLAGS
+    );
+
+    test(
+        "{\n"
+        "    \"foo\": true, \n"
+        "    \"bar\": [\n"
+        "        \"blehh\", \n"
+        "        {\n"
+        "            \"foo\": 10.2, \n"
+        "            \"bleh\": null\n"
+        "        }\n"
+        "    ]\n"
+        "}",
+        &(Json) {
+            .type = JSON_TYPE_OBJECT,
+            .inner.list = (JsonIterator){
+                .data = (Json[]) {
+                    (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = true, .field_name = "foo"},
+                    (Json) {
+                        .field_name = "bar", 
+                        .type = JSON_TYPE_LIST, 
+                        .inner.list = (JsonIterator) {
+                            .length = 2,
+                            .data = (Json[]) {
+                                (Json) {.type = JSON_TYPE_STRING, .inner.string = "blehh"},
+                                (Json) {
+                                    .type = JSON_TYPE_OBJECT, 
+                                    .inner.object = (JsonIterator) {
+                                        .length = 2,
+                                        .data = (Json[]) {
+                                            (Json) {.type = JSON_TYPE_NUMBER, .inner.number = 10.2, .field_name = "foo"},
+                                            (Json) {.type = JSON_TYPE_NULL,  .field_name = "bleh"},
+                                        }
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                .length = 2,
+            },
+        },
+        TAB_FLAGS
+    );
+}
+
 int main() {
     test_primitives();
     test_list();
+    test_objects();
 }

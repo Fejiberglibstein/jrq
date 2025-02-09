@@ -30,7 +30,7 @@ static bool has_flag(Serializer *s, JsonSerializeFlags flag) {
     return (s->flags & flag) ? true : false;
 }
 
-static bool tab(Serializer *s, int depth) {
+static void tab(Serializer *s, int depth) {
     if (has_flag(s, JSON_FLAG_TAB)) {
         for (int d = 0; d < depth; d++) {
             string_append_str(s->inner, "    ");
@@ -49,6 +49,7 @@ static void serialize_list(Serializer *s, Json *json, int depth) {
     for (int i = 0; i < fields.length; i++) {
 
         tab(s, depth);
+
         serialize(s, &fields.data[i], depth);
 
         if (i + 1 != fields.length) {
@@ -74,8 +75,12 @@ static void serialize_object(Serializer *s, Json *json, int depth) {
     for (int i = 0; i < fields.length; i++) {
 
         tab(s, depth);
+
+        // serialize object's key
         APPEND_COLOR(KEY_COLOR);
+        string_append_str(s->inner, "\"");
         string_append_str(s->inner, fields.data[i].field_name);
+        string_append_str(s->inner, "\"");
         APPEND_COLOR(RESET_COLOR);
 
         string_append_str(s->inner, has_flag(s, JSON_FLAG_SPACES) ? ": " : ":");
