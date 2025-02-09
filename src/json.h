@@ -1,19 +1,25 @@
 #ifndef _JSON_H
 #define _JSON_H
 
+#include "src/vector.h"
 #include <stdbool.h>
-#define JSON_NO_COMPACT 0b00000001
-#define JSON_COLOR 0b00000010
+
+typedef enum {
+    JSON_FLAG_TAB = 1,
+    JSON_FLAG_COLORS = 2,
+    JSON_FLAG_SPACES = 4,
+} JsonSerializeFlags;
 
 typedef enum JsonType {
-    JSONTYPE_END_LIST,
-    JSONTYPE_NUMBER,
-    JSONTYPE_OBJECT,
-    JSONTYPE_STRING,
-    JSONTYPE_LIST,
-    JSONTYPE_BOOL,
-    JSONTYPE_NULL,
+    JSON_TYPE_NUMBER,
+    JSON_TYPE_OBJECT,
+    JSON_TYPE_STRING,
+    JSON_TYPE_LIST,
+    JSON_TYPE_BOOL,
+    JSON_TYPE_NULL,
 } JsonType;
+
+typedef Vec(struct Json) JsonIterator;
 
 typedef struct Json {
     char *field_name;
@@ -21,13 +27,18 @@ typedef struct Json {
         double number;
         bool boolean;
         char *string;
-        struct Json *object;
-        struct Json *list;
+        JsonIterator object;
+        JsonIterator list;
     } inner;
     JsonType type;
 } Json;
 
-char *json_serialize(Json *json, char flags);
-Json *json_deserialize(char *json);
+typedef struct {
+    char *error;
+    Json *result;
+} DeserializeResult;
+
+char *json_serialize(Json *json, JsonSerializeFlags flags);
+DeserializeResult json_deserialize(char *json);
 
 #endif // _JSON_H

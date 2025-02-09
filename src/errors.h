@@ -11,6 +11,7 @@
 
 // Json errors
 #define ERROR_EXPECTED_STRING_OR_IDENT "Expected string or identifier key in json literal"
+#define ERROR_EXPECTED_STRING "Expected string key in json literal"
 #define ERROR_EXPECTED_COLON "Expected colon ':' after key in json literal"
 
 #endif // _ERRORS_H

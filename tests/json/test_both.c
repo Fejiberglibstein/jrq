@@ -4,27 +4,25 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define FLAGS JSON_NO_COMPACT | JSON_COLOR
 #define string(v) v, sizeof(v)
 #define all(v) v, v, sizeof(v)
 
 void test(char *input, char *expected, int str_len) {
-    printf("%s\n", input);
-    Json *json = json_deserialize(input);
+    printf("Testing %s\n", input);
+    DeserializeResult res = json_deserialize(input);
     if (str_len == 0) {
-        assert(json == NULL);
-        free(json);
+        assert(res.error != NULL);
         return;
     }
 
-    char *ser = json_serialize(json, 0);
+    char *ser = json_serialize(res.result, JSON_FLAG_SPACES);
     if (strncmp(ser, expected, str_len) != 0) {
         printf("`%s` != `%s`\n", ser, expected);
         assert(ser == expected && "Strings didn't match");
     }
 
     free(ser);
-    free(json);
+    free(res.result);
 }
 
 void test_simple() {
@@ -60,7 +58,7 @@ void test_list() {
 void test_struct() {
     test("   {} ", string("{}"));
     test("{   \" hhhi\"  :  10  }", string("{\" hhhi\": 10}"));
-    test("{   \" hhhi\"  :  10 ,\"10\" :null ,}", string("{\" hhhi\": 10, \"10\": null}"));
+    test("{   \" hhhi\"  :  10 ,\"10\" :null}", string("{\" hhhi\": 10, \"10\": null}"));
     test(all("{\"foo\": 10, \"fooo\": {}}"));
     test(all("{\"foo\": 10, \"bleh\": {\"in\": null, \"out\": {\"sh\": false}, \"hi\": null, "
              "\"hi2\": {}, \"j\": 3}, \"h\": -1}"));

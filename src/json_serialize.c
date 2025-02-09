@@ -1,12 +1,9 @@
-#include "./json.h"
-#include "./utils.h"
+#include "src/json.h"
+#include "src/utils.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-
-#define INITIAL_CAPACITY 16
 
 #define STRING_COLOR "\x1b[32m"
 #define NUM_COLOR "\x1b[36m"
@@ -16,149 +13,137 @@
 #define BOOL_COLOR "\x1b[31m"
 
 #define APPEND_COLOR(color)                                                                        \
-    if (colors) {                                                                                  \
-        string_append(string, color, sizeof(color));                                               \
+    if (has_flag(s, JSON_FLAG_COLORS)) {                                                           \
+        string_append_str(s->inner, color);                                                        \
     }
 
-void serialize(Json *json, String *string, char *depth, bool colors, bool parsing_struct) {
-    // Use the depth to calculate indentation level.
-    //
-    // depth is a string of just spaces: "    " represents one indentation
-    // level. Having one string that's passed into functions instead of an int
-    // for the depth minimizes heap allocations.
-    //
-    // If the depth is NULL, then we should not indent the json.
-    // If the depth is "S", this is a special case where the indentation is 0.
-    char *next_depth = NULL;
-    int depth_len = 0;
-    if (depth != NULL) {
-        // If the depth has an S(kip) in it, we can skip adding indentation.
-        //
-        // S is only in depth at the shallowest indentation levels.
-        if (depth[0] == 'S') {
-            // If we have S, we can allow the next indentation level to be
-            // filled
-            next_depth = malloc(1);
-            next_depth[0] = '\0';
-            depth_len = 1;
-        } else {
-            depth_len = (((strlen(depth) / 4) + 1) * 4) + 1;
-            next_depth = malloc(depth_len + 1);
-            memset(next_depth, ' ', depth_len);
-            next_depth[depth_len] = '\0';
-            string_append(string, next_depth, depth_len);
+typedef struct {
+    String inner;
+    JsonSerializeFlags flags;
+} Serializer;
+
+static void serialize(Serializer *s, Json *json, int depth);
+static void serialize_object(Serializer *s, Json *json, int depth);
+static void serialize_list(Serializer *s, Json *json, int depth);
+
+static bool has_flag(Serializer *s, JsonSerializeFlags flag) {
+    return (s->flags & flag) ? true : false;
+}
+
+static void tab(Serializer *s, int depth) {
+    if (has_flag(s, JSON_FLAG_TAB)) {
+        for (int d = 0; d < depth; d++) {
+            string_append_str(s->inner, "    ");
         }
-    }
-
-    // When parsing lists/structs, use a bool to determine what braces should be
-    // used.
-    bool is_struct = false;
-
-    if (parsing_struct && json->field_name != NULL) {
-        APPEND_COLOR(KEY_COLOR);
-
-        string_append(string, "\"", 2);
-        string_append(string, json->field_name, strlen(json->field_name) + 1);
-        string_append(string, "\"", 2);
-
-        APPEND_COLOR(RESET_COLOR);
-        string_append(string, ": ", 3);
-    }
-
-    switch (json->type) {
-    case JSONTYPE_NULL:
-        APPEND_COLOR(NULL_COLOR);
-        string_append(string, "null", sizeof("null"));
-        APPEND_COLOR(RESET_COLOR);
-        break;
-    case JSONTYPE_BOOL:
-        APPEND_COLOR(BOOL_COLOR);
-        if (json->inner.boolean) {
-            string_append(string, "true", sizeof("true"));
-        } else {
-            string_append(string, "false", sizeof("false"));
-        }
-        APPEND_COLOR(RESET_COLOR);
-        break;
-    case JSONTYPE_NUMBER:
-        APPEND_COLOR(NUM_COLOR);
-
-        char buf[32];
-        int buf_len;
-
-        buf_len = snprintf(NULL, 0, "%g", json->inner.number) + 1;
-        buf[buf_len] = '\0';
-        snprintf(buf, buf_len, "%g", json->inner.number);
-        string_append(string, buf, buf_len);
-
-        APPEND_COLOR(RESET_COLOR);
-        break;
-
-    case JSONTYPE_STRING:
-        APPEND_COLOR(STRING_COLOR);
-
-        string_append(string, "\"", 2);
-        string_append(string, json->inner.string, (int)strlen(json->inner.string) + 1);
-        string_append(string, "\"", 2);
-
-        APPEND_COLOR(RESET_COLOR);
-        break;
-
-    case JSONTYPE_OBJECT:
-        is_struct = true;
-    case JSONTYPE_LIST:
-        // Parsing a struct and list are effectively the same thing, so we just
-        // use a simple switch for which parenthesis type to use
-        //
-        // '{}' for structs, and `[]` for lists
-#define L_PAREN(...) is_struct ? "{" __VA_ARGS__ : "[" __VA_ARGS__
-#define R_PAREN(...) is_struct ? "}" __VA_ARGS__ : "]" __VA_ARGS__
-        ;
-        bool skip_depth = json->inner.list[0].type == JSONTYPE_END_LIST;
-        Json *list = json->inner.list;
-
-        if (depth == NULL || skip_depth) {
-            string_append(string, L_PAREN(), 2);
-        } else {
-            string_append(string, L_PAREN("\n"), 3);
-        }
-
-        for (int i = 0; list[i].type != JSONTYPE_END_LIST; i++) {
-            serialize(&(list[i]), string, next_depth, colors, is_struct);
-            if (list[i + 1].type != JSONTYPE_END_LIST) {
-                string_append(string, ", ", 3);
-            }
-            if (depth != NULL && !skip_depth) {
-                string_append(string, "\n", 2);
-            }
-        }
-
-        if (next_depth != NULL && !skip_depth) {
-            string_append(string, next_depth, depth_len);
-        }
-        string_append(string, R_PAREN(), 2);
-        break;
-#undef L_PAREN
-#undef R_PAREN
-    case JSONTYPE_END_LIST:
-        // unreachable
-        break;
-    }
-
-    if (next_depth != NULL) {
-        free(next_depth);
     }
 }
 
-char *json_serialize(Json *json, char flags) {
-    String str = (String) {
-        .data = malloc(INITIAL_CAPACITY),
-        .length = 0,
-        .capacity = INITIAL_CAPACITY,
-    };
-    int depth = (flags & JSON_NO_COMPACT) ? 0 : -1;
-    bool color = (flags & JSON_COLOR);
+static void serialize_list(Serializer *s, Json *json, int depth) {
+    JsonIterator fields = json->inner.object;
+    if (fields.length == 0) {
+        string_append_str(s->inner, "[]");
+        return;
+    }
+    string_append_str(s->inner, has_flag(s, JSON_FLAG_TAB) ? "[\n" : "[");
 
-    serialize(json, &str, depth ? NULL : "S", color, false);
-    return str.data;
+    for (int i = 0; i < fields.length; i++) {
+
+        tab(s, depth);
+
+        serialize(s, &fields.data[i], depth);
+
+        if (i + 1 != fields.length) {
+            string_append_str(s->inner, has_flag(s, JSON_FLAG_SPACES) ? ", " : ",");
+        }
+        if (has_flag(s, JSON_FLAG_TAB)) {
+            string_append_str(s->inner, "\n");
+        }
+    }
+
+    tab(s, depth - 1);
+    string_append_str(s->inner, "]");
+}
+
+static void serialize_object(Serializer *s, Json *json, int depth) {
+    JsonIterator fields = json->inner.object;
+    if (fields.length == 0) {
+        string_append_str(s->inner, "{}");
+        return;
+    }
+    string_append_str(s->inner, has_flag(s, JSON_FLAG_TAB) ? "{\n" : "{");
+
+    for (int i = 0; i < fields.length; i++) {
+
+        tab(s, depth);
+
+        // serialize object's key
+        APPEND_COLOR(KEY_COLOR);
+        string_append_str(s->inner, "\"");
+        string_append_str(s->inner, fields.data[i].field_name);
+        string_append_str(s->inner, "\"");
+        APPEND_COLOR(RESET_COLOR);
+
+        string_append_str(s->inner, has_flag(s, JSON_FLAG_SPACES) ? ": " : ":");
+
+        serialize(s, &fields.data[i], depth);
+
+        if (i + 1 != fields.length) {
+            string_append_str(s->inner, has_flag(s, JSON_FLAG_SPACES) ? ", " : ",");
+        }
+        if (has_flag(s, JSON_FLAG_TAB)) {
+            string_append_str(s->inner, "\n");
+        }
+    }
+
+    tab(s, depth - 1);
+    string_append_str(s->inner, "}");
+}
+
+void serialize(Serializer *s, Json *json, int depth) {
+    switch (json->type) {
+    case JSON_TYPE_LIST:
+        serialize_list(s, json, depth + 1);
+        break;
+    case JSON_TYPE_OBJECT:
+        serialize_object(s, json, depth + 1);
+        break;
+    case JSON_TYPE_NUMBER:
+        APPEND_COLOR(NUM_COLOR);
+
+        int buf_len = snprintf(NULL, 0, "%g", json->inner.number) + 1;
+        string_grow(s->inner, buf_len);
+        snprintf(s->inner.data + s->inner.length, buf_len, "%g", json->inner.number);
+
+        s->inner.length += buf_len - 1;
+
+        APPEND_COLOR(RESET_COLOR);
+        break;
+    case JSON_TYPE_STRING:
+        APPEND_COLOR(STRING_COLOR);
+        string_append_str(s->inner, "\"");
+        string_append_str(s->inner, json->inner.string);
+        string_append_str(s->inner, "\"");
+        APPEND_COLOR(RESET_COLOR);
+        break;
+    case JSON_TYPE_BOOL:
+        APPEND_COLOR(BOOL_COLOR);
+        string_append_str(s->inner, json->inner.boolean ? "true" : "false");
+        APPEND_COLOR(RESET_COLOR);
+        break;
+    case JSON_TYPE_NULL:
+        APPEND_COLOR(NULL_COLOR);
+        string_append_str(s->inner, "null");
+        APPEND_COLOR(RESET_COLOR);
+        break;
+    }
+}
+
+char *json_serialize(Json *json, JsonSerializeFlags flags) {
+    Serializer *s = &(Serializer) {
+        .inner = (String) {0},
+        .flags = flags,
+    };
+
+    serialize(s, json, 0);
+    return s->inner.data;
 }
