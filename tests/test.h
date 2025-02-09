@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define __jaq_assert(v, msg...)                                                                    \
+#define __jqr_assert(v, msg...)                                                                    \
     if (!(v)) {                                                                                    \
         size_t buf_size = snprintf(NULL, 0, msg) + 1;                                              \
         char *res = malloc(buf_size);                                                              \
@@ -23,7 +23,7 @@
 #define __COMPARE_STRING(exp, act, t) strcmp(exp t, act t) == 0
 #define __PRINT_STRING(exp, act, t) (#t " not equal. Expected '%s' but got '%s'"), exp t, act t
 
-#define jaq_assert(type, exp, act, t)                                                              \
-    __jaq_assert(__COMPARE_##type(exp, act, t), __PRINT_##type(exp, act, t))
+#define jqr_assert(type, exp, act, t)                                                              \
+    __jqr_assert(__COMPARE_##type(exp, act, t), __PRINT_##type(exp, act, t))
 
 #endif // _TEST_H

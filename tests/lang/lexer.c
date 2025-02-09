@@ -5,23 +5,23 @@
 void foo(char *, int, int);
 
 char *tok_equal(Token exp, Token actual) {
-    jaq_assert(INT, exp, actual, .type);
+    jqr_assert(INT, exp, actual, .type);
 
     switch (exp.type) {
     case TOKEN_IDENT:
-        jaq_assert(STRING, exp, actual, .inner.ident);
+        jqr_assert(STRING, exp, actual, .inner.ident);
         break;
     case TOKEN_STRING:
-        jaq_assert(STRING, exp, actual, .inner.string);
+        jqr_assert(STRING, exp, actual, .inner.string);
         break;
     case TOKEN_NUMBER:
-        jaq_assert(INT, exp, actual, .inner.number);
+        jqr_assert(INT, exp, actual, .inner.number);
         break;
     default:
         break;
     }
 
-    __jaq_assert(
+    __jqr_assert(
         exp.range.start.col == actual.range.start.col
             && exp.range.start.line == actual.range.start.line
             && exp.range.end.col == actual.range.end.col

@@ -1,4 +1,4 @@
-project('jaq', 'c')
+project('jrq', 'c')
 
 # .!find src/ -name "*.c" | grep -v "main.c" | xargs -I{} echo "'{}',"
 files = [
@@ -9,7 +9,7 @@ files = [
   'src/parser.c',
 ]
 
-executable('jaq', files + './src/main.c')
+executable('jrq', files + './src/main.c')
 
 tests = [
   ['json', 'serialize', './tests/json/test_serialize.c'],

@@ -235,23 +235,23 @@ int main() {
 }
 
 static char *validate_ast_node(ASTNode *exp, ASTNode *actual) {
-    jaq_assert(INT, exp, actual, ->type);
+    jqr_assert(INT, exp, actual, ->type);
 
     char *err;
 
     switch (exp->type) {
     case AST_TYPE_PRIMARY:
-        jaq_assert(INT, exp, actual, ->inner.primary.type);
+        jqr_assert(INT, exp, actual, ->inner.primary.type);
 
         switch (exp->inner.primary.type) {
         case TOKEN_IDENT:
-            jaq_assert(STRING, exp, actual, ->inner.primary.inner.ident);
+            jqr_assert(STRING, exp, actual, ->inner.primary.inner.ident);
             break;
         case TOKEN_STRING:
-            jaq_assert(STRING, exp, actual, ->inner.primary.inner.string);
+            jqr_assert(STRING, exp, actual, ->inner.primary.inner.string);
             break;
         case TOKEN_NUMBER:
-            jaq_assert(DOUBLE, exp, actual, ->inner.primary.inner.number);
+            jqr_assert(DOUBLE, exp, actual, ->inner.primary.inner.number);
             break;
         default:
             break;
@@ -259,10 +259,10 @@ static char *validate_ast_node(ASTNode *exp, ASTNode *actual) {
         break;
 
     case AST_TYPE_UNARY:
-        jaq_assert(INT, exp, actual, ->inner.unary.operator);
+        jqr_assert(INT, exp, actual, ->inner.unary.operator);
         return validate_ast_node(exp->inner.unary.rhs, actual->inner.unary.rhs);
     case AST_TYPE_BINARY:
-        jaq_assert(INT, exp, actual, ->inner.binary.operator);
+        jqr_assert(INT, exp, actual, ->inner.binary.operator);
         err = validate_ast_node(exp->inner.binary.rhs, actual->inner.binary.rhs);
         if (err != NULL) {
             return err;
@@ -310,7 +310,7 @@ static char *validate_ast_node(ASTNode *exp, ASTNode *actual) {
 }
 
 static char *validate_ast_list(Vec_ASTNode exp, Vec_ASTNode actual) {
-    jaq_assert(INT, exp, actual, .length);
+    jqr_assert(INT, exp, actual, .length);
     for (int i = 0; i < exp.length; i++) {
         char *err = validate_ast_node(exp.data[i], actual.data[i]);
         if (err != NULL) {
