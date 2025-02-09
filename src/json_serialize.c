@@ -27,7 +27,7 @@ static void serialize_object(Serializer *s, Json *json, int depth);
 static void serialize_list(Serializer *s, Json *json, int depth);
 
 static bool has_flag(Serializer *s, JsonSerializeFlags flag) {
-    return (s->flags & flag) ? true : false;
+    return (s->flags & flag) ? false : true;
 }
 
 static void serialize_list(Serializer *s, Json *json, int depth) {
@@ -106,13 +106,16 @@ void serialize(Serializer *s, Json *json, int depth) {
         APPEND_COLOR(NUM_COLOR);
 
         int buf_len = snprintf(NULL, 0, "%g", json->inner.number) + 1;
+        string_grow(s->inner, buf_len);
         snprintf(s->inner.data + s->inner.length, buf_len, "%g", json->inner.number);
 
         APPEND_COLOR(RESET_COLOR);
         break;
     case JSON_TYPE_STRING:
         APPEND_COLOR(STRING_COLOR);
+        string_append_str(s->inner, "\"");
         string_append_str(s->inner, json->inner.string);
+        string_append_str(s->inner, "\"");
         APPEND_COLOR(RESET_COLOR);
         break;
     case JSON_TYPE_BOOL:
