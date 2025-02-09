@@ -5,6 +5,7 @@
 #include <string.h>
 
 #define DEFAULT_FLAGS JSON_FLAG_SPACES
+#define TAB_FLAGS JSON_FLAG_SPACES | JSON_FLAG_TAB
 
 void test(char *expected, Json *input, JsonSerializeFlags flags) {
     printf("testing %s\n", expected);
@@ -74,6 +75,63 @@ void test_list() {
             },
         },
         DEFAULT_FLAGS
+    );
+
+    test(
+        "[true, [], 10.2, [10, 2], \"blehg\"]",
+        &(Json) {
+            .type = JSON_TYPE_LIST,
+            .inner.list = (JsonIterator){
+                .data = (Json[]) {
+                    (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = true},
+                    (Json) {.type = JSON_TYPE_LIST, .inner.list = {0}},
+                    (Json) {.type = JSON_TYPE_NUMBER, .inner.number = 10.2},
+                    (Json) {.type = JSON_TYPE_LIST, .inner.list = {
+                        .data = (Json[]) {
+                            (Json) {.type = JSON_TYPE_NUMBER, .inner.number = 10},
+                            (Json) {.type = JSON_TYPE_NUMBER, .inner.number = 2},
+                        },
+                        .length = 2,
+                    }},
+                    (Json) {.type = JSON_TYPE_STRING, .inner.string = "blehg"},
+                },
+                .length = 5,
+            },
+        },
+        DEFAULT_FLAGS
+    );
+
+    test(
+        "[\n"
+        "    true, \n"
+        "    [], \n"
+        "    10.2, \n"
+        "    [\n"
+        "        10, \n"
+        "        2\n"
+        "    ], \n"
+        "    \"blehg\"\n"
+        "]",
+        &(Json) {
+            .type = JSON_TYPE_LIST,
+            .inner.list = (JsonIterator){
+                .data = (Json[]) {
+                    (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = true},
+                    (Json) {.type = JSON_TYPE_LIST, .inner.list = {0}},
+                    (Json) {.type = JSON_TYPE_NUMBER, .inner.number = 10.2},
+                    (Json) {.type = JSON_TYPE_LIST, .inner.list = {
+                        .data = (Json[]) {
+                            (Json) {.type = JSON_TYPE_NUMBER, .inner.number = 10},
+                            (Json) {.type = JSON_TYPE_NUMBER, .inner.number = 2},
+                        },
+                        .length = 2,
+                    }},
+                    (Json) {.type = JSON_TYPE_STRING, .inner.string = "blehg"},
+                },
+                .length = 5,
+            },
+        },
+        TAB_FLAGS
     );
 }
 
