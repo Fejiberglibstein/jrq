@@ -11,7 +11,7 @@ typedef enum {
 
 typedef struct {
     char *error;
-    Json *result;
+    Json result;
 } DeserializeResult;
 
 char *json_serialize(Json *json, JsonSerializeFlags flags);

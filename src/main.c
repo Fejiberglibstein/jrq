@@ -56,9 +56,8 @@ int main(int argc, char **argv) {
         flags = JSON_FLAG_TAB | JSON_FLAG_COLORS;
     }
 
-    char *out = json_serialize(res.result, flags);
+    char *out = json_serialize(&res.result, flags);
     printf("%s\n", out);
 
     free(out);
-    free(res.result);
 }

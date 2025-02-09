@@ -165,8 +165,5 @@ DeserializeResult json_deserialize(char *str) {
         return (DeserializeResult) {.error = p.error};
     }
 
-    Json *d = calloc(sizeof(Json), 1);
-    *d = j;
-
-    return (DeserializeResult) {.result = d};
+    return (DeserializeResult) {.result = j};
 }

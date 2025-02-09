@@ -1,4 +1,5 @@
 #include "../src/json.h"
+#include "src/json_serde.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,14 +16,13 @@ void test(char *input, char *expected, int str_len) {
         return;
     }
 
-    char *ser = json_serialize(res.result, JSON_FLAG_SPACES);
+    char *ser = json_serialize(&res.result, JSON_FLAG_SPACES);
     if (strncmp(ser, expected, str_len) != 0) {
         printf("`%s` != `%s`\n", ser, expected);
         assert(ser == expected && "Strings didn't match");
     }
 
     free(ser);
-    free(res.result);
 }
 
 void test_simple() {
