@@ -44,20 +44,21 @@ char *read_from_file(int fd) {
 int main(int argc, char **argv) {
     char *str = read_from_file(STDIN_FILENO);
 
-    Json *json = json_deserialize(str);
-    if (json == NULL) {
-        return -1;
+    DeserializeResult res = json_deserialize(str);
+    if (res.error != NULL) {
+        printf("%s", res.error);
+        exit(1);
     }
     free(str);
 
-    char flags = JSON_NO_COMPACT;
+    JsonSerializeFlags flags = JSON_FLAG_TAB;
     if (isatty(STDOUT_FILENO)) {
-        flags = JSON_COLOR | JSON_NO_COMPACT;
+        flags = JSON_FLAG_TAB | JSON_FLAG_COLORS;
     }
 
-    char *out = json_serialize(json, flags);
+    char *out = json_serialize(res.result, flags);
     printf("%s\n", out);
 
     free(out);
-    free(json);
+    free(res.result);
 }
