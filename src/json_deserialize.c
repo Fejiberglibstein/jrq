@@ -1,5 +1,5 @@
 #include "src/errors.h"
-#include "src/json.h"
+#include "src/json_serde.h"
 #include "src/lexer.h"
 #include "src/utils.h"
 #include "src/vector.h"

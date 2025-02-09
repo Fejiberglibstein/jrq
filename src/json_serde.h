@@ -1,5 +1,5 @@
-#ifndef _JSON_H
-#define _JSON_H
+#ifndef _JSON_SERDE_H
+#define _JSON_SERDE_H
 
 #include "src/vector.h"
 #include <stdbool.h>
@@ -41,4 +41,4 @@ typedef struct {
 char *json_serialize(Json *json, JsonSerializeFlags flags);
 DeserializeResult json_deserialize(char *json);
 
-#endif // _JSON_H
+#endif // _JSON_SERDE_H
