@@ -2,6 +2,7 @@
 #include "src/utils.h"
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <string.h>
 
 #define STRING_COLOR "\x1b[32m"
@@ -95,17 +96,29 @@ static void serialize_object(Serializer *s, Json *json, int depth) {
 
 void serialize(Serializer *s, Json *json, int depth) {
     switch (json->type) {
-    case JSON_TYPE_NUMBER:
+    case JSON_TYPE_LIST:
+        serialize_list(s, json, depth + 1);
         break;
     case JSON_TYPE_OBJECT:
         serialize_object(s, json, depth + 1);
         break;
-    case JSON_TYPE_STRING:
+    case JSON_TYPE_NUMBER:
+        APPEND_COLOR(NUM_COLOR);
+
+        int buf_len = snprintf(NULL, 0, "%g", json->inner.number) + 1;
+        snprintf(s->inner.data + s->inner.length, buf_len, "%g", json->inner.number);
+
+        APPEND_COLOR(RESET_COLOR);
         break;
-    case JSON_TYPE_LIST:
-        serialize_object(s, json, depth + 1);
+    case JSON_TYPE_STRING:
+        APPEND_COLOR(STRING_COLOR);
+        string_append_str(s->inner, json->inner.string);
+        APPEND_COLOR(RESET_COLOR);
         break;
     case JSON_TYPE_BOOL:
+        APPEND_COLOR(BOOL_COLOR);
+        string_append_str(s->inner, json->inner.boolean ? "true" : "false");
+        APPEND_COLOR(RESET_COLOR);
         break;
     case JSON_TYPE_NULL:
         APPEND_COLOR(NULL_COLOR);
