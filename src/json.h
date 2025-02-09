@@ -5,13 +5,12 @@
 #include <stdbool.h>
 
 typedef enum {
-    JSON_SER_TAB = 1,
-    JSON_SER_COLORS = 2,
-    JSON_SER_SPACES = 2,
+    JSON_FLAG_TAB = 1,
+    JSON_FLAG_COLORS = 2,
+    JSON_FLAG_SPACES = 2,
 } JsonSerializeFlags;
 
 typedef enum JsonType {
-    JSON_TYPE_END_LIST,
     JSON_TYPE_NUMBER,
     JSON_TYPE_OBJECT,
     JSON_TYPE_STRING,
@@ -34,7 +33,7 @@ typedef struct Json {
     JsonType type;
 } Json;
 
-char *json_serialize(Json *json, char flags);
+char *json_serialize(Json *json, JsonSerializeFlags flags);
 Json *json_deserialize(char *json);
 
 #endif // _JSON_H
