@@ -1,6 +1,8 @@
 #ifndef _VECTOR_H
 #define _VECTOR_H
 
+#include <stdlib.h>
+
 #define Vec(t)                                                                                     \
     struct {                                                                                       \
         t *data;                                                                                   \
@@ -20,7 +22,7 @@
 
 #define vec_append(vec, el...)                                                                     \
     do {                                                                                           \
-        (vec) _grow((vec), 1);                                                                     \
+        vec_grow((vec), 1);                                                                        \
         (vec).data[(vec).length++] = el;                                                           \
     } while (0)
 

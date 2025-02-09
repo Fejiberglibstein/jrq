@@ -2,7 +2,7 @@
 #define _PARSER_H
 
 #include "src/lexer.h"
-#include "src/vector.h"
+#include "vector.h"
 
 typedef enum {
     AST_TYPE_PRIMARY,
