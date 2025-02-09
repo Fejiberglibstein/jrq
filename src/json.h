@@ -7,7 +7,7 @@
 typedef enum {
     JSON_FLAG_TAB = 1,
     JSON_FLAG_COLORS = 2,
-    JSON_FLAG_SPACES = 2,
+    JSON_FLAG_SPACES = 4,
 } JsonSerializeFlags;
 
 typedef enum JsonType {

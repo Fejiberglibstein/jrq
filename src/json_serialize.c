@@ -27,7 +27,7 @@ static void serialize_object(Serializer *s, Json *json, int depth);
 static void serialize_list(Serializer *s, Json *json, int depth);
 
 static bool has_flag(Serializer *s, JsonSerializeFlags flag) {
-    return (s->flags & flag) ? false : true;
+    return (s->flags & flag) ? true : false;
 }
 
 static void serialize_list(Serializer *s, Json *json, int depth) {
@@ -48,7 +48,7 @@ static void serialize_list(Serializer *s, Json *json, int depth) {
 
         serialize(s, &fields.data[i], depth + 1);
 
-        if (i - 1 != fields.length) {
+        if (i + 1 != fields.length) {
             string_append_str(s->inner, has_flag(s, JSON_FLAG_SPACES) ? ", " : ",");
         }
         if (has_flag(s, JSON_FLAG_TAB)) {
@@ -83,7 +83,7 @@ static void serialize_object(Serializer *s, Json *json, int depth) {
 
         serialize(s, &fields.data[i], depth + 1);
 
-        if (i - 1 != fields.length) {
+        if (i + 1 != fields.length) {
             string_append_str(s->inner, has_flag(s, JSON_FLAG_SPACES) ? ", " : ",");
         }
         if (has_flag(s, JSON_FLAG_TAB)) {
@@ -108,6 +108,8 @@ void serialize(Serializer *s, Json *json, int depth) {
         int buf_len = snprintf(NULL, 0, "%g", json->inner.number) + 1;
         string_grow(s->inner, buf_len);
         snprintf(s->inner.data + s->inner.length, buf_len, "%g", json->inner.number);
+
+        s->inner.length += buf_len - 1;
 
         APPEND_COLOR(RESET_COLOR);
         break;
