@@ -20,7 +20,7 @@
 
 #define vec_append(vec, el...)                                                                     \
     do {                                                                                           \
-        (vec) _grow((vec), 1);                                                                     \
+        vec_grow((vec), 1);                                                                        \
         (vec).data[(vec).length++] = el;                                                           \
     } while (0)
 
