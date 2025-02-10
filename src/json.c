@@ -8,11 +8,6 @@
 
 #define EPSILON 0.00000001
 
-struct JsonObjectInner {
-    struct Json value;
-    char *key;
-};
-
 bool json_equal(Json j1, Json j2) {
     if (j1.type != j2.type) {
         return false;
@@ -114,6 +109,17 @@ Json json_object_sized(size_t i) {
 
 void json_object_set(Json *j, char *key, Json value) {
     assert(j->type == JSON_TYPE_OBJECT);
+    vec_append(j->inner.object, (JsonObjectPair) {.key = key, .value = value});
+}
 
-    vec_append(j->inner.object, (struct JsonObjectInner) {.key = key, .value = value});
+Json *json_object_get(Json *j, char *key) {
+    assert(j->type == JSON_TYPE_OBJECT);
+    JsonObject obj = j->inner.object;
+
+    for (int i = 0; i < obj.length; i++) {
+        if (strcmp(key, obj.data[i].key) == 0) {
+            return &obj.data[i].value;
+        }
+    }
+    return NULL;
 }

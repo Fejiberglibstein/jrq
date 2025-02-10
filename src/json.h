@@ -16,7 +16,7 @@ typedef enum JsonType {
 
 typedef Vec(struct Json) JsonIterator;
 
-typedef Vec(struct JsonObjectInner) JsonObject;
+typedef Vec(struct JsonObjectPair) JsonObject;
 
 typedef struct Json {
     union {
@@ -28,6 +28,11 @@ typedef struct Json {
     } inner;
     JsonType type;
 } Json;
+
+typedef struct JsonObjectPair {
+    Json value;
+    char *key;
+} JsonObjectPair;
 
 bool json_equal(Json, Json);
 Json json_copy(Json);

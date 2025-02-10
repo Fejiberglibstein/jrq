@@ -86,7 +86,7 @@ static void serialize_object(Serializer *s, Json *json, int depth) {
 
         string_append_str(s->inner, has_flag(s, JSON_FLAG_SPACES) ? ": " : ":");
 
-        serialize(s, fields.data[i].value, depth);
+        serialize(s, &fields.data[i].value, depth);
 
         if (i + 1 != fields.length) {
             string_append_str(s->inner, has_flag(s, JSON_FLAG_SPACES) ? ", " : ",");
