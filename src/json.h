@@ -16,13 +16,14 @@ typedef enum JsonType {
 
 typedef Vec(struct Json) JsonIterator;
 
+typedef Vec(struct JsonObjectInner) JsonObject;
+
 typedef struct Json {
-    char *field_name;
     union {
         double number;
         bool boolean;
         char *string;
-        JsonIterator object;
+        JsonObject object;
         JsonIterator list;
     } inner;
     JsonType type;
@@ -32,11 +33,10 @@ bool json_equal(Json, Json);
 Json json_copy(Json);
 char *json_type(Json);
 
-void json_list_append(Json *list, Json el);
-Json json_list_sized(size_t i);
+void json_list_append(Json *, Json);
+Json json_list_sized(size_t);
 
-Json json_object_sized(size_t i);
-
-Json json_append(Json, Json);
+Json json_object_sized(size_t);
+void json_object_set(Json *, char *, Json);
 
 #endif // _JSON_H

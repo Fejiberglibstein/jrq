@@ -1,3 +1,4 @@
+#include "src/json.h"
 #include "src/json_serde.h"
 #include "src/utils.h"
 #include <stdarg.h>
@@ -39,20 +40,20 @@ static void tab(Serializer *s, int depth) {
 }
 
 static void serialize_list(Serializer *s, Json *json, int depth) {
-    JsonIterator fields = json->inner.object;
-    if (fields.length == 0) {
+    JsonIterator list = json->inner.list;
+    if (list.length == 0) {
         string_append_str(s->inner, "[]");
         return;
     }
     string_append_str(s->inner, has_flag(s, JSON_FLAG_TAB) ? "[\n" : "[");
 
-    for (int i = 0; i < fields.length; i++) {
+    for (int i = 0; i < list.length; i++) {
 
         tab(s, depth);
 
-        serialize(s, &fields.data[i], depth);
+        serialize(s, &list.data[i], depth);
 
-        if (i + 1 != fields.length) {
+        if (i + 1 != list.length) {
             string_append_str(s->inner, has_flag(s, JSON_FLAG_SPACES) ? ", " : ",");
         }
         if (has_flag(s, JSON_FLAG_TAB)) {
@@ -65,7 +66,7 @@ static void serialize_list(Serializer *s, Json *json, int depth) {
 }
 
 static void serialize_object(Serializer *s, Json *json, int depth) {
-    JsonIterator fields = json->inner.object;
+    JsonObject fields = json->inner.object;
     if (fields.length == 0) {
         string_append_str(s->inner, "{}");
         return;
@@ -79,13 +80,13 @@ static void serialize_object(Serializer *s, Json *json, int depth) {
         // serialize object's key
         APPEND_COLOR(KEY_COLOR);
         string_append_str(s->inner, "\"");
-        string_append_str(s->inner, fields.data[i].field_name);
+        string_append_str(s->inner, fields.data[i].key);
         string_append_str(s->inner, "\"");
         APPEND_COLOR(RESET_COLOR);
 
         string_append_str(s->inner, has_flag(s, JSON_FLAG_SPACES) ? ": " : ":");
 
-        serialize(s, &fields.data[i], depth);
+        serialize(s, fields.data[i].value, depth);
 
         if (i + 1 != fields.length) {
             string_append_str(s->inner, has_flag(s, JSON_FLAG_SPACES) ? ", " : ",");
@@ -101,6 +102,9 @@ static void serialize_object(Serializer *s, Json *json, int depth) {
 
 void serialize(Serializer *s, Json *json, int depth) {
     switch (json->type) {
+    case JSON_TYPE_INVALID:
+        string_append_str(s->inner, "<invalid>");
+        break;
     case JSON_TYPE_LIST:
         serialize_list(s, json, depth + 1);
         break;

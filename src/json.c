@@ -8,6 +8,11 @@
 
 #define EPSILON 0.00000001
 
+struct JsonObjectInner {
+    struct Json value;
+    char *key;
+};
+
 bool json_equal(Json j1, Json j2) {
     if (j1.type != j2.type) {
         return false;
@@ -26,8 +31,13 @@ bool json_equal(Json j1, Json j2) {
         if (j1.inner.object.length != j2.inner.object.length) {
             return false;
         }
-        for (int i = 0; i < j1.inner.object.length; i++) {
-            if (json_equal(j1.inner.object.data[i], j2.inner.object.data[i]) == false) {
+        JsonObject j1obj = j1.inner.object;
+        JsonObject j2obj = j2.inner.object;
+        for (int i = 0; i < j1obj.length; i++) {
+            if (strcmp(j1obj.data[i].key, j2obj.data[i].key) != 0) {
+                return false;
+            }
+            if (json_equal(j1obj.data[i].value, j2obj.data[i].value) == false) {
                 return false;
             }
         }
@@ -42,6 +52,9 @@ bool json_equal(Json j1, Json j2) {
             }
         }
         return true;
+    case JSON_TYPE_INVALID:
+        return true;
+        break;
     }
 }
 
@@ -91,10 +104,16 @@ void json_list_append(Json *list, Json el) {
 }
 
 Json json_object_sized(size_t i) {
-    JsonIterator j = {0};
+    JsonObject j = {0};
     vec_grow(j, i);
     return (Json) {
         .type = JSON_TYPE_OBJECT,
         .inner.object = j,
     };
+}
+
+void json_object_set(Json *j, char *key, Json value) {
+    assert(j->type == JSON_TYPE_OBJECT);
+
+    vec_append(j->inner.object, (struct JsonObjectInner) {.key = key, .value = value});
 }

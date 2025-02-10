@@ -1,4 +1,5 @@
 #include "src/errors.h"
+#include "src/json.h"
 #include "src/json_serde.h"
 #include "src/lexer.h"
 #include "src/utils.h"
@@ -56,7 +57,7 @@ static void expect(Parser *p, TokenType expected, char *err) {
 }
 
 Json parse_object(Parser *p) {
-    JsonIterator items = {0};
+    JsonObject items = {0};
 
     if (p->curr.type != TOKEN_RBRACE) {
         do {
@@ -65,10 +66,8 @@ Json parse_object(Parser *p) {
 
             expect(p, TOKEN_COLON, ERROR_EXPECTED_COLON);
 
-            Json j = parse_json(p);
-            j.field_name = key;
-
-            vec_append(items, j);
+            Json value = parse_json(p);
+            json_object_set(&items, key, value);
         } while (matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
     }
 
