@@ -67,6 +67,7 @@ void test_struct() {
 void test_list_and_struct() {
     test(all("[10, {}, [], {\"nehg\": null}]"));
     test(all("{\"foo\": {}, \"grg\": -20, \"bh\": [10, 9, 2, [3, 5, {\"hi\": [4]}, 8, 3], 2, 8]}"));
+    test("   {\"foo\": 10, \"foo\": 2} ", string("{\"foo\": 2}"));
 }
 
 int main() {
