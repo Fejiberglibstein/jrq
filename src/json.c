@@ -76,6 +76,34 @@ Json json_copy(Json j) {
     }
 }
 
+void json_free(Json j) {
+    JsonObject obj;
+    JsonList list;
+    switch (j.type) {
+    case JSON_TYPE_OBJECT:
+        obj = j.inner.object;
+        for (int i = 0; i < obj.length; i++) {
+            json_free(obj.data[i].value);
+            free(obj.data[i].key);
+        }
+        break;
+    case JSON_TYPE_LIST:
+        list = j.inner.list;
+        for (int i = 0; i < list.length; i++) {
+            json_free(list.data[i]);
+        }
+        break;
+    case JSON_TYPE_NULL:
+    case JSON_TYPE_INVALID:
+    case JSON_TYPE_NUMBER:
+    case JSON_TYPE_BOOL:
+        break;
+    case JSON_TYPE_STRING:
+        free(j.inner.string);
+        break;
+    }
+}
+
 Json json_list_sized(size_t i) {
     JsonList j = {0};
     vec_grow(j, i);

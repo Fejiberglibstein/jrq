@@ -35,6 +35,8 @@ typedef struct JsonObjectPair {
 
 bool json_equal(Json, Json);
 Json json_copy(Json);
+void json_free(Json);
+
 char *json_type(Json);
 
 void json_list_append(Json *, Json);
