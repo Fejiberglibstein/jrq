@@ -14,7 +14,7 @@ typedef enum JsonType {
     JSON_TYPE_BOOL,
 } JsonType;
 
-typedef Vec(struct Json) JsonIterator;
+typedef Vec(struct Json) JsonList;
 
 typedef Vec(struct JsonObjectPair) JsonObject;
 
@@ -24,7 +24,7 @@ typedef struct Json {
         bool boolean;
         char *string;
         JsonObject object;
-        JsonIterator list;
+        JsonList list;
     } inner;
     JsonType type;
 } Json;

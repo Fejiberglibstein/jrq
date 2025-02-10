@@ -40,7 +40,7 @@ static void tab(Serializer *s, int depth) {
 }
 
 static void serialize_list(Serializer *s, Json *json, int depth) {
-    JsonIterator list = json->inner.list;
+    JsonList list = json->inner.list;
     if (list.length == 0) {
         string_append_str(s->inner, "[]");
         return;

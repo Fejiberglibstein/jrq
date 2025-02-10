@@ -77,7 +77,7 @@ Json json_copy(Json j) {
 }
 
 Json json_list_sized(size_t i) {
-    JsonIterator j = {0};
+    JsonList j = {0};
     vec_grow(j, i);
     return (Json) {
         .type = JSON_TYPE_LIST,

@@ -80,7 +80,7 @@ Json parse_object(Parser *p) {
 }
 
 Json parse_list(Parser *p) {
-    JsonIterator items = {0};
+    JsonList items = {0};
 
     if (p->curr.type != TOKEN_RBRACKET) {
         do {

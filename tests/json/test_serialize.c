@@ -34,7 +34,7 @@ void test_list() {
         "[true]",
         &(Json) {
             .type = JSON_TYPE_LIST,
-            .inner.list = (JsonIterator){
+            .inner.list = (JsonList){
                 .data = (Json[]) {
                     (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = true},
                 },
@@ -48,7 +48,7 @@ void test_list() {
         "[10.2]",
         &(Json) {
             .type = JSON_TYPE_LIST,
-            .inner.list = (JsonIterator){
+            .inner.list = (JsonList){
                 .data = (Json[]) {
                     (Json) {.type = JSON_TYPE_NUMBER, .inner.number = 10.2},
                 },
@@ -62,7 +62,7 @@ void test_list() {
         "[true, false, 10.2, \"blehg\"]",
         &(Json) {
             .type = JSON_TYPE_LIST,
-            .inner.list = (JsonIterator){
+            .inner.list = (JsonList){
                 .data = (Json[]) {
                     (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = true},
                     (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = false},
@@ -79,7 +79,7 @@ void test_list() {
         "[true, [], 10.2, [10, 2], \"blehg\"]",
         &(Json) {
             .type = JSON_TYPE_LIST,
-            .inner.list = (JsonIterator){
+            .inner.list = (JsonList){
                 .data = (Json[]) {
                     (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = true},
                     (Json) {.type = JSON_TYPE_LIST, .inner.list = {0}},
@@ -112,7 +112,7 @@ void test_list() {
         "]",
         &(Json) {
             .type = JSON_TYPE_LIST,
-            .inner.list = (JsonIterator){
+            .inner.list = (JsonList){
                 .data = (Json[]) {
                     (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = true},
                     (Json) {.type = JSON_TYPE_LIST, .inner.list = {0}},
@@ -140,7 +140,7 @@ void test_objects() {
         "{\"foo\": true}",
         &(Json) {
             .type = JSON_TYPE_OBJECT,
-            .inner.list = (JsonIterator){
+            .inner.list = (JsonList){
                 .data = (Json[]) {
                     (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = true, .field_name = "foo"},
                 },
@@ -154,18 +154,18 @@ void test_objects() {
         "{\"foo\": true, \"bar\": [{\"foo\": 10.2, \"bleh\": null}]}",
         &(Json) {
             .type = JSON_TYPE_OBJECT,
-            .inner.list = (JsonIterator){
+            .inner.list = (JsonList){
                 .data = (Json[]) {
                     (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = true, .field_name = "foo"},
                     (Json) {
                         .field_name = "bar", 
                         .type = JSON_TYPE_LIST, 
-                        .inner.list = (JsonIterator) {
+                        .inner.list = (JsonList) {
                             .length = 1,
                             .data = (Json[]) {
                                 (Json) {
                                     .type = JSON_TYPE_OBJECT, 
-                                    .inner.object = (JsonIterator) {
+                                    .inner.object = (JsonList) {
                                         .length = 2,
                                         .data = (Json[]) {
                                             (Json) {.type = JSON_TYPE_NUMBER, .inner.number = 10.2, .field_name = "foo"},
@@ -196,19 +196,19 @@ void test_objects() {
         "}",
         &(Json) {
             .type = JSON_TYPE_OBJECT,
-            .inner.list = (JsonIterator){
+            .inner.list = (JsonList){
                 .data = (Json[]) {
                     (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = true, .field_name = "foo"},
                     (Json) {
                         .field_name = "bar", 
                         .type = JSON_TYPE_LIST, 
-                        .inner.list = (JsonIterator) {
+                        .inner.list = (JsonList) {
                             .length = 2,
                             .data = (Json[]) {
                                 (Json) {.type = JSON_TYPE_STRING, .inner.string = "blehh"},
                                 (Json) {
                                     .type = JSON_TYPE_OBJECT, 
-                                    .inner.object = (JsonIterator) {
+                                    .inner.object = (JsonList) {
                                         .length = 2,
                                         .data = (Json[]) {
                                             (Json) {.type = JSON_TYPE_NUMBER, .inner.number = 10.2, .field_name = "foo"},
