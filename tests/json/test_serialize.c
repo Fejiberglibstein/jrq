@@ -1,4 +1,5 @@
 #include "src/json.h"
+#include "src/json_serde.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -140,9 +141,9 @@ void test_objects() {
         "{\"foo\": true}",
         &(Json) {
             .type = JSON_TYPE_OBJECT,
-            .inner.list = (JsonList){
-                .data = (Json[]) {
-                    (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = true, .field_name = "foo"},
+            .inner.object = (JsonObject){
+                .data = (JsonObjectPair[]) {
+                    (JsonObjectPair) {.value = {.type = JSON_TYPE_BOOL, .inner.boolean = true}, .key = "foo"},
                 },
                 .length = 1,
             },
@@ -154,30 +155,32 @@ void test_objects() {
         "{\"foo\": true, \"bar\": [{\"foo\": 10.2, \"bleh\": null}]}",
         &(Json) {
             .type = JSON_TYPE_OBJECT,
-            .inner.list = (JsonList){
-                .data = (Json[]) {
-                    (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = true, .field_name = "foo"},
-                    (Json) {
-                        .field_name = "bar", 
-                        .type = JSON_TYPE_LIST, 
-                        .inner.list = (JsonList) {
-                            .length = 1,
-                            .data = (Json[]) {
-                                (Json) {
-                                    .type = JSON_TYPE_OBJECT, 
-                                    .inner.object = (JsonList) {
-                                        .length = 2,
-                                        .data = (Json[]) {
-                                            (Json) {.type = JSON_TYPE_NUMBER, .inner.number = 10.2, .field_name = "foo"},
-                                            (Json) {.type = JSON_TYPE_NULL,  .field_name = "bleh"},
-                                        }
+            .inner.object = (JsonObject){
+                .length = 2,
+                .data = (JsonObjectPair[]) {
+                    (JsonObjectPair) {.value = {.type = JSON_TYPE_BOOL, .inner.boolean = true}, .key = "foo"},
+                    (JsonObjectPair) {
+                        .key = "bar", 
+                        .value = {
+                            .type = JSON_TYPE_LIST, 
+                            .inner.list = (JsonList) {
+                                .length = 1,
+                                .data = (Json[]) {
+                                    (Json) {
+                                        .type = JSON_TYPE_OBJECT, 
+                                        .inner.object = (JsonObject) {
+                                            .length = 2,
+                                            .data = (JsonObjectPair[]) {
+                                                (JsonObjectPair) {.value = {.type = JSON_TYPE_NUMBER, .inner.number = 10.2}, .key = "foo"},
+                                                (JsonObjectPair) {.value = {.type = JSON_TYPE_NULL}, .key = "bleh"},
+                                            }
+                                        },
                                     },
                                 },
                             },
-                        },
+                        }
                     },
                 },
-                .length = 2,
             },
         },
         DEFAULT_FLAGS
@@ -196,11 +199,12 @@ void test_objects() {
         "}",
         &(Json) {
             .type = JSON_TYPE_OBJECT,
-            .inner.list = (JsonList){
-                .data = (Json[]) {
-                    (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = true, .field_name = "foo"},
-                    (Json) {
-                        .field_name = "bar", 
+            .inner.object = (JsonObject){
+                .data = (JsonObjectPair[]) {
+                    (JsonObjectPair) {.value = {.type = JSON_TYPE_BOOL, .inner.boolean = true}, .key = "foo"},
+                    (JsonObjectPair) {
+                        .key = "bar", 
+                        .value = (Json){
                         .type = JSON_TYPE_LIST, 
                         .inner.list = (JsonList) {
                             .length = 2,
@@ -208,15 +212,17 @@ void test_objects() {
                                 (Json) {.type = JSON_TYPE_STRING, .inner.string = "blehh"},
                                 (Json) {
                                     .type = JSON_TYPE_OBJECT, 
-                                    .inner.object = (JsonList) {
+                                    .inner.object = (JsonObject) {
                                         .length = 2,
-                                        .data = (Json[]) {
-                                            (Json) {.type = JSON_TYPE_NUMBER, .inner.number = 10.2, .field_name = "foo"},
-                                            (Json) {.type = JSON_TYPE_NULL,  .field_name = "bleh"},
+                                        .data = (JsonObjectPair[]) {
+                                            (JsonObjectPair) {.value = {.type = JSON_TYPE_NUMBER, .inner.number = 10.2}, .key = "foo"},
+                                            (JsonObjectPair) {.value = {.type = JSON_TYPE_NULL}, .key = "bleh"},
                                         }
                                     },
                                 },
                             },
+
+                        },
                         },
                     },
                 },

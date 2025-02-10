@@ -15,7 +15,6 @@ typedef enum JsonType {
 } JsonType;
 
 typedef Vec(struct Json) JsonList;
-
 typedef Vec(struct JsonObjectPair) JsonObject;
 
 typedef struct Json {

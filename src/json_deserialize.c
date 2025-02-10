@@ -57,7 +57,10 @@ static void expect(Parser *p, TokenType expected, char *err) {
 }
 
 Json parse_object(Parser *p) {
-    JsonObject items = {0};
+    Json obj = {
+        .type = JSON_TYPE_OBJECT,
+        .inner.object = {0},
+    };
 
     if (p->curr.type != TOKEN_RBRACE) {
         do {
@@ -67,16 +70,13 @@ Json parse_object(Parser *p) {
             expect(p, TOKEN_COLON, ERROR_EXPECTED_COLON);
 
             Json value = parse_json(p);
-            json_object_set(&items, key, value);
+            json_object_set(&obj, key, value);
         } while (matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
     }
 
     expect(p, TOKEN_RBRACE, ERROR_MISSING_RBRACE);
 
-    return (Json) {
-        .type = JSON_TYPE_OBJECT,
-        .inner.object = items,
-    };
+    return obj;
 }
 
 Json parse_list(Parser *p) {

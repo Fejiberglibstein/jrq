@@ -5,6 +5,7 @@ files = [
   'src/eval.c',
   'src/json_serialize.c',
   'src/lexer.c',
+  'src/json.c',
   'src/json_deserialize.c',
   'src/parser.c',
 ]
