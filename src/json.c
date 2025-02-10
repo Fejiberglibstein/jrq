@@ -137,6 +137,13 @@ Json json_object_sized(size_t i) {
 
 void json_object_set(Json *j, char *key, Json value) {
     assert(j->type == JSON_TYPE_OBJECT);
+    JsonObject obj = value.inner.object;
+    for (int i = 0; i < obj.length; i++) {
+        if (strcmp(obj.data[i].key, key) == 0) {
+            json_free(obj.data[i].value);
+            obj.data[i].value = value;
+        }
+    }
     vec_append(j->inner.object, (JsonObjectPair) {.key = key, .value = value});
 }
 
