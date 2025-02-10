@@ -63,7 +63,17 @@ Json json_copy(Json j) {
     case JSON_TYPE_NULL:
         return j;
     case JSON_TYPE_OBJECT:
-        // TODO
+        new = json_object_sized(j.inner.list.length);
+        for (int i = 0; i < j.inner.object.length; i++) {
+            JsonObjectPair pair = j.inner.object.data[i];
+
+            char *key = calloc(strlen(pair.key) + 1, sizeof(char));
+            strcpy(key, pair.key);
+
+            Json value = json_copy(pair.value);
+            json_object_set(&new, key, value);
+        }
+        return new;
         break;
     case JSON_TYPE_LIST:
         new = json_list_sized(j.inner.list.length);
@@ -142,6 +152,7 @@ void json_object_set(Json *j, char *key, Json value) {
         if (strcmp(obj.data[i].key, key) == 0) {
             json_free(obj.data[i].value);
             obj.data[i].value = value;
+            return;
         }
     }
     vec_append(j->inner.object, (JsonObjectPair) {.key = key, .value = value});
