@@ -44,10 +44,11 @@ Json json_string(char *);
 Json json_boolean(bool);
 Json json_null(void);
 
-void json_list_append(Json *, Json);
+
+Json json_list_append(Json, Json);
 Json json_list_sized(size_t);
 
 Json json_object_sized(size_t);
-void json_object_set(Json *, char *, Json);
+Json json_object_set(Json, char *, Json);
 
 #endif // _JSON_H

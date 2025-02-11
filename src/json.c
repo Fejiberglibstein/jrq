@@ -71,7 +71,7 @@ Json json_copy(Json j) {
             strcpy(key, pair.key);
 
             Json value = json_copy(pair.value);
-            json_object_set(&new, key, value);
+            new = json_object_set(new, key, value);
         }
         return new;
         break;
@@ -79,7 +79,7 @@ Json json_copy(Json j) {
         new = json_list_sized(j.inner.list.length);
         for (int i = 0; i < j.inner.list.length; i++) {
             Json el = json_copy(j.inner.list.data[i]);
-            json_list_append(&new, el);
+            new = json_list_append(new, el);
         }
         return new;
         break;
@@ -146,10 +146,11 @@ Json json_list(void) {
     };
 }
 
-void json_list_append(Json *list, Json el) {
-    assert(list->type == JSON_TYPE_LIST);
+Json json_list_append(Json list, Json el) {
+    assert(list.type == JSON_TYPE_LIST);
 
-    vec_append(list->inner.list, el);
+    vec_append(list.inner.list, el);
+    return list;
 }
 
 Json json_object_sized(size_t i) {
@@ -161,27 +162,29 @@ Json json_object_sized(size_t i) {
     };
 }
 
-void json_object_set(Json *j, char *key, Json value) {
-    assert(j->type == JSON_TYPE_OBJECT);
-    JsonObject obj = j->inner.object;
+Json json_object_set(Json j, char *key, Json value) {
+    assert(j.type == JSON_TYPE_OBJECT);
+    JsonObject obj = j.inner.object;
     for (int i = 0; i < obj.length; i++) {
         if (strcmp(obj.data[i].key, key) == 0) {
             json_free(obj.data[i].value);
             obj.data[i].value = value;
-            return;
+            return j;
         }
     }
-    vec_append(j->inner.object, (JsonObjectPair) {.key = key, .value = value});
+    vec_append(j.inner.object, (JsonObjectPair) {.key = key, .value = value});
+    return j;
 }
 
-Json *json_object_get(Json *j, char *key) {
+Json json_object_get(Json *j, char *key) {
     assert(j->type == JSON_TYPE_OBJECT);
     JsonObject obj = j->inner.object;
 
     for (int i = 0; i < obj.length; i++) {
         if (strcmp(key, obj.data[i].key) == 0) {
-            return &obj.data[i].value;
+            return obj.data[i].value;
         }
     }
-    return NULL;
+
+    return json_null();
 }

@@ -70,7 +70,7 @@ Json parse_object(Parser *p) {
             expect(p, TOKEN_COLON, ERROR_EXPECTED_COLON);
 
             Json value = parse_json(p);
-            json_object_set(&obj, key, value);
+            obj = json_object_set(obj, key, value);
         } while (matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
     }
 
