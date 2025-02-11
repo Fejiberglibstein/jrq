@@ -114,6 +114,22 @@ void json_free(Json j) {
     }
 }
 
+Json json_number(double f) {
+    return (Json) {.type = JSON_TYPE_NUMBER, .inner.number = f};
+}
+
+Json json_string(char *str) {
+    return (Json) {.type = JSON_TYPE_STRING, .inner.string = str};
+}
+
+Json json_boolean(bool boolean) {
+    return (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = boolean};
+}
+
+Json json_null(void) {
+    return (Json) {.type = JSON_TYPE_NULL};
+}
+
 Json json_list_sized(size_t i) {
     JsonList j = {0};
     vec_grow(j, i);

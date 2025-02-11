@@ -39,6 +39,11 @@ void json_free(Json);
 
 char *json_type(Json);
 
+Json json_number(double f);
+Json json_string(char *);
+Json json_boolean(bool);
+Json json_null(void);
+
 void json_list_append(Json *, Json);
 Json json_list_sized(size_t);
 
