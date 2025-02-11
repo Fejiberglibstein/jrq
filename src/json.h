@@ -37,6 +37,9 @@ bool json_equal(Json, Json);
 Json json_copy(Json);
 void json_free(Json);
 
+bool json_is_null(Json);
+bool json_is_invalid(Json);
+
 char *json_type(Json);
 
 Json json_number(double f);
@@ -45,6 +48,7 @@ Json json_boolean(bool);
 Json json_null(void);
 Json json_list(void);
 Json json_object(void);
+Json json_invalid(void);
 
 Json json_list_append(Json, Json);
 Json json_list_sized(size_t);
@@ -67,6 +71,9 @@ Json json_list_sized(size_t);
         __VA_ARGS__                                                                                                                                                       \
     )
 
+Json json_object_sized(size_t);
+Json json_object_set(Json, char *, Json);
+
 // clang-format off
 #define JSON_OBJECT_1(k1, v1) json_object_set(json_object(), k1, v1)
 #define JSON_OBJECT_2(k1, v1, k2, v2) json_object_set(JSON_OBJECT_1(k1, v1), k2, v2)
@@ -84,8 +91,5 @@ Json json_list_sized(size_t);
     JSON_OBJECT_IDX(__VA_ARGS__, JSON_OBJECT_10, _10, JSON_OBJECT_9, _9, JSON_OBJECT_8, _8, JSON_OBJECT_7, _7, JSON_OBJECT_6, _6, JSON_OBJECT_5, _5, JSON_OBJECT_4, _4, JSON_OBJECT_3, _3, JSON_OBJECT_2, _2, JSON_OBJECT_1, _1, dummy)( \
         __VA_ARGS__                                                                                                                                                                                                                      \
     )
-
-Json json_object_sized(size_t);
-Json json_object_set(Json, char *, Json);
 
 #endif // _JSON_H

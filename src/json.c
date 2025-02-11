@@ -1,4 +1,5 @@
 #include "src/json.h"
+#include "src/alloc.h"
 #include "src/utils.h"
 #include "src/vector.h"
 #include <assert.h>
@@ -67,8 +68,7 @@ Json json_copy(Json j) {
         for (int i = 0; i < j.inner.object.length; i++) {
             JsonObjectPair pair = j.inner.object.data[i];
 
-            char *key = jrq_calloc(strlen(pair.key) + 1, sizeof(char));
-            strcpy(key, pair.key);
+            char *key = jrq_strdup(pair.key);
 
             Json value = json_copy(pair.value);
             new = json_object_set(new, key, value);
@@ -114,6 +114,15 @@ void json_free(Json j) {
     }
 }
 
+bool json_is_null(Json j) {
+    return j.type == JSON_TYPE_NULL;
+}
+
+bool json_is_invalid(Json j) {
+    return j.type == JSON_TYPE_INVALID;
+}
+
+
 Json json_number(double f) {
     return (Json) {.type = JSON_TYPE_NUMBER, .inner.number = f};
 }
@@ -128,6 +137,10 @@ Json json_boolean(bool boolean) {
 
 Json json_null(void) {
     return (Json) {.type = JSON_TYPE_NULL};
+}
+
+Json json_invalid(void) {
+    return (Json) {.type = JSON_TYPE_INVALID};
 }
 
 Json json_list_sized(size_t i) {
