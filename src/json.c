@@ -140,10 +140,7 @@ Json json_list_sized(size_t i) {
 }
 
 Json json_list(void) {
-    return (Json) {
-        .type = JSON_TYPE_LIST,
-        .inner.list = {0},
-    };
+    return json_list_sized(16);
 }
 
 Json json_list_append(Json list, Json el) {
@@ -160,6 +157,10 @@ Json json_object_sized(size_t i) {
         .type = JSON_TYPE_OBJECT,
         .inner.object = j,
     };
+}
+
+Json json_object() {
+    return json_object_sized(16);
 }
 
 Json json_object_set(Json j, char *key, Json value) {

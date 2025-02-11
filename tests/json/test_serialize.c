@@ -8,8 +8,8 @@
 #define DEFAULT_FLAGS JSON_FLAG_SPACES
 #define TAB_FLAGS JSON_FLAG_SPACES | JSON_FLAG_TAB
 
-void test(char *expected, Json *input, JsonSerializeFlags flags) {
-    char *res = json_serialize(input, flags);
+void test(char *expected, Json input, JsonSerializeFlags flags) {
+    char *res = json_serialize(&input, flags);
 
     if (strcmp(res, expected) != 0) {
         printf("`%s` did not equal the expected `%s`\n", res, expected);
@@ -20,83 +20,34 @@ void test(char *expected, Json *input, JsonSerializeFlags flags) {
 }
 
 void test_primitives() {
-    test("10", &(Json) {.type = JSON_TYPE_NUMBER, .inner.number = 10}, DEFAULT_FLAGS);
-    test("-29.731", &(Json) {.type = JSON_TYPE_NUMBER, .inner.number = -29.731}, DEFAULT_FLAGS);
-    test("true", &(Json) {.type = JSON_TYPE_BOOL, .inner.boolean = true}, DEFAULT_FLAGS);
-    test("false", &(Json) {.type = JSON_TYPE_BOOL, .inner.boolean = false}, DEFAULT_FLAGS);
-    test("\"fooo\"", &(Json) {.type = JSON_TYPE_STRING, .inner.string = "fooo"}, DEFAULT_FLAGS);
-    test("null", &(Json) {.type = JSON_TYPE_NULL}, DEFAULT_FLAGS);
+    test("10", json_number(10), DEFAULT_FLAGS);
+    test("-29.731", json_number(-29.731), DEFAULT_FLAGS);
+    test("true", json_boolean(true), DEFAULT_FLAGS);
+    test("false", json_boolean(false), DEFAULT_FLAGS);
+    test("\"fooo\"", json_string("fooo"), DEFAULT_FLAGS);
+    test("null", json_null(), DEFAULT_FLAGS);
 }
 
 void test_list() {
-    test("[]", &(Json) {.type = JSON_TYPE_LIST, .inner.list = {0}}, DEFAULT_FLAGS);
-
-    test(
-        "[true]",
-        &(Json) {
-            .type = JSON_TYPE_LIST,
-            .inner.list = (JsonList){
-                .data = (Json[]) {
-                    (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = true},
-                },
-                .length = 1,
-            },
-        },
-        DEFAULT_FLAGS
-    );
-
-    test(
-        "[10.2]",
-        &(Json) {
-            .type = JSON_TYPE_LIST,
-            .inner.list = (JsonList){
-                .data = (Json[]) {
-                    (Json) {.type = JSON_TYPE_NUMBER, .inner.number = 10.2},
-                },
-                .length = 1,
-            },
-        },
-        DEFAULT_FLAGS
-    );
+    test("[]", json_list(), DEFAULT_FLAGS);
+    test("[true]", JSON_LIST(json_boolean(true)), DEFAULT_FLAGS);
+    test("[10.2]", JSON_LIST(json_number(10.2)), DEFAULT_FLAGS);
 
     test(
         "[true, false, 10.2, \"blehg\"]",
-        &(Json) {
-            .type = JSON_TYPE_LIST,
-            .inner.list = (JsonList){
-                .data = (Json[]) {
-                    (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = true},
-                    (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = false},
-                    (Json) {.type = JSON_TYPE_NUMBER, .inner.number = 10.2},
-                    (Json) {.type = JSON_TYPE_STRING, .inner.string = "blehg"},
-                },
-                .length = 4,
-            },
-        },
+        JSON_LIST(json_boolean(true), json_boolean(false), json_number(10.2), json_string("blehg")),
         DEFAULT_FLAGS
     );
 
     test(
         "[true, [], 10.2, [10, 2], \"blehg\"]",
-        &(Json) {
-            .type = JSON_TYPE_LIST,
-            .inner.list = (JsonList){
-                .data = (Json[]) {
-                    (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = true},
-                    (Json) {.type = JSON_TYPE_LIST, .inner.list = {0}},
-                    (Json) {.type = JSON_TYPE_NUMBER, .inner.number = 10.2},
-                    (Json) {.type = JSON_TYPE_LIST, .inner.list = {
-                        .data = (Json[]) {
-                            (Json) {.type = JSON_TYPE_NUMBER, .inner.number = 10},
-                            (Json) {.type = JSON_TYPE_NUMBER, .inner.number = 2},
-                        },
-                        .length = 2,
-                    }},
-                    (Json) {.type = JSON_TYPE_STRING, .inner.string = "blehg"},
-                },
-                .length = 5,
-            },
-        },
+        JSON_LIST(
+            json_boolean(true),
+            json_list(),
+            json_number(10.2),
+            JSON_LIST(json_number(10), json_number(2)),
+            json_string("blehg")
+        ),
         DEFAULT_FLAGS
     );
 
@@ -111,78 +62,30 @@ void test_list() {
         "    ], \n"
         "    \"blehg\"\n"
         "]",
-        &(Json) {
-            .type = JSON_TYPE_LIST,
-            .inner.list = (JsonList){
-                .data = (Json[]) {
-                    (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = true},
-                    (Json) {.type = JSON_TYPE_LIST, .inner.list = {0}},
-                    (Json) {.type = JSON_TYPE_NUMBER, .inner.number = 10.2},
-                    (Json) {.type = JSON_TYPE_LIST, .inner.list = {
-                        .data = (Json[]) {
-                            (Json) {.type = JSON_TYPE_NUMBER, .inner.number = 10},
-                            (Json) {.type = JSON_TYPE_NUMBER, .inner.number = 2},
-                        },
-                        .length = 2,
-                    }},
-                    (Json) {.type = JSON_TYPE_STRING, .inner.string = "blehg"},
-                },
-                .length = 5,
-            },
-        },
+        JSON_LIST(
+            json_boolean(true),
+            json_list(),
+            json_number(10.2),
+            JSON_LIST(json_number(10), json_number(2)),
+            json_string("blehg")
+        ),
         TAB_FLAGS
     );
 }
 
 void test_objects() {
-    test("{}", &(Json) {.type = JSON_TYPE_OBJECT, .inner.list = {0}}, DEFAULT_FLAGS);
+    test("{}", (Json) {.type = JSON_TYPE_OBJECT, .inner.list = {0}}, DEFAULT_FLAGS);
 
-    test(
-        "{\"foo\": true}",
-        &(Json) {
-            .type = JSON_TYPE_OBJECT,
-            .inner.object = (JsonObject){
-                .data = (JsonObjectPair[]) {
-                    (JsonObjectPair) {.value = {.type = JSON_TYPE_BOOL, .inner.boolean = true}, .key = "foo"},
-                },
-                .length = 1,
-            },
-        },
-        DEFAULT_FLAGS
-    );
+    test("{\"foo\": true}", JSON_OBJECT("foo", json_boolean(true)), DEFAULT_FLAGS);
 
     test(
         "{\"foo\": true, \"bar\": [{\"foo\": 10.2, \"bleh\": null}]}",
-        &(Json) {
-            .type = JSON_TYPE_OBJECT,
-            .inner.object = (JsonObject){
-                .length = 2,
-                .data = (JsonObjectPair[]) {
-                    (JsonObjectPair) {.value = {.type = JSON_TYPE_BOOL, .inner.boolean = true}, .key = "foo"},
-                    (JsonObjectPair) {
-                        .key = "bar", 
-                        .value = {
-                            .type = JSON_TYPE_LIST, 
-                            .inner.list = (JsonList) {
-                                .length = 1,
-                                .data = (Json[]) {
-                                    (Json) {
-                                        .type = JSON_TYPE_OBJECT, 
-                                        .inner.object = (JsonObject) {
-                                            .length = 2,
-                                            .data = (JsonObjectPair[]) {
-                                                (JsonObjectPair) {.value = {.type = JSON_TYPE_NUMBER, .inner.number = 10.2}, .key = "foo"},
-                                                (JsonObjectPair) {.value = {.type = JSON_TYPE_NULL}, .key = "bleh"},
-                                            }
-                                        },
-                                    },
-                                },
-                            },
-                        }
-                    },
-                },
-            },
-        },
+        JSON_OBJECT(
+            "foo",
+            json_boolean(true),
+            "bar",
+            JSON_LIST(JSON_OBJECT("foo", json_number(10.2), "bleh", json_null()))
+        ),
         DEFAULT_FLAGS
     );
 
@@ -197,38 +100,14 @@ void test_objects() {
         "        }\n"
         "    ]\n"
         "}",
-        &(Json) {
-            .type = JSON_TYPE_OBJECT,
-            .inner.object = (JsonObject){
-                .data = (JsonObjectPair[]) {
-                    (JsonObjectPair) {.value = {.type = JSON_TYPE_BOOL, .inner.boolean = true}, .key = "foo"},
-                    (JsonObjectPair) {
-                        .key = "bar", 
-                        .value = (Json){
-                        .type = JSON_TYPE_LIST, 
-                        .inner.list = (JsonList) {
-                            .length = 2,
-                            .data = (Json[]) {
-                                (Json) {.type = JSON_TYPE_STRING, .inner.string = "blehh"},
-                                (Json) {
-                                    .type = JSON_TYPE_OBJECT, 
-                                    .inner.object = (JsonObject) {
-                                        .length = 2,
-                                        .data = (JsonObjectPair[]) {
-                                            (JsonObjectPair) {.value = {.type = JSON_TYPE_NUMBER, .inner.number = 10.2}, .key = "foo"},
-                                            (JsonObjectPair) {.value = {.type = JSON_TYPE_NULL}, .key = "bleh"},
-                                        }
-                                    },
-                                },
-                            },
-
-                        },
-                        },
-                    },
-                },
-                .length = 2,
-            },
-        },
+        JSON_OBJECT(
+            "foo",
+            json_boolean(true),
+            "bar",
+            JSON_LIST(
+                json_string("blehh"), JSON_OBJECT("foo", json_number(10.2), "bleh", json_null())
+            )
+        ),
         TAB_FLAGS
     );
 }
