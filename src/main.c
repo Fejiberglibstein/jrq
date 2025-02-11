@@ -9,7 +9,7 @@
 char *read_from_file(int fd) {
 
     size_t capacity = 4;
-    char *str = malloc(capacity);
+    char *str = jrq_malloc(capacity);
     char *start = str;
 
     size_t length = 0;
@@ -30,7 +30,7 @@ char *read_from_file(int fd) {
         length = capacity;
         capacity *= 2;
 
-        char *tmp = realloc(start, capacity);
+        char *tmp = jrq_realloc(start, capacity);
         if (tmp == NULL) {
             return NULL;
         }

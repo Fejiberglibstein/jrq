@@ -1,6 +1,6 @@
 #include "./lexer.h"
+#include "src/alloc.h"
 #include "utils.h"
-#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 
@@ -60,8 +60,7 @@ static LexResult parse_ident(Lexer *l) {
     Position end_position = l->position;
 
     uint size = (uint)(l->str - start) + 1;
-    char *ident = calloc(1, size + 1);
-    assert_ptr(ident);
+    char *ident = jrq_calloc(1, size + 1);
     strncpy(ident, start, size);
 
     next_char(l);
@@ -109,8 +108,7 @@ static LexResult parse_string(Lexer *l) {
 
     uint size = (uint)(l->str - 1 - start);
 
-    char *string = calloc(1, size + 1);
-    assert_ptr(string);
+    char *string = jrq_calloc(1, size + 1);
     strncpy(string, start + 1, size);
 
     // Skip past the "
@@ -152,8 +150,7 @@ static LexResult parse_number(Lexer *l) {
     Position end_position = l->position;
 
     uint size = (uint)(l->str - start) + 1;
-    char *number = calloc(1, size + 1);
-    assert_ptr(number);
+    char *number = jrq_calloc(1, size + 1);
     strncpy(number, start, size);
 
     // Go to character after the number

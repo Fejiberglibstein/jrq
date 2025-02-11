@@ -1,9 +1,6 @@
 #include "src/parser.h"
 #include "src/errors.h"
 #include "src/lexer.h"
-#include "src/utils.h"
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 
@@ -99,8 +96,7 @@ static void expect(Parser *p, TokenType expected, char *err) {
                                                                                                    \
             ASTNode *rhs = _next_(p);                                                              \
             /* printf(#_name_ "  inner: %d\n", p->curr.type); */                                   \
-            ASTNode *new_expr = calloc(sizeof(ASTNode), 1);                                        \
-            assert_ptr(new_expr);                                                                  \
+            ASTNode *new_expr = jrq_calloc(sizeof(ASTNode), 1);                                        \
                                                                                                    \
             new_expr->type = AST_TYPE_BINARY;                                                      \
             new_expr->inner.binary = (typeof(new_expr->inner.binary)) {                            \
@@ -131,8 +127,7 @@ static ASTNode *unary(Parser *p) {
         TokenType operator= p->prev.type;
         ASTNode *rhs = unary(p);
 
-        ASTNode *new_expr = calloc(sizeof(ASTNode), 1);
-        assert_ptr(new_expr);
+        ASTNode *new_expr = jrq_calloc(sizeof(ASTNode), 1);
 
         new_expr->type = AST_TYPE_UNARY;
         new_expr->inner.unary = (typeof(new_expr->inner.unary)) {.rhs = rhs, .operator= operator, };
@@ -153,8 +148,7 @@ static ASTNode *closure(Parser *p) {
                 expect(p, TOKEN_IDENT, ERROR_EXPECTED_IDENT);
                 Token tok = p->prev;
 
-                ASTNode *arg = calloc(sizeof(ASTNode), 1);
-                assert_ptr(arg);
+                ASTNode *arg = jrq_calloc(sizeof(ASTNode), 1);
                 arg->type = AST_TYPE_PRIMARY;
                 arg->inner.primary = tok;
 
@@ -165,8 +159,7 @@ static ASTNode *closure(Parser *p) {
         }
         ASTNode *closure_body = expression(p);
 
-        ASTNode *closure = calloc(sizeof(ASTNode), 1);
-        assert_ptr(closure);
+        ASTNode *closure = jrq_calloc(sizeof(ASTNode), 1);
         closure->type = AST_TYPE_CLOSURE;
         closure->inner.closure.args = closure_args;
         closure->inner.closure.body = closure_body;
@@ -189,8 +182,7 @@ static ASTNode *function_call(Parser *p, ASTNode *callee) {
 
     expect(p, TOKEN_RPAREN, ERROR_MISSING_RPAREN);
 
-    ASTNode *function = calloc(sizeof(ASTNode), 1);
-    assert_ptr(function);
+    ASTNode *function = jrq_calloc(sizeof(ASTNode), 1);
     function->type = AST_TYPE_FUNCTION;
     function->inner.function.args = args;
     function->inner.function.callee = callee;
@@ -219,13 +211,11 @@ static ASTNode *access(Parser *p) {
                 return NULL;
             }
             Token ident = p->prev;
-            ASTNode *inner = calloc(sizeof(ASTNode), 1);
-            assert_ptr(inner);
+            ASTNode *inner = jrq_calloc(sizeof(ASTNode), 1);
             inner->type = AST_TYPE_PRIMARY;
             inner->inner.primary = ident;
 
-            ASTNode *new_expr = calloc(sizeof(ASTNode), 1);
-            assert_ptr(new_expr);
+            ASTNode *new_expr = jrq_calloc(sizeof(ASTNode), 1);
             new_expr->type = AST_TYPE_ACCESS;
             new_expr->inner.access.accessor = inner;
             new_expr->inner.access.inner = expr;
@@ -238,8 +228,7 @@ static ASTNode *access(Parser *p) {
             ASTNode *inner = expression(p);
             expect(p, TOKEN_RBRACKET, ERROR_MISSING_RBRACKET);
 
-            ASTNode *new_expr = calloc(sizeof(ASTNode), 1);
-            assert_ptr(new_expr);
+            ASTNode *new_expr = jrq_calloc(sizeof(ASTNode), 1);
             new_expr->type = AST_TYPE_ACCESS;
             new_expr->inner.access.accessor = inner;
             new_expr->inner.access.inner = expr;
@@ -253,8 +242,7 @@ static ASTNode *access(Parser *p) {
 }
 
 static ASTNode *keyword(Parser *p, ASTNodeType t) {
-    ASTNode *n = calloc(sizeof(ASTNode), 1);
-    assert_ptr(n);
+    ASTNode *n = jrq_calloc(sizeof(ASTNode), 1);
 
     n->type = t;
     return n;
@@ -274,8 +262,7 @@ static ASTNode *primary(Parser *p) {
 
     // printf(" primary %d\n", p->curr.type);
     if (matches(p, LIST((TokenType[]) {TOKEN_STRING, TOKEN_NUMBER, TOKEN_IDENT}))) {
-        ASTNode *new_expr = calloc(sizeof(ASTNode), 1);
-        assert_ptr(new_expr);
+        ASTNode *new_expr = jrq_calloc(sizeof(ASTNode), 1);
 
         new_expr->type = AST_TYPE_PRIMARY;
         new_expr->inner.primary = p->prev;
@@ -287,8 +274,7 @@ static ASTNode *primary(Parser *p) {
         ASTNode *expr = expression(p);
         expect(p, TOKEN_RPAREN, ERROR_MISSING_RPAREN);
 
-        ASTNode *grouping = calloc(sizeof(ASTNode), 1);
-        assert_ptr(grouping);
+        ASTNode *grouping = jrq_calloc(sizeof(ASTNode), 1);
 
         grouping->type = AST_TYPE_GROUPING;
         grouping->inner.grouping = expr;
@@ -316,8 +302,7 @@ ASTNode *list(Parser *p) {
 
     expect(p, TOKEN_RBRACKET, ERROR_MISSING_RBRACKET);
 
-    ASTNode *list = calloc(sizeof(ASTNode), 1);
-    assert_ptr(list);
+    ASTNode *list = jrq_calloc(sizeof(ASTNode), 1);
     list->type = AST_TYPE_LIST;
     list->inner.list = items;
     return list;
@@ -332,8 +317,7 @@ ASTNode *json_field(Parser *p) {
 
     Token tok = p->prev;
 
-    ASTNode *key = calloc(sizeof(ASTNode), 1);
-    assert_ptr(key);
+    ASTNode *key = jrq_calloc(sizeof(ASTNode), 1);
     key->type = AST_TYPE_PRIMARY;
     key->inner.primary = tok;
 
@@ -341,8 +325,7 @@ ASTNode *json_field(Parser *p) {
 
     ASTNode *value = expression(p);
 
-    ASTNode *res = calloc(sizeof(ASTNode), 1);
-    assert_ptr(res);
+    ASTNode *res = jrq_calloc(sizeof(ASTNode), 1);
     res->type = AST_TYPE_JSON_FIELD;
     res->inner.json_field.key = key;
     res->inner.json_field.value = value;
@@ -362,8 +345,7 @@ ASTNode *json(Parser *p) {
 
     expect(p, TOKEN_RBRACKET, ERROR_MISSING_RBRACE);
 
-    ASTNode *json = calloc(sizeof(ASTNode), 1);
-    assert_ptr(json);
+    ASTNode *json = jrq_calloc(sizeof(ASTNode), 1);
     json->type = AST_TYPE_JSON_OBJECT;
     json->inner.json_object = fields;
     return json;

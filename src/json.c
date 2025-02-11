@@ -67,7 +67,7 @@ Json json_copy(Json j) {
         for (int i = 0; i < j.inner.object.length; i++) {
             JsonObjectPair pair = j.inner.object.data[i];
 
-            char *key = calloc(strlen(pair.key) + 1, sizeof(char));
+            char *key = jrq_calloc(strlen(pair.key) + 1, sizeof(char));
             strcpy(key, pair.key);
 
             Json value = json_copy(pair.value);

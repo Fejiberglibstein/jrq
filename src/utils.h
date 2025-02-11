@@ -10,16 +10,6 @@ static inline bool is_whitespace(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
 
-// Used to assert that the result of malloc/realloc/calloc did not return NULL.
-//
-// If they did return NULL, this function will exit the program
-static inline void assert_ptr(void *p) {
-    if (p == NULL) {
-        printf("Out of memory :skull:\n");
-        exit(1);
-    }
-}
-
 typedef Vec(char) String;
 
 #define string_grow(str, amt) vec_grow(str, amt)

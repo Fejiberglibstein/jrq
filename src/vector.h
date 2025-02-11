@@ -1,7 +1,7 @@
 #ifndef _VECTOR_H
 #define _VECTOR_H
 
-#include <stdlib.h>
+#include "alloc.h">
 
 #define Vec(t)                                                                                     \
     struct {                                                                                       \
@@ -15,8 +15,8 @@
         do {                                                                                       \
             (vec).capacity = ((vec).capacity == 0) ? sizeof(*(vec).data) * 8 : (vec).capacity * 2; \
         } while ((vec).capacity - (vec).length * sizeof(*(vec).data) < amt * sizeof(*(vec).data)); \
-        typeof((vec).data) tmp = (typeof((vec).data))realloc((void *)(vec).data, (vec).capacity);  \
-        assert_ptr((void *)tmp);                                                                   \
+        typeof((vec).data) tmp                                                                     \
+            = (typeof((vec).data))jrq_realloc((void *)(vec).data, (vec).capacity);                 \
         (vec).data = tmp;                                                                          \
     }
 
