@@ -31,17 +31,17 @@ struct JsonIterator {
     /// to be evaluated.
     ///
     /// Acts sort of like a linked list, operating on a pipeline of data
-    JsonIterator next;
+    JsonIterator next_iter;
 };
 
 /// Advances the iterator and returns the next value yielded.
 ///
 /// Will return a `json_invalid()` when the iterator is over.
 Json iter_next(JsonIterator iter) {
-    if (iter != NULL) {
+    if (iter == NULL) {
         return json_invalid();
     }
-    return iter->func(iter->next);
+    return iter->func(iter);
 }
 
 /************
@@ -74,7 +74,7 @@ JsonIterator iter_list(Json j) {
     JsonIterator iter = jrq_malloc(sizeof(ListIter));
 
     iter->func = &list_iter_next;
-    iter->next = NULL;
+    iter->next_iter = NULL;
 
     ((ListIter *)iter)->index = 0;
     ((ListIter *)iter)->data = j;
@@ -115,7 +115,7 @@ JsonIterator iter_obj_keys(Json j) {
     JsonIterator iter = jrq_malloc(sizeof(KeyIter));
 
     iter->func = &key_iter_next;
-    iter->next = NULL;
+    iter->next_iter = NULL;
     ((KeyIter *)iter)->data = j;
     ((KeyIter *)iter)->index = 0;
 
@@ -152,7 +152,7 @@ JsonIterator iter_obj_values(Json j) {
     JsonIterator iter = jrq_malloc(sizeof(ValueIter));
 
     iter->func = &value_iter_next;
-    iter->next = NULL;
+    iter->next_iter = NULL;
     ((ValueIter *)iter)->data = j;
     ((ValueIter *)iter)->index = 0;
 
@@ -178,7 +178,7 @@ typedef struct {
 } MapIter;
 
 static Json map_iter_next(JsonIterator i) {
-    Json j = NEXT(i->next);
+    Json j = NEXT(i->next_iter);
 
     MapIter *map_iter = (MapIter *)i;
 
@@ -193,15 +193,15 @@ static Json map_iter_next(JsonIterator i) {
 /// `captures` will be passed in as a parameter into `func` every time it is
 /// called.
 JsonIterator iter_map(JsonIterator iter, MapFunc func, void *captures) {
-    JsonIterator iter_map = jrq_malloc(sizeof(MapIter));
+    JsonIterator map_iter = jrq_malloc(sizeof(MapIter));
 
-    iter_map->next = iter;
-    iter_map->func = &map_iter_next;
+    map_iter->next_iter = iter;
+    map_iter->func = &map_iter_next;
 
-    ((MapIter *)iter_map)->func = func;
-    ((MapIter *)iter_map)->closure_captures = captures;
+    ((MapIter *)map_iter)->func = func;
+    ((MapIter *)map_iter)->closure_captures = captures;
 
-    return iter_map;
+    return map_iter;
 }
 
 /**************
@@ -223,7 +223,7 @@ typedef struct {
 } FilterIter;
 
 static Json filter_iter_next(JsonIterator i) {
-    Json j = NEXT(i->next);
+    Json j = NEXT(i->next_iter);
 
     FilterIter *filter_iter = (FilterIter *)i;
 
@@ -231,7 +231,7 @@ static Json filter_iter_next(JsonIterator i) {
         if (filter_iter->func(j, filter_iter->closure_captures)) {
             return j;
         }
-        j = NEXT(i->next);
+        j = NEXT(i->next_iter);
     }
 }
 
@@ -243,13 +243,13 @@ static Json filter_iter_next(JsonIterator i) {
 /// `captures` will be passed in as a parameter into `func` every time it is
 /// called.
 JsonIterator iter_filter(JsonIterator iter, FilterFunc func, void *captures) {
-    JsonIterator iter_map = jrq_malloc(sizeof(FilterFunc));
+    JsonIterator filter_iter = jrq_malloc(sizeof(FilterFunc));
 
-    iter_map->next = iter;
-    iter_map->func = &map_iter_next;
+    filter_iter->next_iter = iter;
+    filter_iter->func = &filter_iter_next;
 
-    ((MapIter *)iter_map)->func = func;
-    ((MapIter *)iter_map)->closure_captures = captures;
+    ((FilterIter *)filter_iter)->func = func;
+    ((FilterIter *)filter_iter)->closure_captures = captures;
 
-    return iter_map;
+    return filter_iter;
 }
