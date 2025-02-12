@@ -117,6 +117,10 @@ JsonIterator iter_obj_values(Json j) {
     return iter;
 }
 
+/***********
+ * MapIter *
+ ***********/
+
 typedef Json (*MapFunc)(Json, void *);
 typedef struct {
     JsonIterator iter;
@@ -132,14 +136,18 @@ static Json iter_map_next(JsonIterator i) {
     return map_iter->func(j, map_iter->closure_captures);
 }
 
-JsonIterator iter_map(JsonIterator i, MapFunc func, void *captures) {
-    JsonIterator iter = jrq_malloc(sizeof(MapIter));
+/// An iterator that maps the values yielded by `iter` with `func`.
+///
+/// `captures` allow the func to have access to data outside the function, if
+/// you want to emulate closure captures like in rust.
+JsonIterator iter_map(JsonIterator iter, MapFunc func, void *captures) {
+    JsonIterator iter_map = jrq_malloc(sizeof(MapIter));
 
-    iter->next = i;
-    iter->func = &iter_map_next;
+    iter_map->next = iter;
+    iter_map->func = &iter_map_next;
 
-    ((MapIter *)iter)->func = func;
-    ((MapIter *)iter)->closure_captures = captures;
+    ((MapIter *)iter_map)->func = func;
+    ((MapIter *)iter_map)->closure_captures = captures;
 
-    return iter;
+    return iter_map;
 }
