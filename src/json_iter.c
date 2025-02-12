@@ -214,6 +214,8 @@ JsonIterator iter_map(JsonIterator iter, MapFunc func, void *captures) {
 /// Also allows for extra state to be captured from passing in an extra
 /// void * parameter
 typedef bool (*FilterFunc)(Json, void *);
+/// An iterator that filters elements of `iter` by skipping values if `func`
+/// returns false
 typedef struct {
     JsonIterator iter;
     /// Filtering function to apply to each element of the iterator
@@ -223,15 +225,14 @@ typedef struct {
 } FilterIter;
 
 static Json filter_iter_next(JsonIterator i) {
-    Json j = NEXT(i->next_iter);
-
     FilterIter *filter_iter = (FilterIter *)i;
 
     for (;;) {
+        Json j = NEXT(i->next_iter);
+        // if the filter function returns true, return it
         if (filter_iter->func(j, filter_iter->closure_captures)) {
             return j;
         }
-        j = NEXT(i->next_iter);
     }
 }
 
