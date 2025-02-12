@@ -203,3 +203,53 @@ JsonIterator iter_map(JsonIterator iter, MapFunc func, void *captures) {
 
     return iter_map;
 }
+
+/**************
+ * FilterIter *
+ **************/
+
+/// Function that filters Json by returning true or false based on the
+/// parameters passsed in
+///
+/// Also allows for extra state to be captured from passing in an extra
+/// void * parameter
+typedef bool (*FilterFunc)(Json, void *);
+typedef struct {
+    JsonIterator iter;
+    /// Filtering function to apply to each element of the iterator
+    FilterFunc func;
+    /// Extra state to be passed into `func` when it's called
+    void *closure_captures;
+} FilterIter;
+
+static Json filter_iter_next(JsonIterator i) {
+    Json j = NEXT(i->next);
+
+    FilterIter *filter_iter = (FilterIter *)i;
+
+    for (;;) {
+        if (filter_iter->func(j, filter_iter->closure_captures)) {
+            return j;
+        }
+        j = NEXT(i->next);
+    }
+}
+
+/// An iterator that maps the values yielded by `iter` with `func`.
+///
+/// `captures` allow the func to have access to data outside the function, if
+/// you want to emulate closure captures like in rust.
+///
+/// `captures` will be passed in as a parameter into `func` every time it is
+/// called.
+JsonIterator iter_filter(JsonIterator iter, FilterFunc func, void *captures) {
+    JsonIterator iter_map = jrq_malloc(sizeof(FilterFunc));
+
+    iter_map->next = iter;
+    iter_map->func = &map_iter_next;
+
+    ((MapIter *)iter_map)->func = func;
+    ((MapIter *)iter_map)->closure_captures = captures;
+
+    return iter_map;
+}
