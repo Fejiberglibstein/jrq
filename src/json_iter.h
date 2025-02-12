@@ -9,6 +9,7 @@ Json iter_next(JsonIterator iter);
 
 JsonIterator iter_obj_keys(Json j);
 JsonIterator iter_obj_values(Json j);
+JsonIterator iter_obj_key_value(Json j);
 
 JsonIterator iter_list(Json j);
 

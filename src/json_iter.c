@@ -163,6 +163,47 @@ JsonIterator iter_obj_values(Json j) {
     return iter;
 }
 
+/*****************
+ * KeyValue Iter *
+ *****************/
+
+/// An iterator over the values of an object
+typedef struct {
+    struct JsonIterator iter;
+    /// The object being iterated over.
+    Json data;
+    /// The current index of the object.
+    size_t index;
+} KeyValueIter;
+
+static Json key_value_iter_next(JsonIterator i) {
+    KeyValueIter *kv_iter = (KeyValueIter *)i;
+
+    if (kv_iter->index >= kv_iter->data.inner.object.length) {
+        return json_invalid();
+    }
+
+    JsonObject obj = kv_iter->data.inner.object;
+    Json ret = JSON_LIST(json_string(obj.data[kv_iter->index].key), obj.data[kv_iter->index].value);
+    kv_iter->index += 1;
+
+    return ret;
+}
+
+/// Returns an iterator over the keys and values of a json object.
+///
+/// If `j` is not an object, the iterator will yield `json_invalid()`.
+JsonIterator iter_obj_key_value(Json j) {
+    JsonIterator iter = jrq_malloc(sizeof(KeyValueIter));
+
+    iter->func = &key_value_iter_next;
+    iter->next_iter = NULL;
+    ((KeyValueIter *)iter)->data = j;
+    ((KeyValueIter *)iter)->index = 0;
+
+    return iter;
+}
+
 /***********
  * MapIter *
  ***********/
