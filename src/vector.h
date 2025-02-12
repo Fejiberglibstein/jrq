@@ -1,7 +1,7 @@
 #ifndef _VECTOR_H
 #define _VECTOR_H
 
-#include "alloc.h">
+#include "alloc.h"
 
 #define Vec(t)                                                                                     \
     struct {                                                                                       \

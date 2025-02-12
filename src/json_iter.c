@@ -23,6 +23,10 @@ typedef Json (*IteratorFunc)(JsonIterator);
 /// Each specific iterator implementation will "extend" this by having a JsonIterator as the first
 /// field in the struct. After the JsonIterator struct, the specific Iterator implementation can
 /// have any data it requires.
+///
+/// NOTE:
+///     All iterator implementations MUST use `struct JsonIterator` rather than `JsonIterator` as
+///     their first field. `JsonIterator` is a pointer, not the iterator itself.
 struct JsonIterator {
     /// Function to call when `json_next` is called on the iterator
     IteratorFunc func;
@@ -50,7 +54,7 @@ Json iter_next(JsonIterator iter) {
 
 /// Iterator over a list
 typedef struct {
-    JsonIterator iter;
+    struct JsonIterator iter;
     /// the list being iterating over
     Json data;
     /// the current index of the list
@@ -88,7 +92,7 @@ JsonIterator iter_list(Json j) {
 
 /// An iterator over the keys of an object
 typedef struct {
-    JsonIterator iter;
+    struct JsonIterator iter;
     /// The object being iterated over.
     Json data;
     /// The current index of the object.
@@ -128,7 +132,7 @@ JsonIterator iter_obj_keys(Json j) {
 
 /// An iterator over the values of an object
 typedef struct {
-    JsonIterator iter;
+    struct JsonIterator iter;
     /// The object being iterated over.
     Json data;
     /// The current index of the object.
@@ -170,9 +174,9 @@ JsonIterator iter_obj_values(Json j) {
 typedef Json (*MapFunc)(Json, void *);
 /// An iterator that maps elements of `iter` by applying `func`
 typedef struct {
-    JsonIterator iter;
+    struct JsonIterator iter;
     /// Mapping function to apply to each element of the iterator
-    MapFunc func;
+    MapFunc map_func;
     /// Extra state to be passed into `func` when it's called
     void *closure_captures;
 } MapIter;
@@ -182,7 +186,7 @@ static Json map_iter_next(JsonIterator i) {
 
     MapIter *map_iter = (MapIter *)i;
 
-    return map_iter->func(j, map_iter->closure_captures);
+    return map_iter->map_func(j, map_iter->closure_captures);
 }
 
 /// An iterator that maps the values yielded by `iter` with `func`.
@@ -198,7 +202,7 @@ JsonIterator iter_map(JsonIterator iter, MapFunc func, void *captures) {
     map_iter->next_iter = iter;
     map_iter->func = &map_iter_next;
 
-    ((MapIter *)map_iter)->func = func;
+    ((MapIter *)map_iter)->map_func = func;
     ((MapIter *)map_iter)->closure_captures = captures;
 
     return map_iter;
@@ -214,13 +218,13 @@ JsonIterator iter_map(JsonIterator iter, MapFunc func, void *captures) {
 /// Also allows for extra state to be captured from passing in an extra
 /// void * parameter
 typedef bool (*FilterFunc)(Json, void *);
-/// An iterator that filters elements of `iter` by skipping values if `func`
+/// An iterator that filters elements of `iter` by skipping values if `filter_func`
 /// returns false
 typedef struct {
-    JsonIterator iter;
+    struct JsonIterator iter;
     /// Filtering function to apply to each element of the iterator
-    FilterFunc func;
-    /// Extra state to be passed into `func` when it's called
+    FilterFunc filter_func;
+    /// Extra state to be passed into `filter_func` when it's called
     void *closure_captures;
 } FilterIter;
 
@@ -230,7 +234,7 @@ static Json filter_iter_next(JsonIterator i) {
     for (;;) {
         Json j = NEXT(i->next_iter);
         // if the filter function returns true, return it
-        if (filter_iter->func(j, filter_iter->closure_captures)) {
+        if (filter_iter->filter_func(j, filter_iter->closure_captures)) {
             return j;
         }
     }
@@ -249,7 +253,7 @@ JsonIterator iter_filter(JsonIterator iter, FilterFunc func, void *captures) {
     filter_iter->next_iter = iter;
     filter_iter->func = &filter_iter_next;
 
-    ((FilterIter *)filter_iter)->func = func;
+    ((FilterIter *)filter_iter)->filter_func = func;
     ((FilterIter *)filter_iter)->closure_captures = captures;
 
     return filter_iter;
