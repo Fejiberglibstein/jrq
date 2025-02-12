@@ -44,6 +44,41 @@ Json iter_next(JsonIterator iter) {
     return iter->func(iter->next);
 }
 
+/************
+ * ListIter *
+ ************/
+
+typedef struct {
+    JsonIterator iter;
+    Json data;
+    size_t index;
+} ListIter;
+
+static Json list_iter_next(JsonIterator i) {
+    ListIter *list_iter = (ListIter *)i;
+
+    if (list_iter->index >= list_iter->data.inner.object.length) {
+        return json_invalid();
+    }
+
+    return list_iter->data.inner.list.data[list_iter->index++];
+}
+
+/// Returns an iterator over all of the values in a list
+///
+/// If `j` is not a list, the iterator will yield `json_invalid()`.
+JsonIterator iter_list(Json j) {
+    JsonIterator iter = jrq_malloc(sizeof(ListIter));
+
+    iter->func = &list_iter_next;
+    iter->next = NULL;
+
+    ((ListIter *)iter)->index = 0;
+    ((ListIter *)iter)->data = j;
+
+    return iter;
+}
+
 /***********
  * KeyIter *
  ***********/
@@ -54,7 +89,7 @@ typedef struct {
     size_t index;
 } KeyIter;
 
-static Json iter_keys_next(JsonIterator i) {
+static Json key_iter_next(JsonIterator i) {
     KeyIter *key_iter = (KeyIter *)i;
 
     if (key_iter->index >= key_iter->data.inner.object.length) {
@@ -69,12 +104,11 @@ static Json iter_keys_next(JsonIterator i) {
 
 /// Returns an iterator over the keys of a json object.
 ///
-/// If the passed in json is not an object, the iterator will yield `json_invalid()` on the first
-/// `next` call
+/// If `j` is not an object, the iterator will yield `json_invalid()`.
 JsonIterator iter_obj_keys(Json j) {
     JsonIterator iter = jrq_malloc(sizeof(KeyIter));
 
-    iter->func = &iter_keys_next;
+    iter->func = &key_iter_next;
     iter->next = NULL;
     ((KeyIter *)iter)->data = j;
     ((KeyIter *)iter)->index = 0;
@@ -92,7 +126,7 @@ typedef struct {
     size_t index;
 } ValueIter;
 
-static Json iter_values_next(JsonIterator i) {
+static Json value_iter_next(JsonIterator i) {
     ValueIter *value_iter = (ValueIter *)i;
 
     if (value_iter->index >= value_iter->data.inner.object.length) {
@@ -104,12 +138,11 @@ static Json iter_values_next(JsonIterator i) {
 
 /// Returns an iterator over the values of a json object.
 ///
-/// If the passed in json is not an object, the iterator will yield `json_invalid()` on the first
-/// `next` call
+/// If `j` is not an object, the iterator will yield `json_invalid()`.
 JsonIterator iter_obj_values(Json j) {
     JsonIterator iter = jrq_malloc(sizeof(ValueIter));
 
-    iter->func = &iter_values_next;
+    iter->func = &value_iter_next;
     iter->next = NULL;
     ((ValueIter *)iter)->data = j;
     ((ValueIter *)iter)->index = 0;
@@ -128,7 +161,7 @@ typedef struct {
     void *closure_captures;
 } MapIter;
 
-static Json iter_map_next(JsonIterator i) {
+static Json map_iter_next(JsonIterator i) {
     Json j = NEXT(i->next);
 
     MapIter *map_iter = (MapIter *)i;
@@ -140,11 +173,14 @@ static Json iter_map_next(JsonIterator i) {
 ///
 /// `captures` allow the func to have access to data outside the function, if
 /// you want to emulate closure captures like in rust.
+///
+/// `captures` will be passed in as a parameter into `func` every time it is
+/// called.
 JsonIterator iter_map(JsonIterator iter, MapFunc func, void *captures) {
     JsonIterator iter_map = jrq_malloc(sizeof(MapIter));
 
     iter_map->next = iter;
-    iter_map->func = &iter_map_next;
+    iter_map->func = &map_iter_next;
 
     ((MapIter *)iter_map)->func = func;
     ((MapIter *)iter_map)->closure_captures = captures;

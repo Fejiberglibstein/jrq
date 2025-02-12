@@ -6,5 +6,10 @@
 typedef struct JsonIterator *JsonIterator;
 
 JsonIterator iter_obj_keys(Json j);
+JsonIterator iter_obj_values(Json j);
+
+JsonIterator iter_list(Json j);
+
+JsonIterator iter_map(JsonIterator iter, Json (*MapFunc)(Json, void *), void *captures);
 
 #endif // _JSON_ITER_H
