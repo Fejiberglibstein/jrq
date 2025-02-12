@@ -5,17 +5,20 @@ files = [
   'src/eval.c',
   'src/json_serialize.c',
   'src/lexer.c',
+  'src/alloc.c',
   'src/json.c',
   'src/json_deserialize.c',
   'src/parser.c',
+  'src/json_iter.c',
 ]
 
 executable('jrq', files + './src/main.c')
 
 tests = [
-  ['json', 'serialize', './tests/json/test_serialize.c'],
-  ['json', 'deserialize', './tests/json/test_deserialize.c'],
-  ['json', 'serde', './tests/json/test_both.c'],
+  ['json', 'serialize', './tests/json/serialize.c'],
+  ['json', 'deserialize', './tests/json/deserialize.c'],
+  ['json', 'serde', './tests/json/both.c'],
+  ['json', 'iter', './tests/json/iter.c'],
 
   ['lang', 'lexer', './tests/lang/lexer.c'],
   ['lang', 'parser', './tests/lang/parser.c'],
