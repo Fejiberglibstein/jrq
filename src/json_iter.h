@@ -3,6 +3,8 @@
 
 #include "json.h"
 
-typedef struct JsonIterator JsonIterator;
+typedef struct JsonIterator *JsonIterator;
+
+JsonIterator iter_obj_keys(Json j);
 
 #endif // _JSON_ITER_H

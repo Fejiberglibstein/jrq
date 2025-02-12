@@ -16,14 +16,14 @@
 ///
 /// From the point of rust iterators, this would be the `next` function in the impl block for the
 /// iterator.
-typedef Json (*IteratorFunc)(JsonIterator *);
+typedef Json (*IteratorFunc)(JsonIterator);
 
 /// Base "class" for an iterator.
 ///
 /// Each specific iterator implementation will "extend" this by having a JsonIterator as the first
 /// field in the struct. After the JsonIterator struct, the specific Iterator implementation can
 /// have any data it requires.
-typedef struct JsonIterator {
+struct JsonIterator {
     /// Function to call when `json_next` is called on the iterator
     IteratorFunc func;
 
@@ -31,13 +31,13 @@ typedef struct JsonIterator {
     /// to be evaluated.
     ///
     /// Acts sort of like a linked list, operating on a pipeline of data
-    JsonIterator *next;
-} JsonIterator;
+    JsonIterator next;
+};
 
 /// Advances the iterator and returns the next value yielded.
 ///
 /// Will return a `json_invalid()` when the iterator is over.
-Json iter_next(JsonIterator *iter) {
+Json iter_next(JsonIterator iter) {
     if (iter != NULL) {
         return json_invalid();
     }
@@ -54,7 +54,7 @@ typedef struct {
     size_t index;
 } KeyIter;
 
-static Json iter_keys_next(JsonIterator *i) {
+static Json iter_keys_next(JsonIterator i) {
     KeyIter *key_iter = (KeyIter *)i;
 
     if (key_iter->index >= key_iter->data.inner.object.length) {
@@ -67,8 +67,12 @@ static Json iter_keys_next(JsonIterator *i) {
     return json_string(str);
 }
 
-JsonIterator *iter_keys(Json j) {
-    JsonIterator *iter = jrq_malloc(sizeof(KeyIter));
+/// Returns an iterator over the keys of a json object.
+///
+/// If the passed in json is not an object, the iterator will yield `json_invalid()` on the first
+/// `next` call
+JsonIterator iter_obj_keys(Json j) {
+    JsonIterator iter = jrq_malloc(sizeof(KeyIter));
 
     iter->func = &iter_keys_next;
     iter->next = NULL;
@@ -88,7 +92,7 @@ typedef struct {
     size_t index;
 } ValueIter;
 
-static Json iter_values_next(JsonIterator *i) {
+static Json iter_values_next(JsonIterator i) {
     ValueIter *value_iter = (ValueIter *)i;
 
     if (value_iter->index >= value_iter->data.inner.object.length) {
@@ -100,9 +104,10 @@ static Json iter_values_next(JsonIterator *i) {
 
 /// Returns an iterator over the values of a json object.
 ///
-/// If the passed in json is not an object, the iterator will immediately return `json_invalid()`
-JsonIterator *iter_values(Json j) {
-    JsonIterator *iter = jrq_malloc(sizeof(ValueIter));
+/// If the passed in json is not an object, the iterator will yield `json_invalid()` on the first
+/// `next` call
+JsonIterator iter_obj_values(Json j) {
+    JsonIterator iter = jrq_malloc(sizeof(ValueIter));
 
     iter->func = &iter_values_next;
     iter->next = NULL;
@@ -119,7 +124,7 @@ typedef struct {
     void *closure_captures;
 } MapIter;
 
-static Json iter_map_next(JsonIterator *i) {
+static Json iter_map_next(JsonIterator i) {
     Json j = NEXT(i->next);
 
     MapIter *map_iter = (MapIter *)i;
@@ -127,8 +132,8 @@ static Json iter_map_next(JsonIterator *i) {
     return map_iter->func(j, map_iter->closure_captures);
 }
 
-JsonIterator *iter_map(JsonIterator *i, MapFunc func, void *captures) {
-    JsonIterator *iter = jrq_malloc(sizeof(MapIter));
+JsonIterator iter_map(JsonIterator i, MapFunc func, void *captures) {
+    JsonIterator iter = jrq_malloc(sizeof(MapIter));
 
     iter->next = i;
     iter->func = &iter_map_next;
