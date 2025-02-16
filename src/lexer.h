@@ -81,4 +81,6 @@ typedef struct {
 Lexer lex_init(char *);
 LexResult lex_next_tok(Lexer *);
 
+void tok_free(Token *tok);
+
 #endif // _LEXER_H

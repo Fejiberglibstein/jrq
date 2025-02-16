@@ -31,6 +31,7 @@ static void next(Parser *p) {
         return;
     }
 
+    tok_free(&p->prev);
     p->prev = p->curr;
     p->curr = t.token;
 }

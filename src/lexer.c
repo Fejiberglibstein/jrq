@@ -281,7 +281,7 @@ Lexer lex_init(char *input) {
     };
 }
 
-static void tok_free(Token *tok) {
+void tok_free(Token *tok) {
     switch (tok->type) {
     case TOKEN_IDENT:
         free(tok->inner.ident);
