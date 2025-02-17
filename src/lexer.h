@@ -78,6 +78,19 @@ typedef struct {
     char *error_message;
 } LexResult;
 
+typedef struct {
+    Lexer *l;
+    Token curr;
+    Token prev;
+    char *error;
+} Parser;
+
+void parser_next(Parser *p);
+
+bool parser_matches(Parser *p, TokenType types[], int length);
+
+void parser_expect(Parser *p, TokenType expected, char *err);
+
 Lexer lex_init(char *);
 LexResult lex_next_tok(Lexer *);
 

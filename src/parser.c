@@ -4,13 +4,6 @@
 #include <string.h>
 #include <strings.h>
 
-typedef struct {
-    Token curr;
-    Token prev;
-    Lexer *l;
-    char *error;
-} Parser;
-
 #define LIST(v...) (v), (sizeof(v) / sizeof(*v))
 
 // (binary_logical_or)
@@ -49,54 +42,19 @@ static ASTNode *list(Parser *p);
 // "{" (json_field ("," json_field)*)? "]"
 static ASTNode *json(Parser *p);
 
-static void next(Parser *p) {
-    if (p->error != NULL) {
-        return;
-    }
-    LexResult t = lex_next_tok(p->l);
-    if (t.error_message != NULL) {
-        p->error = t.error_message;
-        return;
-    }
-
-    p->prev = p->curr;
-    p->curr = t.token;
-}
-
-static bool matches(Parser *p, TokenType types[], int length) {
-    if ((p)->error) {
-        return false;
-    }
-    for (int i = 0; i < length; i++) {
-        if (p->curr.type == types[i]) {
-            next(p);
-            return true;
-        }
-    }
-    return false;
-}
-
-static void expect(Parser *p, TokenType expected, char *err) {
-    if (p->curr.type == expected) {
-        next(p);
-        return;
-    }
-    p->error = err;
-}
-
 #define PARSE_BINARY_OP(_name_, _next_, _ops_...)                                                  \
     static ASTNode *_name_(Parser *p) {                                                            \
         /* printf(#_name_ "  pre: %d\n", p->curr.type); */                                         \
         ASTNode *expr = _next_(p);                                                                 \
         /* printf(#_name_ "  post: %d\n", p->curr.type); */                                        \
                                                                                                    \
-        while (matches(p, LIST((TokenType[])_ops_))) {                                             \
+        while (parser_matches(p, LIST((TokenType[])_ops_))) {                                      \
             /* printf(#_name_ "  inner: %d\n", p->curr.type); */                                   \
             TokenType operator= p->prev.type;                                                      \
                                                                                                    \
             ASTNode *rhs = _next_(p);                                                              \
             /* printf(#_name_ "  inner: %d\n", p->curr.type); */                                   \
-            ASTNode *new_expr = jrq_calloc(sizeof(ASTNode), 1);                                        \
+            ASTNode *new_expr = jrq_calloc(sizeof(ASTNode), 1);                                    \
                                                                                                    \
             new_expr->type = AST_TYPE_BINARY;                                                      \
             new_expr->inner.binary = (typeof(new_expr->inner.binary)) {                            \
@@ -123,7 +81,7 @@ PARSE_BINARY_OP(binary_factor, unary, {TOKEN_SLASH, TOKEN_ASTERISK});
 // clang-format on
 
 static ASTNode *unary(Parser *p) {
-    if (matches(p, LIST((TokenType[]) {TOKEN_MINUS, TOKEN_BANG}))) {
+    if (parser_matches(p, LIST((TokenType[]) {TOKEN_MINUS, TOKEN_BANG}))) {
         TokenType operator= p->prev.type;
         ASTNode *rhs = unary(p);
 
@@ -137,7 +95,7 @@ static ASTNode *unary(Parser *p) {
 }
 
 static ASTNode *closure(Parser *p) {
-    if (matches(p, LIST((TokenType[]) {TOKEN_BAR, TOKEN_OR}))) {
+    if (parser_matches(p, LIST((TokenType[]) {TOKEN_BAR, TOKEN_OR}))) {
         Vec_ASTNode closure_args = (Vec_ASTNode) {0};
 
         // If we had a token_or "||" then there are no arguments to the closure.
@@ -145,7 +103,7 @@ static ASTNode *closure(Parser *p) {
         // the closure and must have a closing bar after the arguments.
         if (p->prev.type == TOKEN_BAR) {
             do {
-                expect(p, TOKEN_IDENT, ERROR_EXPECTED_IDENT);
+                parser_expect(p, TOKEN_IDENT, ERROR_EXPECTED_IDENT);
                 Token tok = p->prev;
 
                 ASTNode *arg = jrq_calloc(sizeof(ASTNode), 1);
@@ -154,8 +112,8 @@ static ASTNode *closure(Parser *p) {
 
                 vec_append(closure_args, arg);
 
-            } while (matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
-            expect(p, TOKEN_BAR, ERROR_MISSING_CLOSURE);
+            } while (parser_matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
+            parser_expect(p, TOKEN_BAR, ERROR_MISSING_CLOSURE);
         }
         ASTNode *closure_body = expression(p);
 
@@ -177,10 +135,10 @@ static ASTNode *function_call(Parser *p, ASTNode *callee) {
     if (p->curr.type != TOKEN_RPAREN) {
         do {
             vec_append(args, closure(p));
-        } while (matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
+        } while (parser_matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
     }
 
-    expect(p, TOKEN_RPAREN, ERROR_MISSING_RPAREN);
+    parser_expect(p, TOKEN_RPAREN, ERROR_MISSING_RPAREN);
 
     ASTNode *function = jrq_calloc(sizeof(ASTNode), 1);
     function->type = AST_TYPE_FUNCTION;
@@ -193,9 +151,9 @@ static ASTNode *access(Parser *p) {
     ASTNode *expr = primary(p);
 
     for (;;) {
-        if (matches(p, LIST((TokenType[]) {TOKEN_LPAREN}))) {
+        if (parser_matches(p, LIST((TokenType[]) {TOKEN_LPAREN}))) {
             expr = function_call(p, expr);
-        } else if (matches(p, LIST((TokenType[]) {TOKEN_DOT}))) {
+        } else if (parser_matches(p, LIST((TokenType[]) {TOKEN_DOT}))) {
             // When using the "." operator, we can access ONLY identifiers OR
             // numbers:
             //
@@ -205,9 +163,9 @@ static ASTNode *access(Parser *p) {
             //
             // [10]."fooo" - not ok, its a string
             // {"foo": 10}.true - not ok, true is a keyword
-            if (!matches(p, LIST((TokenType[]) {TOKEN_NUMBER, TOKEN_IDENT}))) {
+            if (!parser_matches(p, LIST((TokenType[]) {TOKEN_NUMBER, TOKEN_IDENT}))) {
                 // Expect -1 because this bit should never be happening
-                expect(p, -1, ERROR_EXPECTED_IDENT);
+                parser_expect(p, -1, ERROR_EXPECTED_IDENT);
                 return NULL;
             }
             Token ident = p->prev;
@@ -222,11 +180,11 @@ static ASTNode *access(Parser *p) {
 
             expr = new_expr;
 
-        } else if (matches(p, LIST((TokenType[]) {TOKEN_LBRACKET}))) {
+        } else if (parser_matches(p, LIST((TokenType[]) {TOKEN_LBRACKET}))) {
             // When using the [] access operator, we can evaluate any expression
             // inside the [].
             ASTNode *inner = expression(p);
-            expect(p, TOKEN_RBRACKET, ERROR_MISSING_RBRACKET);
+            parser_expect(p, TOKEN_RBRACKET, ERROR_MISSING_RBRACKET);
 
             ASTNode *new_expr = jrq_calloc(sizeof(ASTNode), 1);
             new_expr->type = AST_TYPE_ACCESS;
@@ -252,16 +210,16 @@ static ASTNode *primary(Parser *p) {
     // printf("primary %d\n", p->curr.type);
 
     // clang-format off
-    if (matches(p, LIST((TokenType[]) {TOKEN_TRUE}))) return keyword(p, AST_TYPE_TRUE);
-    if (matches(p, LIST((TokenType[]) {TOKEN_FALSE}))) return keyword(p, AST_TYPE_FALSE);
-    if (matches(p, LIST((TokenType[]) {TOKEN_NULL}))) return keyword(p, AST_TYPE_NULL);
+    if (parser_matches(p, LIST((TokenType[]) {TOKEN_TRUE}))) return keyword(p, AST_TYPE_TRUE);
+    if (parser_matches(p, LIST((TokenType[]) {TOKEN_FALSE}))) return keyword(p, AST_TYPE_FALSE);
+    if (parser_matches(p, LIST((TokenType[]) {TOKEN_NULL}))) return keyword(p, AST_TYPE_NULL);
 
-    if (matches(p, LIST((TokenType[]) {TOKEN_LBRACKET}))) return list(p);
-    if (matches(p, LIST((TokenType[]) {TOKEN_LBRACE}))) return json(p);
+    if (parser_matches(p, LIST((TokenType[]) {TOKEN_LBRACKET}))) return list(p);
+    if (parser_matches(p, LIST((TokenType[]) {TOKEN_LBRACE}))) return json(p);
     // clang-format on
 
     // printf(" primary %d\n", p->curr.type);
-    if (matches(p, LIST((TokenType[]) {TOKEN_STRING, TOKEN_NUMBER, TOKEN_IDENT}))) {
+    if (parser_matches(p, LIST((TokenType[]) {TOKEN_STRING, TOKEN_NUMBER, TOKEN_IDENT}))) {
         ASTNode *new_expr = jrq_calloc(sizeof(ASTNode), 1);
 
         new_expr->type = AST_TYPE_PRIMARY;
@@ -270,9 +228,9 @@ static ASTNode *primary(Parser *p) {
     }
 
     // printf("  primary %d\n", p->curr.type);
-    if (matches(p, LIST((TokenType[]) {TOKEN_LPAREN}))) {
+    if (parser_matches(p, LIST((TokenType[]) {TOKEN_LPAREN}))) {
         ASTNode *expr = expression(p);
-        expect(p, TOKEN_RPAREN, ERROR_MISSING_RPAREN);
+        parser_expect(p, TOKEN_RPAREN, ERROR_MISSING_RPAREN);
 
         ASTNode *grouping = jrq_calloc(sizeof(ASTNode), 1);
 
@@ -297,10 +255,10 @@ ASTNode *list(Parser *p) {
     if (p->curr.type != TOKEN_RBRACKET) {
         do {
             vec_append(items, expression(p));
-        } while (matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
+        } while (parser_matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
     }
 
-    expect(p, TOKEN_RBRACKET, ERROR_MISSING_RBRACKET);
+    parser_expect(p, TOKEN_RBRACKET, ERROR_MISSING_RBRACKET);
 
     ASTNode *list = jrq_calloc(sizeof(ASTNode), 1);
     list->type = AST_TYPE_LIST;
@@ -310,8 +268,8 @@ ASTNode *list(Parser *p) {
 
 ASTNode *json_field(Parser *p) {
     // Make sure we have a string/identifier first in the json
-    if (!matches(p, LIST((TokenType[]) {TOKEN_IDENT, TOKEN_STRING}))) {
-        expect(p, -1, ERROR_EXPECTED_STRING_OR_IDENT);
+    if (!parser_matches(p, LIST((TokenType[]) {TOKEN_IDENT, TOKEN_STRING}))) {
+        parser_expect(p, -1, ERROR_EXPECTED_STRING_OR_IDENT);
         return NULL;
     }
 
@@ -321,7 +279,7 @@ ASTNode *json_field(Parser *p) {
     key->type = AST_TYPE_PRIMARY;
     key->inner.primary = tok;
 
-    expect(p, TOKEN_COLON, ERROR_EXPECTED_COLON);
+    parser_expect(p, TOKEN_COLON, ERROR_EXPECTED_COLON);
 
     ASTNode *value = expression(p);
 
@@ -340,10 +298,10 @@ ASTNode *json(Parser *p) {
     if (p->curr.type != TOKEN_RBRACE) {
         do {
             vec_append(fields, json_field(p));
-        } while (matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
+        } while (parser_matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
     }
 
-    expect(p, TOKEN_RBRACKET, ERROR_MISSING_RBRACE);
+    parser_expect(p, TOKEN_RBRACKET, ERROR_MISSING_RBRACE);
 
     ASTNode *json = jrq_calloc(sizeof(ASTNode), 1);
     json->type = AST_TYPE_JSON_OBJECT;
@@ -356,7 +314,7 @@ ParseResult ast_parse(Lexer *l) {
         .l = l,
     };
 
-    next(p);
+    parser_next(p);
 
     ASTNode *node = expression(p);
 
@@ -365,7 +323,7 @@ ParseResult ast_parse(Lexer *l) {
     } else {
         // If we don't already have an error, make sure that the last token is
         // an EOF and then error if it's not
-        expect(p, TOKEN_EOF, ERROR_EXPECTED_EOF);
+        parser_expect(p, TOKEN_EOF, ERROR_EXPECTED_EOF);
         if (p->error != NULL) {
             return (ParseResult) {.error_message = p->error};
         }

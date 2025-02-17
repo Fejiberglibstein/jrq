@@ -72,6 +72,7 @@ static LexResult parse_ident(Lexer *l) {
 
     LexResult keyword = parse_keyword(ident, range);
     if (keyword.error_message == NULL) {
+        free(ident);
         return keyword;
     }
 
@@ -279,6 +280,42 @@ Lexer lex_init(char *input) {
         },
         .str = input,
     };
+}
+
+void parser_next(Parser *p) {
+    if (p->error != NULL) {
+        return;
+    }
+    LexResult t = lex_next_tok(p->l);
+    if (t.error_message != NULL) {
+        p->error = t.error_message;
+        return;
+    }
+
+    tok_free(&p->prev);
+    p->prev = p->curr;
+    p->curr = t.token;
+}
+
+bool parser_matches(Parser *p, TokenType types[], int length) {
+    if ((p)->error) {
+        return false;
+    }
+    for (int i = 0; i < length; i++) {
+        if (p->curr.type == types[i]) {
+            parser_next(p);
+            return true;
+        }
+    }
+    return false;
+}
+
+void parser_expect(Parser *p, TokenType expected, char *err) {
+    if (p->curr.type == expected) {
+        parser_next(p);
+        return;
+    }
+    p->error = err;
 }
 
 void tok_free(Token *tok) {
