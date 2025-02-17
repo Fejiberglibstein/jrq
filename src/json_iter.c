@@ -48,6 +48,13 @@ Json iter_next(JsonIterator iter) {
     return iter->func(iter);
 }
 
+void iter_free(JsonIterator i) {
+    if (i->next_iter != NULL) {
+        iter_free(i->next_iter);
+    }
+    free(i);
+}
+
 /************
  * ListIter *
  ************/
