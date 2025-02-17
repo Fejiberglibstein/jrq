@@ -51,6 +51,9 @@ bool json_equal(Json j1, Json j2) {
         return true;
         break;
     }
+
+    // unreachable
+    return true;
 }
 
 Json json_copy(Json j) {
@@ -83,6 +86,9 @@ Json json_copy(Json j) {
         return new;
         break;
     }
+
+    // unreachable
+    return json_invalid();
 }
 
 void json_free(Json j) {
@@ -95,12 +101,14 @@ void json_free(Json j) {
             json_free(obj.data[i].value);
             json_free(obj.data[i].key);
         }
+        free(obj.data);
         break;
     case JSON_TYPE_LIST:
         list = j.inner.list;
         for (int i = 0; i < list.length; i++) {
             json_free(list.data[i]);
         }
+        free(list.data);
         break;
     case JSON_TYPE_NULL:
     case JSON_TYPE_INVALID:
