@@ -46,7 +46,7 @@ void map_iter() {
 
 int main() {
     basic_iter();
-    // map_iter();
+    map_iter();
 }
 
 Json mapper(Json j, void *_) {

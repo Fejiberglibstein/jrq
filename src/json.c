@@ -189,7 +189,10 @@ Json json_object_set(Json j, Json key, Json value) {
     JsonObject obj = j.inner.object;
     for (int i = 0; i < obj.length; i++) {
         if (json_equal(obj.data[i].key, key)) {
+
             json_free(obj.data[i].value);
+            json_free(key);
+
             obj.data[i].value = value;
             return j;
         }

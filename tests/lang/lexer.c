@@ -59,6 +59,7 @@ void lex(char *inp, Token *expected, int len) {
             printf("%s\n", eq);
             assert(false);
         }
+        tok_free(&tok);
     }
     LexResult res = lex_next_tok(&l);
     assert(res.token.type == TOKEN_EOF);
