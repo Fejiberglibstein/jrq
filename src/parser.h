@@ -55,6 +55,10 @@ typedef struct ASTNode {
         ///
         /// Can also be written as
         /// expr "[" expr "]"
+        ///
+        /// If `inner` is NULL, then there is no inner expression. This looks
+        /// like `.map()` or `.foo`. A NULL inner expression will have the data
+        /// be the input json when the program is invoked.
         struct {
             struct ASTNode *inner;
             struct ASTNode *accessor;

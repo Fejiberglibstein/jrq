@@ -95,37 +95,36 @@ static ASTNode *unary(Parser *p) {
 }
 
 static ASTNode *closure(Parser *p) {
-    if (parser_matches(p, LIST((TokenType[]) {TOKEN_BAR, TOKEN_OR}))) {
-        Vec_ASTNode closure_args = (Vec_ASTNode) {0};
-
-        // If we had a token_or "||" then there are no arguments to the closure.
-        // On the other hand, if we had just a "|", then we have arguments in
-        // the closure and must have a closing bar after the arguments.
-        if (p->prev.type == TOKEN_BAR) {
-            do {
-                parser_expect(p, TOKEN_IDENT, ERROR_EXPECTED_IDENT);
-                Token tok = p->prev;
-
-                ASTNode *arg = jrq_calloc(sizeof(ASTNode), 1);
-                arg->type = AST_TYPE_PRIMARY;
-                arg->inner.primary = tok;
-
-                vec_append(closure_args, arg);
-
-            } while (parser_matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
-            parser_expect(p, TOKEN_BAR, ERROR_MISSING_CLOSURE);
-        }
-        ASTNode *closure_body = expression(p);
-
-        ASTNode *closure = jrq_calloc(sizeof(ASTNode), 1);
-        closure->type = AST_TYPE_CLOSURE;
-        closure->inner.closure.args = closure_args;
-        closure->inner.closure.body = closure_body;
-
-        return closure;
+    if (!parser_matches(p, LIST((TokenType[]) {TOKEN_BAR, TOKEN_OR}))) {
+        return expression(p);
     }
+    Vec_ASTNode closure_args = (Vec_ASTNode) {0};
 
-    return expression(p);
+    // If we had a token_or "||" then there are no arguments to the closure.
+    // On the other hand, if we had just a "|", then we have arguments in
+    // the closure and must have a closing bar after the arguments.
+    if (p->prev.type == TOKEN_BAR) {
+        do {
+            parser_expect(p, TOKEN_IDENT, ERROR_EXPECTED_IDENT);
+            Token tok = p->prev;
+
+            ASTNode *arg = jrq_calloc(sizeof(ASTNode), 1);
+            arg->type = AST_TYPE_PRIMARY;
+            arg->inner.primary = tok;
+
+            vec_append(closure_args, arg);
+
+        } while (parser_matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
+        parser_expect(p, TOKEN_BAR, ERROR_MISSING_CLOSURE);
+    }
+    ASTNode *closure_body = expression(p);
+
+    ASTNode *closure = jrq_calloc(sizeof(ASTNode), 1);
+    closure->type = AST_TYPE_CLOSURE;
+    closure->inner.closure.args = closure_args;
+    closure->inner.closure.body = closure_body;
+
+    return closure;
 }
 
 static ASTNode *function_call(Parser *p, ASTNode *callee) {
@@ -148,7 +147,7 @@ static ASTNode *function_call(Parser *p, ASTNode *callee) {
 }
 
 static ASTNode *access(Parser *p) {
-    ASTNode *expr = primary(p);
+    ASTNode *expr = (p->curr.type == TOKEN_DOT) ? NULL : primary(p);
 
     for (;;) {
         if (parser_matches(p, LIST((TokenType[]) {TOKEN_LPAREN}))) {
