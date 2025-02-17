@@ -17,6 +17,14 @@
 /// From the point of rust iterators, this would be the `next` function in the impl block for the
 /// iterator.
 typedef Json (*IteratorFunc)(JsonIterator);
+
+/// A FreeFunc is the function that gets called when `iter_free` is called.
+///
+/// This function should free any inner state the iterator implementation may
+/// have.
+///
+/// You do NOT need to free the iterator itself inside `FreeFunc`s, freeing the
+/// iterator is handled by `iter_free`
 typedef void (*FreeFunc)(JsonIterator);
 
 /// Base "class" for an iterator.
@@ -32,7 +40,7 @@ struct JsonIterator {
     /// Function to call when `iter_next` is called on the iterator
     IteratorFunc func;
 
-    // Function to be called when `iter_free` is called on the iterator
+    /// Function to be called when `iter_free` is called on the iterator
     FreeFunc free;
 };
 
@@ -47,7 +55,9 @@ Json iter_next(JsonIterator iter) {
 }
 
 void iter_free(JsonIterator i) {
-    i->free(i);
+    if (i->free != NULL) {
+        i->free(i);
+    }
     free(i);
 }
 
@@ -77,60 +87,49 @@ static void free_func_next(JsonIterator i) {
     iter_free(iter->next);
 }
 
-/************
- * ListIter *
- ************/
+#define JSON_DATA_ITERATOR(struct_name, create_func_name, next_func_name)                          \
+    JsonIterator create_func_name(Json);                                                           \
+                                                                                                   \
+    typedef struct {                                                                               \
+        struct JsonIterator iter;                                                                  \
+        /* the json data being iterating over */                                                   \
+        Json data;                                                                                 \
+        /* the current index of the data we're iterating over */                                   \
+        size_t index;                                                                              \
+    } struct_name;                                                                                 \
+                                                                                                   \
+    static Json next_func_name(JsonIterator);                                                      \
+                                                                                                   \
+    JsonIterator create_func_name(Json j) {                                                        \
+        struct_name *i = jrq_malloc(sizeof(struct_name));                                          \
+                                                                                                   \
+        *i = (struct_name) {                                                                       \
+            .iter = {.func = &next_func_name, .free = &free_func_json},                            \
+            .index = 0,                                                                            \
+            .data = j,                                                                             \
+        };                                                                                         \
+                                                                                                   \
+        return (JsonIterator)i;                                                                    \
+    }
 
-/// Iterator over a list
-typedef struct {
-    struct JsonIterator iter;
-    /// the list being iterating over
-    Json data;
-    /// the current index of the list
-    size_t index;
-} ListIter;
-
+/// Returns an iterator over all of the values in a list
+///
+/// If `j` is not a list, the iterator will yield `json_invalid()`.
+JSON_DATA_ITERATOR(ListIter, iter_list, list_iter_next);
 static Json list_iter_next(JsonIterator i) {
     ListIter *list_iter = (ListIter *)i;
 
-    if (list_iter->index >= list_iter->data.inner.object.length) {
+    if (list_iter->index >= list_iter->data.inner.list.length) {
         return json_invalid();
     }
 
     return list_iter->data.inner.list.data[list_iter->index++];
 }
 
-/// Returns an iterator over all of the values in a list
+/// Returns an iterator over the keys of a json object.
 ///
-/// If `j` is not a list, the iterator will yield `json_invalid()`.
-JsonIterator iter_list(Json j) {
-    ListIter *i = jrq_malloc(sizeof(ListIter));
-
-    *i = (ListIter){
-        .iter = {
-            .func = &list_iter_next,
-            .free = &free_func_json,
-        },
-        .index = 0,
-        .data = j,
-    };
-
-    return (JsonIterator)i;
-}
-
-/***********
- * KeyIter *
- ***********/
-
-/// An iterator over the keys of an object
-typedef struct {
-    struct JsonIterator iter;
-    /// The object being iterated over.
-    Json data;
-    /// The current index of the object.
-    size_t index;
-} KeyIter;
-
+/// If `j` is not an object, the iterator will yield `json_invalid()`.
+JSON_DATA_ITERATOR(KeyIter, iter_obj_keys, key_iter_next);
 static Json key_iter_next(JsonIterator i) {
     KeyIter *key_iter = (KeyIter *)i;
 
@@ -141,37 +140,10 @@ static Json key_iter_next(JsonIterator i) {
     return key_iter->data.inner.object.data[key_iter->index++].key;
 }
 
-/// Returns an iterator over the keys of a json object.
+/// Returns an iterator over the values of a json object.
 ///
 /// If `j` is not an object, the iterator will yield `json_invalid()`.
-JsonIterator iter_obj_keys(Json j) {
-    KeyIter *i = jrq_malloc(sizeof(KeyIter));
-
-    *i = (KeyIter) {
-        .iter = {
-            .func = &key_iter_next,
-            .free = &free_func_json,
-        },
-        .index = 0,
-        .data = j,
-    };
-
-    return (JsonIterator)i;
-}
-
-/**************
- * Value Iter *
- **************/
-
-/// An iterator over the values of an object
-typedef struct {
-    struct JsonIterator iter;
-    /// The object being iterated over.
-    Json data;
-    /// The current index of the object.
-    size_t index;
-} ValueIter;
-
+JSON_DATA_ITERATOR(ValueIter, iter_obj_values, value_iter_next);
 static Json value_iter_next(JsonIterator i) {
     ValueIter *value_iter = (ValueIter *)i;
 
@@ -182,37 +154,10 @@ static Json value_iter_next(JsonIterator i) {
     return value_iter->data.inner.object.data[value_iter->index++].value;
 }
 
-/// Returns an iterator over the values of a json object.
+/// Returns an iterator over the keys and values of a json object.
 ///
 /// If `j` is not an object, the iterator will yield `json_invalid()`.
-JsonIterator iter_obj_values(Json j) {
-    ValueIter *i = jrq_malloc(sizeof(ValueIter));
-
-    *i = (ValueIter) {
-        .iter = {
-            .func = &value_iter_next,
-            .free = &free_func_json,
-        },
-        .index = 0,
-        .data = j,
-    };
-
-    return (JsonIterator)i;
-}
-
-/*****************
- * KeyValue Iter *
- *****************/
-
-/// An iterator over the values of an object
-typedef struct {
-    struct JsonIterator iter;
-    /// The object being iterated over.
-    Json data;
-    /// The current index of the object.
-    size_t index;
-} KeyValueIter;
-
+JSON_DATA_ITERATOR(KeyValueIter, iter_obj_key_value, key_value_iter_next);
 static Json key_value_iter_next(JsonIterator i) {
     KeyValueIter *kv_iter = (KeyValueIter *)i;
 
@@ -225,24 +170,6 @@ static Json key_value_iter_next(JsonIterator i) {
     kv_iter->index += 1;
 
     return ret;
-}
-
-/// Returns an iterator over the keys and values of a json object.
-///
-/// If `j` is not an object, the iterator will yield `json_invalid()`.
-JsonIterator iter_obj_key_value(Json j) {
-    KeyValueIter *i = jrq_malloc(sizeof(KeyValueIter));
-
-    *i = (KeyValueIter) {
-        .iter = {
-            .func = &key_value_iter_next,
-            .free = &free_func_json,
-        },
-        .index = 0,
-        .data = j,
-    };
-
-    return (JsonIterator)i;
 }
 
 /***********
