@@ -169,6 +169,12 @@ Json json_list_append(Json list, Json el) {
     return list;
 }
 
+Json json_list_get(Json j, uint index) {
+    assert(j.type == JSON_TYPE_LIST);
+
+    return j.inner.list.data[index];
+}
+
 Json json_object_sized(size_t i) {
     JsonObject j = {0};
     vec_grow(j, i);
