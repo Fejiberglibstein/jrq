@@ -106,10 +106,7 @@ static Json key_iter_next(JsonIterator i) {
         return json_invalid();
     }
 
-    char *key = key_iter->data.inner.object.data[key_iter->index++].key;
-    char *str = jrq_strdup(key);
-
-    return json_string(str);
+    return key_iter->data.inner.object.data[key_iter->index++].key;
 }
 
 /// Returns an iterator over the keys of a json object.
@@ -184,7 +181,7 @@ static Json key_value_iter_next(JsonIterator i) {
     }
 
     JsonObject obj = kv_iter->data.inner.object;
-    Json ret = JSON_LIST(json_string(obj.data[kv_iter->index].key), obj.data[kv_iter->index].value);
+    Json ret = JSON_LIST(obj.data[kv_iter->index].key, obj.data[kv_iter->index].value);
     kv_iter->index += 1;
 
     return ret;

@@ -66,7 +66,7 @@ Json parse_object(Parser *p) {
     if (p->curr.type != TOKEN_RBRACE) {
         do {
             expect(p, TOKEN_STRING, ERROR_EXPECTED_STRING);
-            char *key = p->prev.inner.string;
+            Json key = json_string(p->prev.inner.string);
 
             expect(p, TOKEN_COLON, ERROR_EXPECTED_COLON);
 
@@ -124,22 +124,13 @@ static Json parse_json(Parser *p) {
 
         switch (t.type) {
         case TOKEN_STRING:
-            return (Json) {
-                .type = JSON_TYPE_STRING,
-                .inner.string = t.inner.string,
-            };
+            return json_string(t.inner.string);
         case TOKEN_NUMBER:
-            return (Json) {
-                .type = JSON_TYPE_NUMBER,
-                .inner.number = t.inner.number,
-            };
+            return json_number(t.inner.number);
         case TOKEN_MINUS:
             expect(p, TOKEN_NUMBER, "Invalid numerical literal");
             t = p->prev;
-            return (Json) {
-                .type = JSON_TYPE_NUMBER,
-                .inner.number = -t.inner.number,
-            };
+            return json_number(-t.inner.number);
 
         default:
             // unreachable

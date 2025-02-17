@@ -80,7 +80,7 @@ static void serialize_object(Serializer *s, Json *json, int depth) {
         // serialize object's key
         APPEND_COLOR(KEY_COLOR);
         string_append_str(s->inner, "\"");
-        string_append_str(s->inner, fields.data[i].key);
+        string_append_str(s->inner, fields.data[i].key.inner.string);
         string_append_str(s->inner, "\"");
         APPEND_COLOR(RESET_COLOR);
 

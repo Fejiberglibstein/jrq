@@ -1,6 +1,5 @@
 #include "src/json.h"
 #include "src/alloc.h"
-#include "src/utils.h"
 #include "src/vector.h"
 #include <assert.h>
 #include <math.h>
@@ -30,7 +29,7 @@ bool json_equal(Json j1, Json j2) {
         JsonObject j1obj = j1.inner.object;
         JsonObject j2obj = j2.inner.object;
         for (int i = 0; i < j1obj.length; i++) {
-            if (strcmp(j1obj.data[i].key, j2obj.data[i].key) != 0) {
+            if (json_equal(j1obj.data[i].key, j2obj.data[i].key) == false) {
                 return false;
             }
             if (json_equal(j1obj.data[i].value, j2obj.data[i].value) == false) {
@@ -68,7 +67,7 @@ Json json_copy(Json j) {
         for (int i = 0; i < j.inner.object.length; i++) {
             JsonObjectPair pair = j.inner.object.data[i];
 
-            char *key = jrq_strdup(pair.key);
+            Json key = json_copy(pair.key);
 
             Json value = json_copy(pair.value);
             new = json_object_set(new, key, value);
@@ -94,7 +93,7 @@ void json_free(Json j) {
         obj = j.inner.object;
         for (int i = 0; i < obj.length; i++) {
             json_free(obj.data[i].value);
-            free(obj.data[i].key);
+            json_free(obj.data[i].key);
         }
         break;
     case JSON_TYPE_LIST:
@@ -122,13 +121,12 @@ bool json_is_invalid(Json j) {
     return j.type == JSON_TYPE_INVALID;
 }
 
-
 Json json_number(double f) {
     return (Json) {.type = JSON_TYPE_NUMBER, .inner.number = f};
 }
 
 Json json_string(char *str) {
-    return (Json) {.type = JSON_TYPE_STRING, .inner.string = str};
+    return (Json) {.type = JSON_TYPE_STRING, .inner.string = jrq_strdup(str)};
 }
 
 Json json_boolean(bool boolean) {
@@ -176,11 +174,13 @@ Json json_object() {
     return json_object_sized(16);
 }
 
-Json json_object_set(Json j, char *key, Json value) {
+Json json_object_set(Json j, Json key, Json value) {
     assert(j.type == JSON_TYPE_OBJECT);
+    assert(key.type == JSON_TYPE_STRING);
+
     JsonObject obj = j.inner.object;
     for (int i = 0; i < obj.length; i++) {
-        if (strcmp(obj.data[i].key, key) == 0) {
+        if (json_equal(obj.data[i].key, key)) {
             json_free(obj.data[i].value);
             obj.data[i].value = value;
             return j;
@@ -195,7 +195,7 @@ Json json_object_get(Json *j, char *key) {
     JsonObject obj = j->inner.object;
 
     for (int i = 0; i < obj.length; i++) {
-        if (strcmp(key, obj.data[i].key) == 0) {
+        if (strcmp(key, obj.data[i].key.inner.string) == 0) {
             return obj.data[i].value;
         }
     }

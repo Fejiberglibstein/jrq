@@ -30,7 +30,7 @@ typedef struct Json {
 
 typedef struct JsonObjectPair {
     Json value;
-    char *key;
+    Json key;
 } JsonObjectPair;
 
 bool json_equal(Json, Json);
@@ -72,19 +72,19 @@ Json json_list_sized(size_t);
     )
 
 Json json_object_sized(size_t);
-Json json_object_set(Json, char *, Json);
+Json json_object_set(Json j, Json key, Json value);
 
 // clang-format off
-#define JSON_OBJECT_1(k1, v1) json_object_set(json_object(), k1, v1)
-#define JSON_OBJECT_2(k1, v1, k2, v2) json_object_set(JSON_OBJECT_1(k1, v1), k2, v2)
-#define JSON_OBJECT_3(k1, v1, k2, v2, k3, v3) json_object_set(JSON_OBJECT_2(k1, v1, k2, v2), k3, v3)
-#define JSON_OBJECT_4(k1, v1, k2, v2, k3, v3, k4, v4) json_object_set(JSON_OBJECT_3(k1, v1, k2, v2, k3, v3), k4, v4)
-#define JSON_OBJECT_5(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5) json_object_set(JSON_OBJECT_4(k1, v1, k2, v2, k3, v3, k4, v4), k5, v5)
-#define JSON_OBJECT_6(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5, k6, v6) json_object_set(JSON_OBJECT_5(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5), k6, v6)
-#define JSON_OBJECT_7(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5, k6, v6, k7, v7) json_object_set(JSON_OBJECT_6(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5, k6, v6), k7, v7)
-#define JSON_OBJECT_8(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5, k6, v6, k7, v7, k8, v8) json_object_set(JSON_OBJECT_7(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5, k6, v6, k7, v7), k8, v8)
-#define JSON_OBJECT_9(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5, k6, v6, k7, v7, k8, v8, k9, v9) json_object_set(JSON_OBJECT_8(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5, k6, v6, k7, v7, k8, v8), k9, v9)
-#define JSON_OBJECT_10(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5, k6, v6, k7, v7, k8, v8, k9, v9, k10, v10) json_object_set(JSON_OBJECT_9(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5, k6, v6, k7, v7, k8, v8, k9, v9), k10, v10)
+#define JSON_OBJECT_1(k1, v1) json_object_set(json_object(), json_string(k1), v1)
+#define JSON_OBJECT_2(k1, v1, k2, v2) json_object_set(JSON_OBJECT_1(k1, v1), json_string(k2), v2)
+#define JSON_OBJECT_3(k1, v1, k2, v2, k3, v3) json_object_set(JSON_OBJECT_2(k1, v1, k2, v2), json_string(k3), v3)
+#define JSON_OBJECT_4(k1, v1, k2, v2, k3, v3, k4, v4) json_object_set(JSON_OBJECT_3(k1, v1, k2, v2, k3, v3), json_string(k4), v4)
+#define JSON_OBJECT_5(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5) json_object_set(JSON_OBJECT_4(k1, v1, k2, v2, k3, v3, k4, v4), json_string(k5), v5)
+#define JSON_OBJECT_6(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5, k6, v6) json_object_set(JSON_OBJECT_5(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5), json_string(k6), v6)
+#define JSON_OBJECT_7(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5, k6, v6, k7, v7) json_object_set(JSON_OBJECT_6(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5, k6, v6), json_string(k7), v7)
+#define JSON_OBJECT_8(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5, k6, v6, k7, v7, k8, v8) json_object_set(JSON_OBJECT_7(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5, k6, v6, k7, v7), json_string(k8), v8)
+#define JSON_OBJECT_9(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5, k6, v6, k7, v7, k8, v8, k9, v9) json_object_set(JSON_OBJECT_8(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5, k6, v6, k7, v7, k8, v8), json_string(k9), v9)
+#define JSON_OBJECT_10(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5, k6, v6, k7, v7, k8, v8, k9, v9, k10, v10) json_object_set(JSON_OBJECT_9(k1, v1, k2, v2, k3, v3, k4, v4, k5, v5, k6, v6, k7, v7, k8, v8, k9, v9), json_string(k10), v10)
 #define JSON_OBJECT_IDX(_k1, _v1, _k2, _v2, _k3, _v3, _k4, _v4, _k5, _v5, _k6, _v6, _k7, _v7, _k8, _v8, _k9, _v9, _k10, _v10, NAME, ...) NAME
 // clang-format on
 #define JSON_OBJECT(...)                                                                                                                                                                                                                 \
