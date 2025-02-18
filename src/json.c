@@ -3,6 +3,8 @@
 #include "src/vector.h"
 #include <assert.h>
 #include <math.h>
+#include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -171,7 +173,16 @@ Json json_invalid(void) {
     return (Json) {.type = JSON_TYPE_INVALID};
 }
 
-Json json_invalid_msg(char *msg) {
+Json json_invalid_msg(char *format, ...) {
+    va_list args;
+    va_start(args, format);
+
+    int n = sprintf(NULL, format, args);
+    char *msg = calloc(sizeof(char), n + 1);
+    sprintf(msg, format, args);
+
+    va_end(args);
+
     return (Json) {.type = JSON_TYPE_INVALID, .inner.invalid = msg};
 }
 

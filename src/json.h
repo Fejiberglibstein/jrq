@@ -51,7 +51,7 @@ Json json_null(void);
 Json json_list(void);
 Json json_object(void);
 Json json_invalid(void);
-Json json_invalid_msg(char *);
+Json json_invalid_msg(char *, ...);
 
 Json json_list_append(Json, Json);
 Json json_list_sized(size_t);
