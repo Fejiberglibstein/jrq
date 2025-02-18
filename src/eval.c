@@ -1,44 +1,74 @@
 #include "src/eval.h"
+#include "src/errors.h"
 #include "src/json.h"
 #include "src/parser.h"
 #include <assert.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-static Json eval_primary(ASTNode *node, Json input);
-static Json eval_unary(ASTNode *node, Json input);
-static Json eval_binary(ASTNode *node, Json input);
-static Json eval_function(ASTNode *node, Json input);
-static Json eval_access(ASTNode *node, Json input);
-static Json eval_list(ASTNode *node, Json input);
-static Json eval_json_field(ASTNode *node, Json input);
-static Json eval_json_object(ASTNode *node, Json input);
-static Json eval_grouping(ASTNode *node, Json input);
+typedef struct {
+} VariableStack;
+
+typedef struct {
+    // The input json from invoking the program
+    Json input;
+
+    VariableStack vars;
+} Eval;
+
+#define EXPECT_TYPE(j, _type, ...)                                                                 \
+    ({                                                                                             \
+        Json __j = j;                                                                              \
+        if (__j.type != _type) {                                                                   \
+            int n = sprintf(NULL, ""__VA_ARGS__);                                                  \
+            char *msg = jrq_calloc(sizeof(char), n + 1);                                           \
+            sprintf(msg, ""__VA_ARGS__);                                                           \
+            return json_invalid_msg(msg);                                                          \
+        }                                                                                          \
+        __j;                                                                                       \
+    })
+
+static Json eval_unary(Eval *e, ASTNode *node);
+static Json eval_primary(Eval *e, ASTNode *node);
+static Json eval_binary(Eval *e, ASTNode *node);
+static Json eval_function(Eval *e, ASTNode *node);
+static Json eval_access(Eval *e, ASTNode *node);
+static Json eval_list(Eval *e, ASTNode *node);
+static Json eval_json_field(Eval *e, ASTNode *node);
+static Json eval_json_object(Eval *e, ASTNode *node);
+static Json eval_grouping(Eval *e, ASTNode *node);
+static Json eval_node(Eval *e, ASTNode *node);
 
 Json eval(ASTNode *node, Json input) {
+    return eval_node(&(Eval) {.input = input, .vars = (VariableStack) {}}, node);
+}
+
+Json eval_node(Eval *e, ASTNode *node) {
     switch (node->type) {
     case AST_TYPE_PRIMARY:
-        return eval_primary(node, input);
+        return eval_primary(e, node);
     case AST_TYPE_UNARY:
-        return eval_unary(node, input);
+        return eval_unary(e, node);
     case AST_TYPE_BINARY:
-        return eval_binary(node, input);
+        return eval_binary(e, node);
     case AST_TYPE_FUNCTION:
-        return eval_function(node, input);
+        return eval_function(e, node);
     case AST_TYPE_ACCESS:
-        return eval_access(node, input);
+        return eval_access(e, node);
     case AST_TYPE_LIST:
-        return eval_list(node, input);
+        return eval_list(e, node);
     case AST_TYPE_JSON_OBJECT:
-        return eval_json_object(node, input);
+        return eval_json_object(e, node);
     case AST_TYPE_GROUPING:
-        return eval_grouping(node, input);
+        return eval_grouping(e, node);
     default:
         assert(false);
         break;
     }
 }
 
-static Json eval_primary(ASTNode *node, Json _) {
+static Json eval_primary(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_PRIMARY);
 
     switch (node->inner.primary.type) {
@@ -58,31 +88,49 @@ static Json eval_primary(ASTNode *node, Json _) {
     }
 }
 
-static Json eval_grouping(ASTNode *node, Json input) {
+static Json eval_grouping(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_GROUPING);
 
-    return eval(node->inner.grouping, input);
+    return eval_node(e, node->inner.grouping);
 }
 
-static Json eval_unary(ASTNode *node, Json input) {
+static Json eval_unary(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_UNARY);
+    Json r;
 
     switch (node->inner.unary.operator) {
-        // TODO
     case TOKEN_BANG:
-        return eval(node->inner.unary.rhs, input);
-        // TODO
+        r = eval_node(e, node->inner.unary.rhs);
+        EXPECT_TYPE(
+            r,
+            JSON_TYPE_BOOL,
+            TYPE_ERROR("Expected boolean in unary ! but got %s", json_type(r.type))
+        );
+        r.inner.boolean = !r.inner.boolean;
+        return r;
     case TOKEN_MINUS:
-        return eval(node->inner.unary.rhs, input);
+        r = eval_node(e, node->inner.unary.rhs);
+        EXPECT_TYPE(
+            r,
+            JSON_TYPE_NUMBER,
+            TYPE_ERROR("Expected number in unary - but got %s", json_type(r.type))
+        );
+        r.inner.number = -r.inner.number;
+        return r;
 
     default:
         // unreachable
-        break;
+        return json_invalid();
     }
 }
 
-static Json eval_binary(ASTNode *node, Json input);
-static Json eval_function(ASTNode *node, Json input);
-static Json eval_access(ASTNode *node, Json input);
-static Json eval_list(ASTNode *node);
-static Json eval_json_object(ASTNode *node);
+static Json eval_binary(Eval *e, ASTNode *node) {
+}
+static Json eval_function(Eval *e, ASTNode *node) {
+}
+static Json eval_access(Eval *e, ASTNode *node) {
+}
+static Json eval_list(Eval *e, ASTNode *node) {
+}
+static Json eval_json_object(Eval *e, ASTNode *node) {
+}

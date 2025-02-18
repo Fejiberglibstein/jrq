@@ -14,4 +14,7 @@
 #define ERROR_EXPECTED_STRING "Expected string key in json literal"
 #define ERROR_EXPECTED_COLON "Expected colon ':' after key in json literal"
 
+// Type errors
+#define TYPE_ERROR(...) "Type Error: " __VA_ARGS__
+
 #endif // _ERRORS_H
