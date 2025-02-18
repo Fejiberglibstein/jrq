@@ -22,6 +22,7 @@ typedef struct Json {
         double number;
         bool boolean;
         char *string;
+        char *invalid;
         JsonObject object;
         JsonList list;
     } inner;
@@ -40,15 +41,17 @@ void json_free(Json);
 bool json_is_null(Json);
 bool json_is_invalid(Json);
 
-char *json_type(Json);
+char *json_type(JsonType);
 
 Json json_number(double f);
 Json json_string(char *);
+Json json_string_no_alloc(char *);
 Json json_boolean(bool);
 Json json_null(void);
 Json json_list(void);
 Json json_object(void);
 Json json_invalid(void);
+Json json_invalid_msg(char *);
 
 Json json_list_append(Json, Json);
 Json json_list_sized(size_t);

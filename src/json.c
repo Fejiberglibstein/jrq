@@ -8,6 +8,25 @@
 
 #define EPSILON 0.00000001
 
+char *json_type(JsonType type) {
+    switch (type) {
+    case JSON_TYPE_INVALID:
+        return "<invalid>";
+    case JSON_TYPE_OBJECT:
+        return "object";
+    case JSON_TYPE_LIST:
+        return "list";
+    case JSON_TYPE_NULL:
+        return "<null>";
+    case JSON_TYPE_NUMBER:
+        return "number";
+    case JSON_TYPE_STRING:
+        return "string";
+    case JSON_TYPE_BOOL:
+        return "bool";
+    }
+}
+
 bool json_equal(Json j1, Json j2) {
     if (j1.type != j2.type) {
         return false;
@@ -136,6 +155,9 @@ Json json_number(double f) {
 Json json_string(char *str) {
     return (Json) {.type = JSON_TYPE_STRING, .inner.string = jrq_strdup(str)};
 }
+Json json_string_no_alloc(char *str) {
+    return (Json) {.type = JSON_TYPE_STRING, .inner.string = str};
+}
 
 Json json_boolean(bool boolean) {
     return (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = boolean};
@@ -147,6 +169,10 @@ Json json_null(void) {
 
 Json json_invalid(void) {
     return (Json) {.type = JSON_TYPE_INVALID};
+}
+
+Json json_invalid_msg(char *msg) {
+    return (Json) {.type = JSON_TYPE_INVALID, .inner.invalid = msg};
 }
 
 Json json_list_sized(size_t i) {
