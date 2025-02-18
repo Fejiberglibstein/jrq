@@ -2,32 +2,53 @@
 #include "src/errors.h"
 #include "src/json.h"
 #include "src/parser.h"
+#include "src/vector.h"
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-typedef struct {
-} VariableStack;
-
-typedef struct {
-    // The input json from invoking the program
-    Json input;
-
-    VariableStack vars;
-} Eval;
+#include <string.h>
 
 #define EXPECT_TYPE(j, _type, ...)                                                                 \
     ({                                                                                             \
         Json __j = j;                                                                              \
         if (__j.type != _type) {                                                                   \
-            int n = sprintf(NULL, ""__VA_ARGS__);                                                  \
-            char *msg = jrq_calloc(sizeof(char), n + 1);                                           \
-            sprintf(msg, ""__VA_ARGS__);                                                           \
-            return json_invalid_msg(msg);                                                          \
+            return json_invalid_msg(__VA_ARGS__);                                                  \
         }                                                                                          \
         __j;                                                                                       \
     })
+
+struct Variable {
+    char *name;
+    Json value;
+};
+typedef Vec(struct Variable) VariableStack;
+
+typedef struct {
+    /// The input json from invoking the program
+    Json input;
+
+    /// The variables that are currently in scope.
+    ///
+    /// This is represented as a stack so that we can allow for variable
+    /// shadowing:
+    ///
+    ///  [{"foo": 4}].map(|v| v.foo.map(|v| v))
+    ///
+    /// will create a stack like [v: {"foo": 4}, v: 4].
+    VariableStack vars;
+} Eval;
+
+static Json get_variable(VariableStack *vs, char *var_name) {
+    // Iterate through the stack in reverse order
+    for (uint i = vs->length - 1; i >= 0; i--) {
+        if (strcmp(vs->data[i].name, var_name) == 0) {
+            return vs->data[i].value;
+        }
+    }
+
+    return json_invalid_msg(RUNTIME_ERROR("Variable not in scope: %s", var_name));
+}
 
 static Json eval_unary(Eval *e, ASTNode *node);
 static Json eval_primary(Eval *e, ASTNode *node);
@@ -79,6 +100,8 @@ static Json eval_primary(Eval *e, ASTNode *node) {
     switch (node->inner.primary.type) {
     case TOKEN_STRING:
         return json_string_no_alloc(node->inner.primary.inner.string);
+    case TOKEN_IDENT:
+        return get_variable(&e->vars, node->inner.primary.inner.ident);
     case TOKEN_NUMBER:
         return json_number(node->inner.primary.inner.number);
     case TOKEN_TRUE:
