@@ -26,4 +26,6 @@
         (vec).data[(vec).length++] = el;                                                           \
     } while (0)
 
+#define vec_pop(vec) ({ (vec).data[--(vec).length]; })
+
 #endif // _VECTOR_H
