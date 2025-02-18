@@ -206,8 +206,6 @@ static ASTNode *keyword(Parser *p, ASTNodeType t) {
 }
 
 static ASTNode *primary(Parser *p) {
-    // printf("primary %d\n", p->curr.type);
-
     // clang-format off
     if (parser_matches(p, LIST((TokenType[]) {TOKEN_TRUE}))) return keyword(p, AST_TYPE_TRUE);
     if (parser_matches(p, LIST((TokenType[]) {TOKEN_FALSE}))) return keyword(p, AST_TYPE_FALSE);
@@ -217,7 +215,6 @@ static ASTNode *primary(Parser *p) {
     if (parser_matches(p, LIST((TokenType[]) {TOKEN_LBRACE}))) return json(p);
     // clang-format on
 
-    // printf(" primary %d\n", p->curr.type);
     if (parser_matches(p, LIST((TokenType[]) {TOKEN_STRING, TOKEN_NUMBER, TOKEN_IDENT}))) {
         ASTNode *new_expr = jrq_calloc(sizeof(ASTNode), 1);
 
@@ -226,7 +223,6 @@ static ASTNode *primary(Parser *p) {
         return new_expr;
     }
 
-    // printf("  primary %d\n", p->curr.type);
     if (parser_matches(p, LIST((TokenType[]) {TOKEN_LPAREN}))) {
         ASTNode *expr = expression(p);
         parser_expect(p, TOKEN_RPAREN, ERROR_MISSING_RPAREN);
@@ -239,7 +235,6 @@ static ASTNode *primary(Parser *p) {
         return grouping;
     }
 
-    // printf("   primary %d\n", p->curr.type);
     if (p->error == NULL) {
         p->error = ERROR_UNEXPECTED_TOKEN;
     }

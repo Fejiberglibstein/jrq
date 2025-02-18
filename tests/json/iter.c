@@ -23,13 +23,12 @@ void basic_iter() {
     iter_free(iter);
 
     iter = iter_obj_keys(obj);
-    assert(json_equal(iter_next(iter), json_string("foo")));
-    assert(json_equal(iter_next(iter), json_string("bar")));
-    assert(json_equal(iter_next(iter), json_string("baz")));
+    assert(json_equal(iter_next(iter), json_string_no_alloc("foo")));
+    assert(json_equal(iter_next(iter), json_string_no_alloc("bar")));
+    assert(json_equal(iter_next(iter), json_string_no_alloc("baz")));
     assert(json_equal(iter_next(iter), json_invalid()));
     assert(json_equal(iter_next(iter), json_invalid()));
     iter_free(iter);
-
 }
 
 void map_iter() {
