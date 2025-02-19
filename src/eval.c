@@ -13,7 +13,7 @@
     ({                                                                                             \
         Json __j = j;                                                                              \
         if (__j.type != _type) {                                                                   \
-            return json_invalid_msg(__VA_ARGS__);                                                  \
+            return json_invalid_msg(TYPE_ERROR(__VA_ARGS__));                                      \
         }                                                                                          \
         __j;                                                                                       \
     })
@@ -142,19 +142,13 @@ static Json eval_unary(Eval *e, ASTNode *node) {
     switch (node->inner.unary.operator) {
     case TOKEN_BANG:
         r = eval_node(e, node->inner.unary.rhs);
-        EXPECT_TYPE(
-            r,
-            JSON_TYPE_BOOL,
-            TYPE_ERROR("Expected boolean in unary ! but got %s", json_type(r.type))
-        );
+        EXPECT_TYPE(r, JSON_TYPE_BOOL, "Expected boolean in unary ! but got %s", json_type(r.type));
         r.inner.boolean = !r.inner.boolean;
         return r;
     case TOKEN_MINUS:
         r = eval_node(e, node->inner.unary.rhs);
         EXPECT_TYPE(
-            r,
-            JSON_TYPE_NUMBER,
-            TYPE_ERROR("Expected number in unary - but got %s", json_type(r.type))
+            r, JSON_TYPE_NUMBER, "Expected number in unary - but got %s", json_type(r.type)
         );
         r.inner.number = -r.inner.number;
         return r;
@@ -175,21 +169,17 @@ static Json eval_binary(Eval *e, ASTNode *node) {
         EXPECT_TYPE(                                                                               \
             (lhs),                                                                                 \
             _type,                                                                                 \
-            TYPE_ERROR(                                                                            \
-                "Invalid operands to binary " #op " (Expected %s, but got %s)",                    \
-                json_type(_type),                                                                  \
-                json_type((lhs).type)                                                              \
-            )                                                                                      \
+            "Invalid operands to binary " #op " (Expected %s, but got %s)",                        \
+            json_type(_type),                                                                      \
+            json_type((lhs).type)                                                                  \
         );                                                                                         \
         (rhs) = eval_node(e, node->inner.binary.rhs);                                              \
         EXPECT_TYPE(                                                                               \
             (rhs),                                                                                 \
             _type,                                                                                 \
-            TYPE_ERROR(                                                                            \
-                "Invalid operands to binary " #op " (Expected %s, but got %s)",                    \
-                json_type(_type),                                                                  \
-                json_type((rhs).type)                                                              \
-            )                                                                                      \
+            "Invalid operands to binary " #op " (Expected %s, but got %s)",                        \
+            json_type(_type),                                                                      \
+            json_type((rhs).type)                                                                  \
         );                                                                                         \
         ret = _new((lhs).inner._inner op rhs.inner._inner);                                        \
     } while (0)
@@ -250,15 +240,11 @@ static Json eval_binary(Eval *e, ASTNode *node) {
     case TOKEN_PERC:
         lhs = eval_node(e, node->inner.binary.lhs);
         EXPECT_TYPE(
-            lhs,
-            JSON_TYPE_NUMBER,
-            TYPE_ERROR("Expected number in binary %% but got %s", json_type(lhs.type))
+            lhs, JSON_TYPE_NUMBER, "Expected number in binary %% but got %s", json_type(lhs.type)
         );
         rhs = eval_node(e, node->inner.binary.rhs);
         EXPECT_TYPE(
-            rhs,
-            JSON_TYPE_NUMBER,
-            TYPE_ERROR("Expected number in binary %% but got %s", json_type(rhs.type))
+            rhs, JSON_TYPE_NUMBER, "Expected number in binary %% but got %s", json_type(rhs.type)
         );
         ret = json_number((int)lhs.inner.number % (int)rhs.inner.number);
         break;
