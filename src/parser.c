@@ -306,9 +306,13 @@ ASTNode *json(Parser *p) {
 ParseResult ast_parse(Lexer *l) {
     Parser *p = &(Parser) {
         .l = l,
+        .should_free = false,
     };
 
     parser_next(p);
+    if (p->curr.type == TOKEN_EOF) {
+        return (ParseResult) {.node = NULL};
+    }
 
     ASTNode *node = expression(p);
 

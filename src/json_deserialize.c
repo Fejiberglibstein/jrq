@@ -103,6 +103,7 @@ DeserializeResult json_deserialize(char *str) {
 
     Parser p = {
         .l = &l,
+        .should_free = true,
     };
 
     parser_next(&p);

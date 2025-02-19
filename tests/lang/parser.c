@@ -12,9 +12,7 @@ static char *validate_ast_list(Vec_ASTNode exp, Vec_ASTNode actual);
 static void test_parse(char *input, char *expected_err, ASTNode *exp) {
     printf("Testing '%s'\n", input);
 
-    Lexer l = lex_init(input);
-
-    ParseResult res = ast_parse(&l);
+    ParseResult res = ast_parse(input);
 
     if (expected_err != NULL) {
         if (strcmp(expected_err, res.error_message) != 0) {
@@ -38,6 +36,8 @@ static void test_parse(char *input, char *expected_err, ASTNode *exp) {
 }
 
 void test_primary_expr() {
+
+    test_parse("", NULL, NULL);
 
     ASTNode *initial = &(ASTNode) {
         .type = AST_TYPE_BINARY,
@@ -235,6 +235,9 @@ int main() {
 }
 
 static char *validate_ast_node(ASTNode *exp, ASTNode *actual) {
+    if (exp == NULL || actual == NULL) {
+        return (exp == actual) ? NULL : "One was null the other wasn't";
+    }
     jqr_assert(INT, exp, actual, ->type);
 
     char *err;

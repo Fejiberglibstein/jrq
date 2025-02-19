@@ -79,10 +79,11 @@ typedef struct {
 } LexResult;
 
 typedef struct {
-    Lexer *l;
     Token curr;
     Token prev;
     char *error;
+    Lexer *l;
+    bool should_free;
 } Parser;
 
 void parser_next(Parser *p);
