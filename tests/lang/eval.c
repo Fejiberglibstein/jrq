@@ -49,6 +49,10 @@ void simple_eval() {
     // assert(test_eval("{\"foo\": 10} == {\"foo\": 10-2}", json_null(), json_boolean(true)));
 }
 
+void complex_eval() {
+}
+
 int main() {
     simple_eval();
+    complex_eval();
 }

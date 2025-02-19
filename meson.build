@@ -22,7 +22,7 @@ tests = [
 
   ['lang', 'lexer', './tests/lang/lexer.c'],
   ['lang', 'parser', './tests/lang/parser.c'],
-  ['lang', 'eval_simple', './tests/lang/eval_simple.c'],
+  ['lang', 'eval', './tests/lang/eval.c'],
 ]
 foreach test : tests
   exe = executable('test_' + test[1], files + test[2])
