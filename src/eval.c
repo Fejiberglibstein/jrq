@@ -147,7 +147,7 @@ static Json eval_list(Eval *e, ASTNode *node) {
 }
 
 static Json eval_json_object(Eval *e, ASTNode *node) {
-    assert(node->type == AST_TYPE_LIST);
+    assert(node->type == AST_TYPE_JSON_OBJECT);
 
     Vec_ASTNode elems = node->inner.json_object;
     Json r = json_object_sized(elems.length);
