@@ -129,6 +129,46 @@ static Json eval_primary(Eval *e, ASTNode *node) {
     }
 }
 
+static Json eval_access(Eval *e, ASTNode *node) {
+}
+static Json eval_function(Eval *e, ASTNode *node) {
+}
+static Json eval_list(Eval *e, ASTNode *node) {
+    assert(node->type == AST_TYPE_LIST);
+
+    Vec_ASTNode elems = node->inner.list;
+    Json r = json_list_sized(elems.length);
+
+    for (int i = 0; i < elems.length; i++) {
+        r = json_list_append(r, eval_node(e, elems.data[i]));
+    }
+
+    return r;
+}
+
+static Json eval_json_object(Eval *e, ASTNode *node) {
+    assert(node->type == AST_TYPE_LIST);
+
+    Vec_ASTNode elems = node->inner.json_object;
+    Json r = json_object_sized(elems.length);
+
+    for (int i = 0; i < elems.length; i++) {
+        ASTNode *field = elems.data[i];
+        assert(field->type == AST_TYPE_JSON_FIELD);
+
+        Json key = eval_node(e, field->inner.json_field.key);
+        EXPECT_TYPE(
+            key, JSON_TYPE_STRING, "Expected string for json key, got %s", json_type(key.type)
+        );
+
+        Json value = eval_node(e, field->inner.json_field.value);
+
+        r = json_object_set(r, key, value);
+    }
+
+    return r;
+}
+
 static Json eval_grouping(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_GROUPING);
 
@@ -255,12 +295,4 @@ static Json eval_binary(Eval *e, ASTNode *node) {
     }
     return ret;
 #undef BINARY_OP
-}
-static Json eval_function(Eval *e, ASTNode *node) {
-}
-static Json eval_access(Eval *e, ASTNode *node) {
-}
-static Json eval_list(Eval *e, ASTNode *node) {
-}
-static Json eval_json_object(Eval *e, ASTNode *node) {
 }
