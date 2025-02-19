@@ -166,14 +166,14 @@ static Json eval_unary(Eval *e, ASTNode *node) {
 static Json eval_binary(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_BINARY);
 
-#define BINARY_OP(lhs, rhs, _type, op, _inner)                                                     \
+#define BINARY_OP(lhs, rhs, _type, op, _inner, _new)                                               \
     do {                                                                                           \
         (lhs) = eval_node(e, node->inner.binary.lhs);                                              \
         EXPECT_TYPE(                                                                               \
             (lhs),                                                                                 \
             _type,                                                                                 \
             TYPE_ERROR(                                                                            \
-                "Expected %s in binary " #op " but got %s",                                        \
+                "Invalid operands to binary " #op " (Expected %s, but got %s)",                    \
                 json_type(_type),                                                                  \
                 json_type((lhs).type)                                                              \
             )                                                                                      \
@@ -183,12 +183,12 @@ static Json eval_binary(Eval *e, ASTNode *node) {
             (rhs),                                                                                 \
             _type,                                                                                 \
             TYPE_ERROR(                                                                            \
-                "Expected %s in binary " #op " but got %s",                                        \
+                "Invalid operands to binary " #op " (Expected %s, but got %s)",                    \
                 json_type(_type),                                                                  \
                 json_type((rhs).type)                                                              \
             )                                                                                      \
         );                                                                                         \
-        ret = json_##_inner((lhs).inner._inner op rhs.inner._inner);                               \
+        ret = _new((lhs).inner._inner op rhs.inner._inner);                               \
     } while (0)
 
     Json lhs;
@@ -197,41 +197,52 @@ static Json eval_binary(Eval *e, ASTNode *node) {
 
     switch (node->inner.binary.operator) {
     case TOKEN_EQUAL:
-        BINARY_OP(lhs, rhs, JSON_TYPE_BOOL, ==, boolean);
+        lhs = eval_node(e, node->inner.binary.lhs);
+        rhs = eval_node(e, node->inner.binary.rhs);
+
+        ret = json_boolean(json_equal(lhs, rhs));
+        json_free(lhs);
+        json_free(rhs);
+        return ret;
         break;
     case TOKEN_NOT_EQUAL:
-        BINARY_OP(lhs, rhs, JSON_TYPE_BOOL, !=, boolean);
-        break;
-    case TOKEN_LT_EQUAL:
-        BINARY_OP(lhs, rhs, JSON_TYPE_BOOL, <=, boolean);
-        break;
-    case TOKEN_GT_EQUAL:
-        BINARY_OP(lhs, rhs, JSON_TYPE_BOOL, >=, boolean);
-        break;
-    case TOKEN_LANGLE:
-        BINARY_OP(lhs, rhs, JSON_TYPE_BOOL, <, boolean);
-        break;
-    case TOKEN_RANGLE:
-        BINARY_OP(lhs, rhs, JSON_TYPE_BOOL, >, boolean);
-        break;
+        lhs = eval_node(e, node->inner.binary.lhs);
+        rhs = eval_node(e, node->inner.binary.rhs);
+
+        ret = json_boolean(!json_equal(lhs, rhs));
+        json_free(lhs);
+        json_free(rhs);
+        return ret;
     case TOKEN_OR:
-        BINARY_OP(lhs, rhs, JSON_TYPE_BOOL, ||, boolean);
+        BINARY_OP(lhs, rhs, JSON_TYPE_BOOL, ||, boolean, json_boolean);
         break;
     case TOKEN_AND:
-        BINARY_OP(lhs, rhs, JSON_TYPE_BOOL, &&, boolean);
+        BINARY_OP(lhs, rhs, JSON_TYPE_BOOL, &&, boolean, json_boolean);
+        break;
+    case TOKEN_LT_EQUAL:
+        BINARY_OP(lhs, rhs, JSON_TYPE_NUMBER, <=, number, json_boolean);
+        break;
+    case TOKEN_GT_EQUAL:
+        BINARY_OP(lhs, rhs, JSON_TYPE_NUMBER, >=, number, json_boolean);
+        break;
+    case TOKEN_LANGLE:
+        BINARY_OP(lhs, rhs, JSON_TYPE_NUMBER, <, number, json_boolean);
+        break;
+    case TOKEN_RANGLE:
+        BINARY_OP(lhs, rhs, JSON_TYPE_NUMBER, >, number, json_boolean);
         break;
 
     case TOKEN_PLUS:
-        BINARY_OP(lhs, rhs, JSON_TYPE_NUMBER, +, number);
+        BINARY_OP(lhs, rhs, JSON_TYPE_NUMBER, +, number, json_number);
         break;
     case TOKEN_MINUS:
-        BINARY_OP(lhs, rhs, JSON_TYPE_NUMBER, -, number);
+        BINARY_OP(lhs, rhs, JSON_TYPE_NUMBER, -, number, json_number);
         break;
     case TOKEN_ASTERISK:
-        BINARY_OP(lhs, rhs, JSON_TYPE_NUMBER, *, number);
+        BINARY_OP(lhs, rhs, JSON_TYPE_NUMBER, *, number, json_number);
         break;
     case TOKEN_SLASH:
-        BINARY_OP(lhs, rhs, JSON_TYPE_NUMBER, /, number);
+        BINARY_OP(lhs, rhs, JSON_TYPE_NUMBER, /, number, json_number);
         break;
     case TOKEN_PERC:
         lhs = eval_node(e, node->inner.binary.lhs);
