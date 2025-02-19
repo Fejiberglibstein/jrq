@@ -178,10 +178,8 @@ Json json_invalid_msg(char *format, ...) {
     va_list args;
     va_start(args, format);
 
-    int n = sprintf(NULL, format, args);
-    char *msg = calloc(sizeof(char), n + 1);
-    sprintf(msg, format, args);
-
+    char *msg;
+    vasprintf(&msg, format, args);
     va_end(args);
 
     return (Json) {.type = JSON_TYPE_INVALID, .inner.invalid = msg};

@@ -103,7 +103,13 @@ static void serialize_object(Serializer *s, Json *json, int depth) {
 void serialize(Serializer *s, Json *json, int depth) {
     switch (json->type) {
     case JSON_TYPE_INVALID:
-        string_append_str(s->inner, "<invalid>");
+        if (json->inner.invalid != NULL) {
+            string_append_str(s->inner, "<invalid: ");
+            string_append_str(s->inner, json->inner.invalid);
+            string_append_str(s->inner, ">");
+        } else {
+            string_append_str(s->inner, "<invalid>");
+        }
         break;
     case JSON_TYPE_LIST:
         serialize_list(s, json, depth + 1);

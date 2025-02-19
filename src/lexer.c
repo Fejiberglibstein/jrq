@@ -262,8 +262,8 @@ LexResult lex_next_tok(Lexer *l) {
     case '!': return parse_double_char(l, TOKEN_BANG, '=', TOKEN_NOT_EQUAL);
     case '|': return parse_double_char(l, TOKEN_BAR, '|', TOKEN_OR);
     case '&': return parse_double_char(l, TOKEN_AMPERSAND, '&', TOKEN_AND);
-    case '<': return parse_double_char(l, TOKEN_LANGLE, '=', TOKEN_EQUAL);
-    case '>': return parse_double_char(l, TOKEN_RANGLE, '=', TOKEN_EQUAL);
+    case '<': return parse_double_char(l, TOKEN_LANGLE, '=', TOKEN_LT_EQUAL);
+    case '>': return parse_double_char(l, TOKEN_RANGLE, '=', TOKEN_GT_EQUAL);
         // clang-format on
     case '\0':
         return (LexResult) {.token.type = TOKEN_EOF};
