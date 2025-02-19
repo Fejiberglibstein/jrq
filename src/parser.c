@@ -242,7 +242,7 @@ static ASTNode *primary(Parser *p) {
     return NULL;
 }
 
-ASTNode *list(Parser *p) {
+static ASTNode *list(Parser *p) {
     Vec_ASTNode items = (Vec_ASTNode) {0};
 
     // If we don't have a closing paren immediately after the open paren
@@ -260,7 +260,7 @@ ASTNode *list(Parser *p) {
     return list;
 }
 
-ASTNode *json_field(Parser *p) {
+static ASTNode *json_field(Parser *p) {
     // Make sure we have a string/identifier first in the json
     if (!parser_matches(p, LIST((TokenType[]) {TOKEN_IDENT, TOKEN_STRING}))) {
         parser_expect(p, -1, ERROR_EXPECTED_STRING_OR_IDENT);
@@ -285,7 +285,7 @@ ASTNode *json_field(Parser *p) {
     return res;
 }
 
-ASTNode *json(Parser *p) {
+static ASTNode *json(Parser *p) {
     Vec_ASTNode fields = (Vec_ASTNode) {0};
 
     // If we don't have a closing paren immediately after the open paren
@@ -295,7 +295,7 @@ ASTNode *json(Parser *p) {
         } while (parser_matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
     }
 
-    parser_expect(p, TOKEN_RBRACKET, ERROR_MISSING_RBRACE);
+    parser_expect(p, TOKEN_RBRACE, ERROR_MISSING_RBRACE);
 
     ASTNode *json = jrq_calloc(sizeof(ASTNode), 1);
     json->type = AST_TYPE_JSON_OBJECT;

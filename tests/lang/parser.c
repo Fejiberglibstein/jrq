@@ -29,8 +29,8 @@ static void test_parse(char *input, char *expected_err, ASTNode *exp) {
 
     char *err = validate_ast_node(exp, res.node);
     if (err != NULL) {
-        printf("%s\n", expected_err);
-        free(expected_err);
+        printf("%s\n", err);
+        free(err);
         assert(false);
     }
 }
@@ -215,7 +215,42 @@ static void test_access_function_expr() {
 }
 
 static void test_json_literals() {
-    // todo: i should probably add tests
+    test_parse("{\"foo\": 10-2}", NULL, &(ASTNode) {
+        .type = AST_TYPE_JSON_OBJECT,
+        .inner.json_object = (Vec_ASTNode) {
+            .length = 1,
+            .data = (ASTNode*[]) {
+                &(ASTNode) {
+                    .type = AST_TYPE_JSON_FIELD,
+                    .inner.json_field.key = &(ASTNode) {
+                        .type = AST_TYPE_PRIMARY,
+                        .inner.primary = (Token) {
+                            .type = TOKEN_STRING,
+                            .inner.string = "foo"
+                        },
+                    },
+                    .inner.json_field.value = &(ASTNode) {
+                        .type = AST_TYPE_BINARY,
+                        .inner.binary.lhs = &(ASTNode) {
+                            .type = AST_TYPE_PRIMARY,
+                            .inner.primary = (Token) {
+                                .type = TOKEN_NUMBER,
+                                .inner.number = 10,
+                            },
+                        },
+                        .inner.binary.rhs = &(ASTNode) {
+                            .type = AST_TYPE_PRIMARY,
+                            .inner.primary = (Token) {
+                                .type = TOKEN_NUMBER,
+                                .inner.number = 2,
+                            },
+                        },
+                        .inner.binary.operator = TOKEN_MINUS,
+                    },
+                },
+            },
+        },
+    });
 }
 
 static void test_errors() {
