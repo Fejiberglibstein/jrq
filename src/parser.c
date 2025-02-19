@@ -303,9 +303,11 @@ ASTNode *json(Parser *p) {
     return json;
 }
 
-ParseResult ast_parse(Lexer *l) {
+ParseResult ast_parse(char *input) {
+    Lexer l = lex_init(input);
+
     Parser *p = &(Parser) {
-        .l = l,
+        .l = &l,
         .should_free = false,
     };
 
@@ -327,4 +329,58 @@ ParseResult ast_parse(Lexer *l) {
         }
         return (ParseResult) {.node = node};
     }
+}
+
+static void ast_vec_free(Vec_ASTNode vec) {
+    for (int i = 0; i < vec.length; i++) {
+        ast_free(vec.data[i]);
+    }
+
+    free((ASTNode *)vec.data);
+}
+
+void ast_free(ASTNode *n) {
+    switch (n->type) {
+    case AST_TYPE_PRIMARY:
+        tok_free(&n->inner.primary);
+        break;
+    case AST_TYPE_UNARY:
+        ast_free(n->inner.unary.rhs);
+        break;
+    case AST_TYPE_BINARY:
+        ast_free(n->inner.binary.rhs);
+        ast_free(n->inner.binary.lhs);
+        break;
+    case AST_TYPE_FUNCTION:
+        ast_free(n->inner.function.callee);
+        ast_vec_free(n->inner.function.args);
+        break;
+    case AST_TYPE_CLOSURE:
+        ast_free(n->inner.closure.body);
+        ast_vec_free(n->inner.closure.args);
+        break;
+    case AST_TYPE_ACCESS:
+        ast_free(n->inner.access.inner);
+        ast_free(n->inner.access.accessor);
+        break;
+    case AST_TYPE_LIST:
+        ast_vec_free(n->inner.list);
+        break;
+    case AST_TYPE_JSON_FIELD:
+        ast_free(n->inner.json_field.key);
+        ast_free(n->inner.json_field.value);
+        break;
+    case AST_TYPE_JSON_OBJECT:
+        ast_vec_free(n->inner.json_object);
+        break;
+    case AST_TYPE_GROUPING:
+        ast_free(n->inner.grouping);
+        break;
+    case AST_TYPE_FALSE:
+    case AST_TYPE_TRUE:
+    case AST_TYPE_NULL:
+        break;
+    }
+
+    free(n);
 }

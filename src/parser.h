@@ -101,6 +101,8 @@ typedef struct {
     char *error_message;
 } ParseResult;
 
-ParseResult ast_parse(Lexer *l);
+ParseResult ast_parse(char *);
+
+void ast_free(ASTNode *);
 
 #endif // _PARSER_H
