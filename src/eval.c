@@ -39,11 +39,12 @@ typedef struct {
     VariableStack vars;
 } Eval;
 
+/// Will return a copy of the json value associated with the variable name
 static Json get_variable(VariableStack *vs, char *var_name) {
     // Iterate through the stack in reverse order
     for (uint i = vs->length - 1; i >= 0; i--) {
         if (strcmp(vs->data[i].name, var_name) == 0) {
-            return vs->data[i].value;
+            return json_copy(vs->data[i].value);
         }
     }
 
@@ -62,6 +63,10 @@ static Json eval_grouping(Eval *e, ASTNode *node);
 static Json eval_node(Eval *e, ASTNode *node);
 
 Json eval(ASTNode *node, Json input) {
+    if (node == NULL) {
+        return input;
+    }
+
     return eval_node(&(Eval) {.input = input, .vars = (VariableStack) {}}, node);
 }
 
@@ -83,11 +88,15 @@ Json eval_node(Eval *e, ASTNode *node) {
         return eval_json_object(e, node);
     case AST_TYPE_GROUPING:
         return eval_grouping(e, node);
+    case AST_TYPE_FALSE:
+        return json_boolean(false);
+    case AST_TYPE_TRUE:
+        return json_boolean(true);
+    case AST_TYPE_NULL:
+        return json_null();
+
     case AST_TYPE_CLOSURE:
     case AST_TYPE_JSON_FIELD:
-    case AST_TYPE_FALSE:
-    case AST_TYPE_TRUE:
-    case AST_TYPE_NULL:
         // unreachable
         assert(false);
         break;
@@ -159,7 +168,7 @@ static Json eval_binary(Eval *e, ASTNode *node) {
 
 #define BINARY_OP(lhs, rhs, _type, op, _inner)                                                     \
     do {                                                                                           \
-        lhs = eval_node(e, node->inner.binary.lhs);                                                \
+        (lhs) = eval_node(e, node->inner.binary.lhs);                                              \
         EXPECT_TYPE(                                                                               \
             (lhs),                                                                                 \
             _type,                                                                                 \
@@ -169,7 +178,7 @@ static Json eval_binary(Eval *e, ASTNode *node) {
                 json_type((lhs).type)                                                              \
             )                                                                                      \
         );                                                                                         \
-        rhs = eval_node(e, node->inner.binary.rhs);                                                \
+        (rhs) = eval_node(e, node->inner.binary.rhs);                                              \
         EXPECT_TYPE(                                                                               \
             (rhs),                                                                                 \
             _type,                                                                                 \
@@ -179,8 +188,9 @@ static Json eval_binary(Eval *e, ASTNode *node) {
                 json_type((rhs).type)                                                              \
             )                                                                                      \
         );                                                                                         \
-        ret = json_##_inner(lhs.inner._inner op rhs.inner._inner);                                 \
+        ret = json_##_inner((lhs).inner._inner op rhs.inner._inner);                               \
     } while (0)
+
     Json lhs;
     Json rhs;
     Json ret;
@@ -243,8 +253,8 @@ static Json eval_binary(Eval *e, ASTNode *node) {
         assert(false);
         break;
     }
-
     return ret;
+#undef BINARY_OP
 }
 static Json eval_function(Eval *e, ASTNode *node) {
 }
