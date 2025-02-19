@@ -82,12 +82,13 @@ Json json_copy(Json j) {
     switch (j.type) {
     case JSON_TYPE_INVALID:
     case JSON_TYPE_NUMBER:
-    case JSON_TYPE_STRING:
     case JSON_TYPE_BOOL:
     case JSON_TYPE_NULL:
         return j;
+    case JSON_TYPE_STRING:
+        return json_string(j.inner.string);
     case JSON_TYPE_OBJECT:
-        new = json_object_sized(j.inner.list.length);
+        new = json_object_sized(j.inner.object.length);
         for (int i = 0; i < j.inner.object.length; i++) {
             JsonObjectPair pair = j.inner.object.data[i];
 
