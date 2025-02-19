@@ -17,11 +17,12 @@ executable('jrq', files + './src/main.c')
 tests = [
   ['json', 'serialize', './tests/json/serialize.c'],
   ['json', 'deserialize', './tests/json/deserialize.c'],
-  ['json', 'serde', './tests/json/both.c'],
+  ['json', 'serde', './tests/json/serde.c'],
   ['json', 'iter', './tests/json/iter.c'],
 
   ['lang', 'lexer', './tests/lang/lexer.c'],
   ['lang', 'parser', './tests/lang/parser.c'],
+  ['lang', 'eval_simple', './tests/lang/eval_simple.c'],
 ]
 foreach test : tests
   exe = executable('test_' + test[1], files + test[2])
