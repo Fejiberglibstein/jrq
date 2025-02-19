@@ -105,10 +105,13 @@ Json eval_node(Eval *e, ASTNode *node) {
 
 static Json eval_primary(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_PRIMARY);
+    char *str;
 
     switch (node->inner.primary.type) {
     case TOKEN_STRING:
-        return json_string_no_alloc(node->inner.primary.inner.string);
+        str = node->inner.primary.inner.string;
+        node->inner.primary.inner.string = NULL;
+        return json_string_no_alloc(str);
     case TOKEN_IDENT:
         return get_variable(&e->vars, node->inner.primary.inner.ident);
     case TOKEN_NUMBER:
@@ -188,7 +191,7 @@ static Json eval_binary(Eval *e, ASTNode *node) {
                 json_type((rhs).type)                                                              \
             )                                                                                      \
         );                                                                                         \
-        ret = _new((lhs).inner._inner op rhs.inner._inner);                               \
+        ret = _new((lhs).inner._inner op rhs.inner._inner);                                        \
     } while (0)
 
     Json lhs;

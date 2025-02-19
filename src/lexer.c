@@ -323,10 +323,14 @@ void parser_expect(Parser *p, TokenType expected, char *err) {
 void tok_free(Token *tok) {
     switch (tok->type) {
     case TOKEN_IDENT:
-        free(tok->inner.ident);
+        if (tok->inner.ident != NULL) {
+            free(tok->inner.ident);
+        }
         break;
     case TOKEN_STRING:
-        free(tok->inner.string);
+        if (tok->inner.string != NULL) {
+            free(tok->inner.string);
+        }
         break;
     default:
         break;
