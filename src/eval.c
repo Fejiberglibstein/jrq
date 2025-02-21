@@ -81,14 +81,14 @@ static Json eval_grouping(Eval *e, ASTNode *node);
 static Json eval_node(Eval *e, ASTNode *node);
 
 Json eval(ASTNode *node, Json input) {
-    if (node == NULL) {
-        return input;
-    }
-
     return eval_node(&(Eval) {.input = input, .vars = (VariableStack) {}}, node);
 }
 
 Json eval_node(Eval *e, ASTNode *node) {
+    if (node == NULL) {
+        return e->input;
+    }
+
     switch (node->type) {
     case AST_TYPE_PRIMARY:
         return eval_primary(e, node);
@@ -148,9 +148,57 @@ static Json eval_primary(Eval *e, ASTNode *node) {
 }
 
 static Json eval_access(Eval *e, ASTNode *node) {
+    assert(node->type == AST_TYPE_ACCESS);
+
+    Json inner = PROPOGATE_INVALID(eval_node(e, node->inner.access.inner), (Json[]) {});
+
+    bool used_input = node->inner.access.inner == NULL;
+
+    Json accessor = PROPOGATE_INVALID(eval_node(e, node->inner.access.accessor), (Json[]) {inner});
+    Json free_list[] = {inner, accessor};
+
+    Json ret;
+
+    switch (inner.type) {
+    case JSON_TYPE_LIST:
+        EXPECT_TYPE(
+            accessor,
+            JSON_TYPE_NUMBER,
+            free_list,
+            "Expected number in array access, got %s",
+            json_type(accessor.type)
+        );
+
+        ret = json_copy(json_list_get(inner, (uint)accessor.inner.number));
+        break;
+    case JSON_TYPE_OBJECT:
+        EXPECT_TYPE(
+            accessor,
+            JSON_TYPE_STRING,
+            free_list,
+            "Expected string in object access, got %s",
+            json_type(accessor.type)
+        );
+
+        ret = json_copy(json_object_get(&inner, accessor.inner.string));
+        break;
+
+    default:
+        // Unreachable
+        assert(false);
+    }
+
+    if (!used_input) {
+        json_free(inner);
+    }
+    json_free(accessor);
+
+    return ret;
 }
+
 static Json eval_function(Eval *e, ASTNode *node) {
 }
+
 static Json eval_list(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_LIST);
 
