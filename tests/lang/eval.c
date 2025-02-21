@@ -36,6 +36,7 @@ bool test_eval(char *expr, Json input, Json expected) {
 
 void simple_eval() {
     // Simple numbers and strings
+
     assert(test_eval("", json_number(10), json_number(10)));
     assert(test_eval("10 + 102", json_null(), json_number(112)));
     assert(test_eval("10 + 10 * 2", json_null(), json_number(30)));
@@ -44,6 +45,9 @@ void simple_eval() {
     assert(test_eval("(12 - 3) * 4", json_null(), json_number(9 * 4)));
     assert(test_eval("true != false", json_null(), json_boolean(true)));
     assert(test_eval("12 >= 3", json_null(), json_boolean(true)));
+    assert(test_eval("-(6-2)", json_null(), json_number(-4)));
+    assert(test_eval("-2", json_null(), json_number(-2)));
+    assert(test_eval("!(10 == 2)", json_null(), json_boolean(!(10 == 2))));
     assert(test_eval("4-6/2 <= (4-6)/2", json_null(), json_boolean(4 - 6 / 2 <= (4 - 6) / 2)));
     assert(test_eval("\"blehh\" == \"blehh\"", json_null(), json_boolean(true)));
     assert(test_eval("\"blehh\" != \"stupid\"", json_null(), json_boolean(true)));
@@ -57,6 +61,16 @@ void simple_eval() {
     assert(test_eval("{\"foo\": 10}", json_null(), JSON_OBJECT("foo", json_number(10))));
     assert(test_eval("{\"foo\": 4-2*4}", json_null(), JSON_OBJECT("foo", json_number(-4))));
     assert(test_eval("{\"foo\": 10} == {\"foo\": 12-2}", json_null(), json_boolean(true)));
+    assert(test_eval(
+        "{\"foo\": [4-2, 0 == 0 && 1 + 2 == 3, {}], \"bar\": 10, \"bar\": 8 == 2}",
+        json_null(),
+        JSON_OBJECT(
+            "foo",
+            JSON_LIST(json_number(4 - 2), json_boolean(0 == 0 && 1 + 2 == 3), json_object_sized(0)),
+            "bar",
+            json_boolean(8 == 2)
+        )
+    ));
 }
 
 void complex_eval() {

@@ -9,11 +9,30 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define EXPECT_TYPE(j, _type, ...)                                                                 \
+#define EXPECT_TYPE(j, _type, free_list, ...)                                                      \
     ({                                                                                             \
         Json __j = j;                                                                              \
         if (__j.type != _type) {                                                                   \
+            uint __list_size = sizeof(free_list) / sizeof(*free_list);                             \
+            for (uint i = 0; i < __list_size; i++) {                                               \
+                json_free((free_list)[i]);                                                         \
+            }                                                                                      \
+                                                                                                   \
             return json_invalid_msg(TYPE_ERROR(__VA_ARGS__));                                      \
+        }                                                                                          \
+        __j;                                                                                       \
+    })
+
+#define PROPOGATE_INVALID(j, free_list...)                                                         \
+    ({                                                                                             \
+        Json __j = j;                                                                              \
+        if (__j.type == JSON_TYPE_INVALID) {                                                       \
+            uint __list_size = sizeof(free_list) / sizeof(*free_list);                             \
+            for (uint i = 0; i < __list_size; i++) {                                               \
+                json_free((free_list)[i]);                                                         \
+            }                                                                                      \
+                                                                                                   \
+            return __j;                                                                            \
         }                                                                                          \
         __j;                                                                                       \
     })
@@ -57,7 +76,6 @@ static Json eval_binary(Eval *e, ASTNode *node);
 static Json eval_function(Eval *e, ASTNode *node);
 static Json eval_access(Eval *e, ASTNode *node);
 static Json eval_list(Eval *e, ASTNode *node);
-// static Json eval_json_field(Eval *e, ASTNode *node);
 static Json eval_json_object(Eval *e, ASTNode *node);
 static Json eval_grouping(Eval *e, ASTNode *node);
 static Json eval_node(Eval *e, ASTNode *node);
@@ -138,9 +156,10 @@ static Json eval_list(Eval *e, ASTNode *node) {
 
     Vec_ASTNode elems = node->inner.list;
     Json r = json_list_sized(elems.length);
+    Json free_list[] = {r};
 
     for (int i = 0; i < elems.length; i++) {
-        r = json_list_append(r, eval_node(e, elems.data[i]));
+        r = json_list_append(r, PROPOGATE_INVALID(eval_node(e, elems.data[i]), free_list));
     }
 
     return r;
@@ -152,16 +171,28 @@ static Json eval_json_object(Eval *e, ASTNode *node) {
     Vec_ASTNode elems = node->inner.json_object;
     Json r = json_object_sized(elems.length);
 
+    Json free_list[] = {r};
+
     for (int i = 0; i < elems.length; i++) {
         ASTNode *field = elems.data[i];
         assert(field->type == AST_TYPE_JSON_FIELD);
 
-        Json key = eval_node(e, field->inner.json_field.key);
+        Json key = PROPOGATE_INVALID(eval_node(e, field->inner.json_field.key), free_list);
         EXPECT_TYPE(
-            key, JSON_TYPE_STRING, "Expected string for json key, got %s", json_type(key.type)
+            key,
+            JSON_TYPE_STRING,
+            free_list,
+            "Expected string for json key, got %s",
+            json_type(key.type)
         );
 
-        Json value = eval_node(e, field->inner.json_field.value);
+        Json value = PROPOGATE_INVALID(
+            eval_node(e, field->inner.json_field.value),
+            (Json[]) {
+                r,
+                key,
+            }
+        );
 
         r = json_object_set(r, key, value);
     }
@@ -181,14 +212,24 @@ static Json eval_unary(Eval *e, ASTNode *node) {
 
     switch (node->inner.unary.operator) {
     case TOKEN_BANG:
-        r = eval_node(e, node->inner.unary.rhs);
-        EXPECT_TYPE(r, JSON_TYPE_BOOL, "Expected boolean in unary ! but got %s", json_type(r.type));
+        r = PROPOGATE_INVALID(eval_node(e, node->inner.unary.rhs), (Json[]) {});
+        EXPECT_TYPE(
+            r,
+            JSON_TYPE_BOOL,
+            (Json[]) {r},
+            "Expected boolean in unary ! but got %s",
+            json_type(r.type)
+        );
         r.inner.boolean = !r.inner.boolean;
         return r;
     case TOKEN_MINUS:
-        r = eval_node(e, node->inner.unary.rhs);
+        r = PROPOGATE_INVALID(eval_node(e, node->inner.unary.rhs), (Json[]) {});
         EXPECT_TYPE(
-            r, JSON_TYPE_NUMBER, "Expected number in unary - but got %s", json_type(r.type)
+            r,
+            JSON_TYPE_NUMBER,
+            (Json[]) {r},
+            "Expected number in unary - but got %s",
+            json_type(r.type)
         );
         r.inner.number = -r.inner.number;
         return r;
@@ -209,6 +250,7 @@ static Json eval_binary(Eval *e, ASTNode *node) {
         EXPECT_TYPE(                                                                               \
             (lhs),                                                                                 \
             _type,                                                                                 \
+            (Json[]) {},                                                                           \
             "Invalid operands to binary " #op " (Expected %s, but got %s)",                        \
             json_type(_type),                                                                      \
             json_type((lhs).type)                                                                  \
@@ -217,6 +259,7 @@ static Json eval_binary(Eval *e, ASTNode *node) {
         EXPECT_TYPE(                                                                               \
             (rhs),                                                                                 \
             _type,                                                                                 \
+            (Json[]) {lhs},                                                                        \
             "Invalid operands to binary " #op " (Expected %s, but got %s)",                        \
             json_type(_type),                                                                      \
             json_type((rhs).type)                                                                  \
@@ -280,11 +323,19 @@ static Json eval_binary(Eval *e, ASTNode *node) {
     case TOKEN_PERC:
         lhs = eval_node(e, node->inner.binary.lhs);
         EXPECT_TYPE(
-            lhs, JSON_TYPE_NUMBER, "Expected number in binary %% but got %s", json_type(lhs.type)
+            lhs,
+            JSON_TYPE_NUMBER,
+            (Json[]) {},
+            "Expected number in binary %% but got %s",
+            json_type(lhs.type)
         );
         rhs = eval_node(e, node->inner.binary.rhs);
         EXPECT_TYPE(
-            rhs, JSON_TYPE_NUMBER, "Expected number in binary %% but got %s", json_type(rhs.type)
+            rhs,
+            JSON_TYPE_NUMBER,
+            (Json[]) {lhs},
+            "Expected number in binary %% but got %s",
+            json_type(rhs.type)
         );
         ret = json_number((int)lhs.inner.number % (int)rhs.inner.number);
         break;
