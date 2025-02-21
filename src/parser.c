@@ -319,12 +319,14 @@ ParseResult ast_parse(char *input) {
     ASTNode *node = expression(p);
 
     if (p->error != NULL) {
+        ast_free(node);
         return (ParseResult) {.error_message = p->error};
     } else {
         // If we don't already have an error, make sure that the last token is
         // an EOF and then error if it's not
         parser_expect(p, TOKEN_EOF, ERROR_EXPECTED_EOF);
         if (p->error != NULL) {
+            ast_free(node);
             return (ParseResult) {.error_message = p->error};
         }
         return (ParseResult) {.node = node};
@@ -340,6 +342,9 @@ static void ast_vec_free(Vec_ASTNode vec) {
 }
 
 void ast_free(ASTNode *n) {
+    if (n == NULL) {
+        return;
+    }
     switch (n->type) {
     case AST_TYPE_PRIMARY:
         tok_free(&n->inner.primary);

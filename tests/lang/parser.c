@@ -28,6 +28,7 @@ static void test_parse(char *input, char *expected_err, ASTNode *exp) {
     }
 
     char *err = validate_ast_node(exp, res.node);
+    ast_free(res.node);
     if (err != NULL) {
         printf("%s\n", err);
         free(err);
