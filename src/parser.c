@@ -168,13 +168,13 @@ static ASTNode *access(Parser *p) {
                 return NULL;
             }
             Token ident = p->prev;
-            ASTNode *inner = jrq_calloc(sizeof(ASTNode), 1);
-            inner->type = AST_TYPE_PRIMARY;
-            inner->inner.primary = ident;
+            ASTNode *access = jrq_calloc(sizeof(ASTNode), 1);
+            access->type = AST_TYPE_PRIMARY;
+            access->inner.primary = ident;
 
             ASTNode *new_expr = jrq_calloc(sizeof(ASTNode), 1);
             new_expr->type = AST_TYPE_ACCESS;
-            new_expr->inner.access.accessor = inner;
+            new_expr->inner.access.accessor = access;
             new_expr->inner.access.inner = expr;
 
             expr = new_expr;
@@ -182,12 +182,12 @@ static ASTNode *access(Parser *p) {
         } else if (parser_matches(p, LIST((TokenType[]) {TOKEN_LBRACKET}))) {
             // When using the [] access operator, we can evaluate any expression
             // inside the [].
-            ASTNode *inner = expression(p);
+            ASTNode *access = expression(p);
             parser_expect(p, TOKEN_RBRACKET, ERROR_MISSING_RBRACKET);
 
             ASTNode *new_expr = jrq_calloc(sizeof(ASTNode), 1);
             new_expr->type = AST_TYPE_ACCESS;
-            new_expr->inner.access.accessor = inner;
+            new_expr->inner.access.accessor = access;
             new_expr->inner.access.inner = expr;
 
             expr = new_expr;
@@ -261,17 +261,7 @@ static ASTNode *list(Parser *p) {
 }
 
 static ASTNode *json_field(Parser *p) {
-    // Make sure we have a string/identifier first in the json
-    if (!parser_matches(p, LIST((TokenType[]) {TOKEN_IDENT, TOKEN_STRING}))) {
-        parser_expect(p, -1, ERROR_EXPECTED_STRING_OR_IDENT);
-        return NULL;
-    }
-
-    Token tok = p->prev;
-
-    ASTNode *key = jrq_calloc(sizeof(ASTNode), 1);
-    key->type = AST_TYPE_PRIMARY;
-    key->inner.primary = tok;
+    ASTNode *key = access(p);
 
     parser_expect(p, TOKEN_COLON, ERROR_EXPECTED_COLON);
 
