@@ -73,10 +73,23 @@ void simple_eval() {
     ));
 }
 
-void complex_eval() {
+void accesor_eval() {
+    assert(test_eval("[10].0", JSON_LIST(json_number(10)), json_number(10)));
+    assert(test_eval("[10, [290, [465]]][4 - 3].1", json_null(), JSON_LIST(json_number(465))));
+    assert(test_eval(".0", JSON_LIST(json_number(10)), json_number(10)));
+    assert(test_eval(
+        "[.0[0], .1]",
+        JSON_LIST(JSON_LIST(json_number(10)), json_number(4)),
+        JSON_LIST(json_number(10), json_number(4))
+    ));
+    assert(test_eval(
+        "{ .0: true }",
+        JSON_LIST(json_string_no_alloc("fooo")),
+        JSON_OBJECT("fooo", json_boolean(true))
+    ));
 }
 
 int main() {
     simple_eval();
-    complex_eval();
+    accesor_eval();
 }
