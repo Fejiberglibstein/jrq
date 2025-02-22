@@ -94,9 +94,7 @@ typedef struct {
 } Parser;
 
 void parser_next(Parser *p);
-
 bool parser_matches(Parser *p, TokenType types[], int length);
-
 void parser_expect(Parser *p, TokenType expected, char *err);
 
 Lexer lex_init(char *);
@@ -104,5 +102,7 @@ LexResult lex_next_tok(Lexer *);
 
 void tok_free(Token *tok);
 Token_norange tok_norange(Token t);
+
+Range range_combine(Range, Range);
 
 #endif // _LEXER_H

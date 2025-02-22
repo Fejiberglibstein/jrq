@@ -4,6 +4,9 @@
 #include <string.h>
 #include <sys/types.h>
 
+#define min(a, b) ((a) < (b)) ? (a) : (b)
+#define max(a, b) ((a) > (b)) ? (a) : (b)
+
 typedef struct {
     Token *data;
     uint length;
@@ -339,4 +342,17 @@ void tok_free(Token *tok) {
 
 Token_norange tok_norange(Token t) {
     return (Token_norange) {.inner = t.inner, .type = t.type};
+}
+
+inline Range range_combine(Range r1, Range r2) {
+    return (Range) {
+        .start = (Position) {
+            .col = min(r1.start.col, r2.start.col), 
+            .line = min(r1.start.line, r2.start.line),
+        },
+        .end = (Position) {
+            .col = max(r1.end.col, r2.end.col),
+            .line = max(r1.end.line, r2.end.line),
+        },
+    };
 }

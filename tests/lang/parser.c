@@ -45,7 +45,7 @@ void test_primary_expr() {
 
         .inner.binary.lhs = &(ASTNode) {
             .type = AST_TYPE_PRIMARY,
-            .inner.primary = (Token) {
+            .inner.primary = (Token_norange) {
                 .type = TOKEN_NUMBER,
                 .inner.number = 10,
             },
@@ -55,7 +55,7 @@ void test_primary_expr() {
 
         .inner.binary.rhs = &(ASTNode) {
             .type = AST_TYPE_PRIMARY,
-            .inner.primary = (Token) {
+            .inner.primary = (Token_norange) {
                 .type = TOKEN_NUMBER,
                 .inner.number = 2,
             },
@@ -73,7 +73,7 @@ void test_primary_expr() {
 
         .inner.binary.rhs = &(ASTNode) {
             .type = AST_TYPE_PRIMARY,
-            .inner.primary = (Token) {
+            .inner.primary = (Token_norange) {
                 .type = TOKEN_IDENT,
                 .inner.ident = "ofoobar",
             },
@@ -85,7 +85,7 @@ void test_primary_expr() {
 
             .inner.binary.lhs = &(ASTNode) {
                 .type = AST_TYPE_PRIMARY,
-                .inner.primary = (Token) {
+                .inner.primary = (Token_norange) {
                     .type = TOKEN_STRING,
                     .inner.string = "foo",
                 },
@@ -103,7 +103,7 @@ void test_primary_expr() {
 static void test_access_function_expr() {
     ASTNode *foo = &(ASTNode) {
         .type = AST_TYPE_PRIMARY,
-        .inner.primary = (Token) {
+        .inner.primary = (Token_norange) {
             .type = TOKEN_IDENT,
             .inner.ident = "foo",
         },
@@ -111,7 +111,7 @@ static void test_access_function_expr() {
 
     ASTNode *bar = &(ASTNode) {
         .type = AST_TYPE_PRIMARY,
-        .inner.primary = (Token) {
+        .inner.primary = (Token_norange) {
             .type = TOKEN_IDENT,
             .inner.ident = "bar",
         },
@@ -119,7 +119,7 @@ static void test_access_function_expr() {
 
     ASTNode *baz = &(ASTNode) {
         .type = AST_TYPE_PRIMARY,
-        .inner.primary = (Token) {
+        .inner.primary = (Token_norange) {
             .type = TOKEN_IDENT,
             .inner.ident = "baz",
         },
@@ -206,7 +206,7 @@ static void test_access_function_expr() {
         .type = AST_TYPE_ACCESS,
         .inner.access.accessor = &(ASTNode) {
             .type = AST_TYPE_PRIMARY,
-            .inner.primary = (Token) {
+            .inner.primary = (Token_norange) {
                 .type = TOKEN_IDENT,
                 .inner.ident = "baz",
             },
@@ -232,7 +232,7 @@ static void test_json_literals() {
                     .type = AST_TYPE_JSON_FIELD,
                     .inner.json_field.key = &(ASTNode) {
                         .type = AST_TYPE_PRIMARY,
-                        .inner.primary = (Token) {
+                        .inner.primary = (Token_norange) {
                             .type = TOKEN_STRING,
                             .inner.string = "foo"
                         },
@@ -241,14 +241,14 @@ static void test_json_literals() {
                         .type = AST_TYPE_BINARY,
                         .inner.binary.lhs = &(ASTNode) {
                             .type = AST_TYPE_PRIMARY,
-                            .inner.primary = (Token) {
+                            .inner.primary = (Token_norange) {
                                 .type = TOKEN_NUMBER,
                                 .inner.number = 10,
                             },
                         },
                         .inner.binary.rhs = &(ASTNode) {
                             .type = AST_TYPE_PRIMARY,
-                            .inner.primary = (Token) {
+                            .inner.primary = (Token_norange) {
                                 .type = TOKEN_NUMBER,
                                 .inner.number = 2,
                             },

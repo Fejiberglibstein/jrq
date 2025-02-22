@@ -44,16 +44,13 @@ static ASTNode *json(Parser *p);
 
 #define PARSE_BINARY_OP(_name_, _next_, _ops_...)                                                  \
     static ASTNode *_name_(Parser *p) {                                                            \
-        /* printf(#_name_ "  pre: %d\n", p->curr.type); */                                         \
+        Range start = p->curr.range;                                                               \
         ASTNode *expr = _next_(p);                                                                 \
-        /* printf(#_name_ "  post: %d\n", p->curr.type); */                                        \
                                                                                                    \
         while (parser_matches(p, LIST((TokenType[])_ops_))) {                                      \
-            /* printf(#_name_ "  inner: %d\n", p->curr.type); */                                   \
             TokenType operator= p->prev.type;                                                      \
                                                                                                    \
             ASTNode *rhs = _next_(p);                                                              \
-            /* printf(#_name_ "  inner: %d\n", p->curr.type); */                                   \
             ASTNode *new_expr = jrq_calloc(sizeof(ASTNode), 1);                                    \
                                                                                                    \
             new_expr->type = AST_TYPE_BINARY;                                                      \
@@ -63,6 +60,7 @@ static ASTNode *json(Parser *p);
                 .rhs = rhs,                                                                        \
             };                                                                                     \
             expr = new_expr;                                                                       \
+            expr->range = range_combine(start, p->prev.range);                                     \
         }                                                                                          \
         return expr;                                                                               \
     }
@@ -82,6 +80,7 @@ PARSE_BINARY_OP(binary_factor, unary, {TOKEN_SLASH, TOKEN_ASTERISK, TOKEN_PERC})
 
 static ASTNode *unary(Parser *p) {
     if (parser_matches(p, LIST((TokenType[]) {TOKEN_MINUS, TOKEN_BANG}))) {
+        Range start = p->prev.range;
         TokenType operator= p->prev.type;
         ASTNode *rhs = unary(p);
 
@@ -89,6 +88,8 @@ static ASTNode *unary(Parser *p) {
 
         new_expr->type = AST_TYPE_UNARY;
         new_expr->inner.unary = (typeof(new_expr->inner.unary)) {.rhs = rhs, .operator= operator, };
+
+        new_expr->range = range_combine(start, p->prev.range);
         return new_expr;
     }
     return access(p);
@@ -98,6 +99,8 @@ static ASTNode *closure(Parser *p) {
     if (!parser_matches(p, LIST((TokenType[]) {TOKEN_BAR, TOKEN_OR}))) {
         return expression(p);
     }
+
+    Range start = p->prev.range;
     Vec_ASTNode closure_args = (Vec_ASTNode) {0};
 
     // If we had a token_or "||" then there are no arguments to the closure.
@@ -110,7 +113,7 @@ static ASTNode *closure(Parser *p) {
 
             ASTNode *arg = jrq_calloc(sizeof(ASTNode), 1);
             arg->type = AST_TYPE_PRIMARY;
-            arg->inner.primary = tok;
+            arg->inner.primary = tok_norange(tok);
 
             vec_append(closure_args, arg);
 
@@ -123,6 +126,8 @@ static ASTNode *closure(Parser *p) {
     closure->type = AST_TYPE_CLOSURE;
     closure->inner.closure.args = closure_args;
     closure->inner.closure.body = closure_body;
+
+    closure->range = range_combine(start, p->prev.range);
 
     return closure;
 }
@@ -143,7 +148,8 @@ static ASTNode *function_call(Parser *p, ASTNode *callee, Token function_name) {
     function->type = AST_TYPE_FUNCTION;
     function->inner.function.args = args;
     function->inner.function.callee = callee;
-    function->inner.function.function_name = function_name;
+    function->inner.function.function_name = tok_norange(function_name);
+    // Don't update the function's range here, the range for a function is handled in `access`
     return function;
 }
 
@@ -151,6 +157,7 @@ static ASTNode *access(Parser *p) {
     ASTNode *expr = (p->curr.type == TOKEN_DOT) ? NULL : primary(p);
 
     for (;;) {
+        Range start = p->curr.range;
         if (parser_matches(p, LIST((TokenType[]) {TOKEN_DOT}))) {
             // When using the "." operator, we can access ONLY identifiers OR
             // numbers:
@@ -175,16 +182,18 @@ static ASTNode *access(Parser *p) {
                     p->error = ERROR_EXPECTED_IDENT;
                 } else {
                     expr = function_call(p, expr, ident);
+                    expr->range = range_combine(start, p->prev.range);
                 }
             } else {
                 ASTNode *access = jrq_calloc(sizeof(ASTNode), 1);
                 access->type = AST_TYPE_PRIMARY;
-                access->inner.primary = ident;
+                access->inner.primary = tok_norange(ident);
 
                 ASTNode *new_expr = jrq_calloc(sizeof(ASTNode), 1);
                 new_expr->type = AST_TYPE_ACCESS;
                 new_expr->inner.access.accessor = access;
                 new_expr->inner.access.inner = expr;
+                new_expr->range = range_combine(start, p->prev.range);
 
                 expr = new_expr;
             }
@@ -199,6 +208,7 @@ static ASTNode *access(Parser *p) {
             new_expr->type = AST_TYPE_ACCESS;
             new_expr->inner.access.accessor = access;
             new_expr->inner.access.inner = expr;
+            new_expr->range = range_combine(start, p->prev.range);
 
             expr = new_expr;
         } else {
@@ -210,6 +220,7 @@ static ASTNode *access(Parser *p) {
 
 static ASTNode *keyword(Parser *p, ASTNodeType t) {
     ASTNode *n = jrq_calloc(sizeof(ASTNode), 1);
+    n->range = p->prev.range;
 
     n->type = t;
     return n;
@@ -229,11 +240,14 @@ static ASTNode *primary(Parser *p) {
         ASTNode *new_expr = jrq_calloc(sizeof(ASTNode), 1);
 
         new_expr->type = AST_TYPE_PRIMARY;
-        new_expr->inner.primary = p->prev;
+        new_expr->inner.primary = tok_norange(p->prev);
+        new_expr->range = p->prev.range;
         return new_expr;
     }
 
     if (parser_matches(p, LIST((TokenType[]) {TOKEN_LPAREN}))) {
+        Range start = p->prev.range;
+
         ASTNode *expr = expression(p);
         parser_expect(p, TOKEN_RPAREN, ERROR_MISSING_RPAREN);
 
@@ -241,6 +255,7 @@ static ASTNode *primary(Parser *p) {
 
         grouping->type = AST_TYPE_GROUPING;
         grouping->inner.grouping = expr;
+        grouping->range = range_combine(start, p->prev.range);
 
         return grouping;
     }
@@ -254,6 +269,7 @@ static ASTNode *primary(Parser *p) {
 
 static ASTNode *list(Parser *p) {
     Vec_ASTNode items = (Vec_ASTNode) {0};
+    Range start = p->prev.range;
 
     // If we don't have a closing paren immediately after the open paren
     if (p->curr.type != TOKEN_RBRACKET) {
@@ -267,10 +283,13 @@ static ASTNode *list(Parser *p) {
     ASTNode *list = jrq_calloc(sizeof(ASTNode), 1);
     list->type = AST_TYPE_LIST;
     list->inner.list = items;
+    list->range = range_combine(start, p->prev.range);
     return list;
 }
 
 static ASTNode *json_field(Parser *p) {
+    Range start = p->curr.range;
+
     ASTNode *key = access(p);
 
     parser_expect(p, TOKEN_COLON, ERROR_EXPECTED_COLON);
@@ -281,12 +300,14 @@ static ASTNode *json_field(Parser *p) {
     res->type = AST_TYPE_JSON_FIELD;
     res->inner.json_field.key = key;
     res->inner.json_field.value = value;
+    res->range = range_combine(start, p->prev.range);
 
     return res;
 }
 
 static ASTNode *json(Parser *p) {
     Vec_ASTNode fields = (Vec_ASTNode) {0};
+    Range start = p->prev.range;
 
     // If we don't have a closing paren immediately after the open paren
     if (p->curr.type != TOKEN_RBRACE) {
@@ -300,6 +321,8 @@ static ASTNode *json(Parser *p) {
     ASTNode *json = jrq_calloc(sizeof(ASTNode), 1);
     json->type = AST_TYPE_JSON_OBJECT;
     json->inner.json_object = fields;
+    json->range = range_combine(start, p->prev.range);
+
     return json;
 }
 
@@ -347,7 +370,7 @@ void ast_free(ASTNode *n) {
     }
     switch (n->type) {
     case AST_TYPE_PRIMARY:
-        tok_free(&n->inner.primary);
+        tok_free((Token *)&n->inner.primary);
         break;
     case AST_TYPE_UNARY:
         ast_free(n->inner.unary.rhs);
