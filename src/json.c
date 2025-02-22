@@ -133,9 +133,13 @@ void json_free(Json j) {
         free(list.data);
         break;
     case JSON_TYPE_NULL:
-    case JSON_TYPE_INVALID:
     case JSON_TYPE_NUMBER:
     case JSON_TYPE_BOOL:
+        break;
+    case JSON_TYPE_INVALID:
+        if (j.inner.invalid != NULL) {
+            free(j.inner.invalid);
+        }
         break;
     case JSON_TYPE_STRING:
         free(j.inner.string);

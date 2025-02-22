@@ -127,11 +127,10 @@ static Json eval_primary(Eval *e, ASTNode *node) {
 
     switch (node->inner.primary.type) {
     case TOKEN_STRING:
+    case TOKEN_IDENT:
         str = node->inner.primary.inner.string;
         node->inner.primary.inner.string = NULL;
         return json_string_no_alloc(str);
-    case TOKEN_IDENT:
-        return get_variable(&e->vars, node->inner.primary.inner.ident);
     case TOKEN_NUMBER:
         return json_number(node->inner.primary.inner.number);
     case TOKEN_TRUE:
@@ -155,7 +154,7 @@ static Json eval_access(Eval *e, ASTNode *node) {
     bool used_input = node->inner.access.inner == NULL;
 
     Json accessor = PROPOGATE_INVALID(eval_node(e, node->inner.access.accessor), (Json[]) {inner});
-    Json free_list[] = {inner, accessor};
+    Json free_list[] = {(!used_input) ? inner : json_null(), accessor};
 
     Json ret;
 

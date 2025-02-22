@@ -83,9 +83,12 @@ void accesor_eval() {
         JSON_LIST(json_number(10), json_number(4))
     ));
     assert(test_eval(
-        "{ .0: true }",
-        JSON_LIST(json_string_no_alloc("fooo")),
-        JSON_OBJECT("fooo", json_boolean(true))
+        "{ .0: 2*.1-2, .2: .0 == .2 && .3 }",
+        JSON_LIST(json_string("fooo"), json_number(4), json_string("bharr"), json_boolean(true)),
+        JSON_OBJECT("fooo", json_number(6), "bharr", json_boolean(false))
+    ));
+    assert(test_eval(
+        "{\"bar\": .fooo > 4- 2}.bar", JSON_OBJECT("fooo", json_number(4)), json_boolean(true)
     ));
 }
 
