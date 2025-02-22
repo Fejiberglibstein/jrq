@@ -53,6 +53,9 @@ typedef struct {
     VariableStack vars;
 } Eval;
 
+Json eval_node(Eval *e, ASTNode *node);
 Json eval_function_map(Eval *, ASTNode *);
+
+Json vs_get_variable(VariableStack *, char *);
 
 #endif // _EVAL_PRIVATE_H
