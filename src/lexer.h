@@ -48,6 +48,12 @@ typedef enum uint8_t {
 
 } TokenType;
 
+union tok_inner {
+    char *ident;
+    char *string;
+    double number;
+};
+
 typedef struct {
     uint line;
     uint col;
@@ -59,13 +65,14 @@ typedef struct {
 } Range;
 
 typedef struct {
-    Range range;
-    union {
-        char *ident;
-        char *string;
-        double number;
-    } inner;
+    union tok_inner inner;
     TokenType type;
+} Token_norange;
+
+typedef struct {
+    union tok_inner inner;
+    TokenType type;
+    Range range;
 } Token;
 
 typedef struct {
@@ -96,5 +103,6 @@ Lexer lex_init(char *);
 LexResult lex_next_tok(Lexer *);
 
 void tok_free(Token *tok);
+Token_norange tok_norange(Token t);
 
 #endif // _LEXER_H

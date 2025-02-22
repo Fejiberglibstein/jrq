@@ -336,3 +336,7 @@ void tok_free(Token *tok) {
         break;
     }
 }
+
+Token_norange tok_norange(Token t) {
+    return (Token_norange) {.inner = t.inner, .type = t.type};
+}

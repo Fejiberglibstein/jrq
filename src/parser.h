@@ -26,10 +26,11 @@ typedef Vec(struct ASTNode *) Vec_ASTNode;
 // note that `expr` is just any AST node
 typedef struct ASTNode {
     ASTNodeType type;
+    Range range;
     union {
         /// Primitive value
         /// Strings ("foo"), numbers (1029), idents (foo_bar), etc
-        Token primary;
+        Token_norange primary;
 
         /// Unary Operator:
         /// ("!" |"-") expr
@@ -68,7 +69,7 @@ typedef struct ASTNode {
         /// <expr: callee> "." <ident: function_name> "(" <(expr ",")*: args> ")"
         struct {
             struct ASTNode *callee;
-            Token function_name;
+            Token_norange function_name;
             Vec_ASTNode args;
         } function;
 
