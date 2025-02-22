@@ -65,10 +65,11 @@ typedef struct ASTNode {
         } access;
 
         /// Function call:
-        /// <expr: callee> "(" <(expr ",")*: args> ")"
+        /// <expr: callee> "." <ident: function_name> "(" <(expr ",")*: args> ")"
         struct {
-            Vec_ASTNode args;
             struct ASTNode *callee;
+            Token function_name;
+            Vec_ASTNode args;
         } function;
 
         /// Closure body:

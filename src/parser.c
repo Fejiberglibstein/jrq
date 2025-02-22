@@ -127,7 +127,7 @@ static ASTNode *closure(Parser *p) {
     return closure;
 }
 
-static ASTNode *function_call(Parser *p, ASTNode *callee) {
+static ASTNode *function_call(Parser *p, ASTNode *callee, Token function_name) {
     Vec_ASTNode args = (Vec_ASTNode) {0};
 
     // If we don't have a closing paren immediately after the open paren
@@ -143,6 +143,7 @@ static ASTNode *function_call(Parser *p, ASTNode *callee) {
     function->type = AST_TYPE_FUNCTION;
     function->inner.function.args = args;
     function->inner.function.callee = callee;
+    function->inner.function.function_name = function_name;
     return function;
 }
 
@@ -150,9 +151,7 @@ static ASTNode *access(Parser *p) {
     ASTNode *expr = (p->curr.type == TOKEN_DOT) ? NULL : primary(p);
 
     for (;;) {
-        if (parser_matches(p, LIST((TokenType[]) {TOKEN_LPAREN}))) {
-            expr = function_call(p, expr);
-        } else if (parser_matches(p, LIST((TokenType[]) {TOKEN_DOT}))) {
+        if (parser_matches(p, LIST((TokenType[]) {TOKEN_DOT}))) {
             // When using the "." operator, we can access ONLY identifiers OR
             // numbers:
             //
@@ -168,16 +167,27 @@ static ASTNode *access(Parser *p) {
                 return NULL;
             }
             Token ident = p->prev;
-            ASTNode *access = jrq_calloc(sizeof(ASTNode), 1);
-            access->type = AST_TYPE_PRIMARY;
-            access->inner.primary = ident;
 
-            ASTNode *new_expr = jrq_calloc(sizeof(ASTNode), 1);
-            new_expr->type = AST_TYPE_ACCESS;
-            new_expr->inner.access.accessor = access;
-            new_expr->inner.access.inner = expr;
+            // if we have a ( after the .expr
+            if (parser_matches(p, LIST((TokenType[]) {TOKEN_LPAREN}))) {
+                // TODO this is a really bad implementation for functions
+                if (ident.type != TOKEN_IDENT) {
+                    p->error = ERROR_EXPECTED_IDENT;
+                } else {
+                    expr = function_call(p, expr, ident);
+                }
+            } else {
+                ASTNode *access = jrq_calloc(sizeof(ASTNode), 1);
+                access->type = AST_TYPE_PRIMARY;
+                access->inner.primary = ident;
 
-            expr = new_expr;
+                ASTNode *new_expr = jrq_calloc(sizeof(ASTNode), 1);
+                new_expr->type = AST_TYPE_ACCESS;
+                new_expr->inner.access.accessor = access;
+                new_expr->inner.access.inner = expr;
+
+                expr = new_expr;
+            }
 
         } else if (parser_matches(p, LIST((TokenType[]) {TOKEN_LBRACKET}))) {
             // When using the [] access operator, we can evaluate any expression

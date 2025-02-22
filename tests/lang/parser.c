@@ -109,29 +109,32 @@ static void test_access_function_expr() {
         },
     };
 
+    ASTNode *bar = &(ASTNode) {
+        .type = AST_TYPE_PRIMARY,
+        .inner.primary = (Token) {
+            .type = TOKEN_IDENT,
+            .inner.ident = "bar",
+        },
+    };
+
+    ASTNode *baz = &(ASTNode) {
+        .type = AST_TYPE_PRIMARY,
+        .inner.primary = (Token) {
+            .type = TOKEN_IDENT,
+            .inner.ident = "baz",
+        },
+    };
+
     ASTNode *foo_bar = &(ASTNode) {
         .type = AST_TYPE_ACCESS,
         .inner.access.inner = foo,
-        .inner.access.accessor = &(ASTNode) {
-            .type = AST_TYPE_PRIMARY,
-            .inner.primary = (Token) {
-                .type = TOKEN_IDENT,
-                .inner.ident = "bar",
-            },
-
-        }
+        .inner.access.accessor = bar,
     };
 
     ASTNode *foo_bar_baz = &(ASTNode) {
         .type = AST_TYPE_ACCESS,
         .inner.access.inner = foo_bar,
-        .inner.access.accessor = &(ASTNode) {
-            .type = AST_TYPE_PRIMARY,
-            .inner.primary = (Token) {
-                .type = TOKEN_IDENT,
-                .inner.ident = "baz",
-            },
-        },
+        .inner.access.accessor = baz,
     };
 
     ASTNode *ten = &(ASTNode) {
@@ -149,7 +152,8 @@ static void test_access_function_expr() {
         .inner.function.args = (Vec_ASTNode) {
             .length = 0,
         },
-        .inner.function.callee = foo_bar_baz,
+        .inner.function.callee = foo_bar,
+        .inner.function.function_name = baz->inner.primary,
     });
 
     test_parse("foo.bar(foo, foo.bar, 10)", NULL, &(ASTNode) {
@@ -162,7 +166,8 @@ static void test_access_function_expr() {
             },
             .length = 3,
         },
-        .inner.function.callee = foo_bar,
+        .inner.function.callee = foo,
+        .inner.function.function_name = bar->inner.primary,
     });
 
     test_parse("foo.bar(|| 10, 10, |foo| (foo.bar))", NULL, &(ASTNode) {
@@ -193,7 +198,8 @@ static void test_access_function_expr() {
             },
             .length = 3,
         },
-        .inner.function.callee = foo_bar,
+        .inner.function.callee = foo,
+        .inner.function.function_name = bar->inner.primary,
     });
 
     test_parse("foo.bar().baz", NULL, &(ASTNode) {
@@ -210,7 +216,8 @@ static void test_access_function_expr() {
             .inner.function.args = {
                 .length = 0,
             },
-            .inner.function.callee = foo_bar,
+            .inner.function.callee = foo,
+            .inner.function.function_name = bar->inner.primary,
         },
     });
 }
@@ -260,7 +267,7 @@ static void test_errors() {
     test_parse("foo + ", ERROR_UNEXPECTED_TOKEN, NULL);
     test_parse("foo[10", ERROR_MISSING_RBRACKET, NULL);
     test_parse("(foo (foo + bar)", ERROR_MISSING_RPAREN, NULL);
-    test_parse("bar(|)", ERROR_MISSING_CLOSURE, NULL);
+    test_parse(".bar(|)", ERROR_MISSING_CLOSURE, NULL);
 }
 
 int main() {
