@@ -2,7 +2,6 @@
 #include "src/eval_private.h"
 #include "src/json.h"
 #include "src/parser.h"
-#include "src/vector.h"
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -17,7 +16,6 @@ static Json eval_access(Eval *e, ASTNode *node);
 static Json eval_list(Eval *e, ASTNode *node);
 static Json eval_json_object(Eval *e, ASTNode *node);
 static Json eval_grouping(Eval *e, ASTNode *node);
-static Json eval_node(Eval *e, ASTNode *node);
 
 Json eval(ASTNode *node, Json input) {
     return eval_node(&(Eval) {.input = input, .vars = (VariableStack) {}}, node);
@@ -88,9 +86,18 @@ static Json eval_primary(Eval *e, ASTNode *node) {
 static Json eval_access(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_ACCESS);
 
-    Json inner = PROPOGATE_INVALID(eval_node(e, node->inner.access.inner), (Json[]) {});
+    ASTNode *inner_node = node->inner.access.inner;
+    Json inner = PROPOGATE_INVALID(eval_node(e, inner_node), (Json[]) {});
 
     bool used_input = node->inner.access.inner == NULL;
+
+    if (!used_input && inner_node->type == AST_TYPE_PRIMARY
+        && inner_node->inner.primary.type == TOKEN_IDENT) {
+        char *var_name = inner_node->inner.primary.inner.ident;
+        inner = vs_get_variable(&e->vars, var_name);
+
+        json_free(inner);
+    }
 
     Json accessor = PROPOGATE_INVALID(eval_node(e, node->inner.access.accessor), (Json[]) {inner});
     Json free_list[] = {(!used_input) ? inner : json_null(), accessor};
