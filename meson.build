@@ -8,6 +8,7 @@ files = [
   'src/alloc.c',
   'src/json.c',
   'src/json_deserialize.c',
+  'src/eval_functions.c',
   'src/parser.c',
   'src/json_iter.c',
 ]
