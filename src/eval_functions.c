@@ -1,4 +1,9 @@
 #include "eval_private.h"
+#include "src/errors.h"
+#include "src/json.h"
+#include "src/parser.h"
+#include <assert.h>
+#include <string.h>
 
 /// Will return a copy of the json value associated with the variable name
 static Json get_variable(VariableStack *vs, char *var_name) {
@@ -12,3 +17,10 @@ static Json get_variable(VariableStack *vs, char *var_name) {
     return json_invalid_msg(RUNTIME_ERROR("Variable not in scope: %s", var_name));
 }
 
+Json eval_function_map(Eval *e, ASTNode *node) {
+    assert(node->type == AST_TYPE_FUNCTION);
+
+    Json callee = PROPOGATE_INVALID(eval_node(e, node->inner.function.callee), (Json[]) {});
+
+
+}
