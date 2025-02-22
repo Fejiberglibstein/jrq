@@ -1,5 +1,5 @@
-#include "src/eval.h"
 #include "src/errors.h"
+#include "src/eval_private.h"
 #include "src/json.h"
 #include "src/parser.h"
 #include "src/vector.h"
@@ -8,67 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define EXPECT_TYPE(j, _type, free_list, ...)                                                      \
-    ({                                                                                             \
-        Json __j = j;                                                                              \
-        if (__j.type != _type) {                                                                   \
-            uint __list_size = sizeof(free_list) / sizeof(*free_list);                             \
-            for (uint i = 0; i < __list_size; i++) {                                               \
-                json_free((free_list)[i]);                                                         \
-            }                                                                                      \
-                                                                                                   \
-            return json_invalid_msg(TYPE_ERROR(__VA_ARGS__));                                      \
-        }                                                                                          \
-        __j;                                                                                       \
-    })
-
-#define PROPOGATE_INVALID(j, free_list...)                                                         \
-    ({                                                                                             \
-        Json __j = j;                                                                              \
-        if (__j.type == JSON_TYPE_INVALID) {                                                       \
-            uint __list_size = sizeof(free_list) / sizeof(*free_list);                             \
-            for (uint i = 0; i < __list_size; i++) {                                               \
-                json_free((free_list)[i]);                                                         \
-            }                                                                                      \
-                                                                                                   \
-            return __j;                                                                            \
-        }                                                                                          \
-        __j;                                                                                       \
-    })
-
-struct Variable {
-    char *name;
-    Json value;
-};
-typedef Vec(struct Variable) VariableStack;
-
-typedef struct {
-    /// The input json from invoking the program
-    Json input;
-
-    /// The variables that are currently in scope.
-    ///
-    /// This is represented as a stack so that we can allow for variable
-    /// shadowing:
-    ///
-    ///  [{"foo": 4}].map(|v| v.foo.map(|v| v))
-    ///
-    /// will create a stack like [v: {"foo": 4}, v: 4].
-    VariableStack vars;
-} Eval;
-
-/// Will return a copy of the json value associated with the variable name
-static Json get_variable(VariableStack *vs, char *var_name) {
-    // Iterate through the stack in reverse order
-    for (uint i = vs->length - 1; i >= 0; i--) {
-        if (strcmp(vs->data[i].name, var_name) == 0) {
-            return json_copy(vs->data[i].value);
-        }
-    }
-
-    return json_invalid_msg(RUNTIME_ERROR("Variable not in scope: %s", var_name));
-}
 
 static Json eval_unary(Eval *e, ASTNode *node);
 static Json eval_primary(Eval *e, ASTNode *node);
@@ -193,9 +132,6 @@ static Json eval_access(Eval *e, ASTNode *node) {
     json_free(accessor);
 
     return ret;
-}
-
-static Json eval_function(Eval *e, ASTNode *node) {
 }
 
 static Json eval_list(Eval *e, ASTNode *node) {
@@ -393,4 +329,21 @@ static Json eval_binary(Eval *e, ASTNode *node) {
     }
     return ret;
 #undef BINARY_OP
+}
+
+/*************
+ * FUNCTIONS *
+ *************/
+
+static Json eval_function(Eval *e, ASTNode *node) {
+    assert(node->type == AST_TYPE_FUNCTION);
+    assert(node->inner.function.function_name.type == TOKEN_IDENT);
+
+    char *function_name = node->inner.function.function_name.inner.ident;
+
+    // TODO make this a trie maybe
+    if (strcmp(function_name, "map") == 0) {
+        return eval_function_map(e, node);
+    }
+    return json_invalid_msg("TODO     Invalid function name");
 }
