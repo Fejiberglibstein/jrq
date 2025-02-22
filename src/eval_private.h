@@ -3,6 +3,7 @@
 
 #include "src/eval.h"
 #include "src/json.h"
+#include "src/parser.h"
 
 #define EXPECT_TYPE(j, _type, free_list, ...)                                                      \
     ({                                                                                             \
@@ -20,22 +21,23 @@
 
 #define PROPOGATE_INVALID(j, free_list...)                                                         \
     ({                                                                                             \
-        Json __j = j;                                                                              \
-        if (__j.type == JSON_TYPE_INVALID) {                                                       \
+        EvalResult __r = j;                                                                        \
+        if (__r.type == EVAL_ERR) {                                                                \
             uint __list_size = sizeof(free_list) / sizeof(*free_list);                             \
             for (uint i = 0; i < __list_size; i++) {                                               \
                 json_free((free_list)[i]);                                                         \
             }                                                                                      \
                                                                                                    \
-            return __j;                                                                            \
+            return __r;                                                                            \
         }                                                                                          \
-        __j;                                                                                       \
+        __r.json;                                                                                  \
     })
 
 struct Variable {
     char *name;
     Json value;
 };
+
 typedef Vec(struct Variable) VariableStack;
 
 typedef struct {
@@ -53,8 +55,10 @@ typedef struct {
     VariableStack vars;
 } Eval;
 
-Json eval_node(Eval *e, ASTNode *node);
-Json eval_function_map(Eval *, ASTNode *);
+EvalResult eval_node(Eval *e, ASTNode *node);
+EvalResult eval_function_map(Eval *, ASTNode *);
+
+EvalResult eval_res_json(Json);
 
 Json vs_get_variable(VariableStack *, char *);
 
