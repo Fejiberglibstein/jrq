@@ -45,7 +45,7 @@ struct JsonIterator {
 };
 
 // clang-format off
-IterOption iter_none() { return (IterOption) {.type = ITER_DONE}; }
+IterOption iter_done() { return (IterOption) {.type = ITER_DONE}; }
 IterOption iter_some(Json j) { return (IterOption) {.some = j, .type = ITER_SOME}; }
 // clang-format on
 
@@ -54,7 +54,7 @@ IterOption iter_some(Json j) { return (IterOption) {.some = j, .type = ITER_SOME
 /// Will return a `json_invalid()` when the iterator is over.
 IterOption iter_next(JsonIterator iter) {
     if (iter == NULL) {
-        return iter_none();
+        return iter_done();
     }
     return iter->func(iter);
 }
@@ -125,7 +125,7 @@ static IterOption list_iter_next(JsonIterator i) {
     ListIter *list_iter = (ListIter *)i;
 
     if (list_iter->index >= list_iter->data.inner.list.length) {
-        return iter_none();
+        return iter_done();
     }
 
     return iter_some(list_iter->data.inner.list.data[list_iter->index++]);
@@ -139,7 +139,7 @@ static IterOption key_iter_next(JsonIterator i) {
     KeyIter *key_iter = (KeyIter *)i;
 
     if (key_iter->index >= key_iter->data.inner.object.length) {
-        return iter_none();
+        return iter_done();
     }
 
     return iter_some(key_iter->data.inner.object.data[key_iter->index++].key);
@@ -153,7 +153,7 @@ static IterOption value_iter_next(JsonIterator i) {
     ValueIter *value_iter = (ValueIter *)i;
 
     if (value_iter->index >= value_iter->data.inner.object.length) {
-        return iter_none();
+        return iter_done();
     }
 
     return iter_some(value_iter->data.inner.object.data[value_iter->index++].value);
@@ -167,7 +167,7 @@ static IterOption key_value_iter_next(JsonIterator i) {
     KeyValueIter *kv_iter = (KeyValueIter *)i;
 
     if (kv_iter->index >= kv_iter->data.inner.object.length) {
-        return iter_none();
+        return iter_done();
     }
 
     JsonObject obj = kv_iter->data.inner.object;
@@ -289,4 +289,45 @@ JsonIterator iter_filter(JsonIterator iter, FilterFunc func, void *captures) {
     };
 
     return (JsonIterator)filter_iter;
+}
+
+/****************
+ * EnumerateIter*
+ ****************/
+
+/// An iterator that creates a pair of [value, index] for each value yielded by
+/// the iterator
+typedef struct {
+    struct JsonIterator iter;
+
+    JsonIterator next;
+    size_t index;
+
+} EnumerateIter;
+
+static IterOption enumerate_iter_next(JsonIterator i) {
+    EnumerateIter *iter = (EnumerateIter *)i;
+
+    Json j = NEXT(iter->next);
+
+    return iter_some(JSON_LIST(j, json_number(iter->index++)));
+}
+
+/// An iterator that yields the current iteration index along with the next
+/// value.
+///
+/// The iterator yields values in the form of [value, i]
+JsonIterator iter_enumerate(JsonIterator iter) {
+    EnumerateIter *i = jrq_malloc(sizeof(EnumerateIter));
+
+    *i = (EnumerateIter) {
+        .iter = { 
+            .func = &enumerate_iter_next,
+            .free = &free_func_next,
+        },
+        .next = iter,
+        .index = 0,
+    };
+
+    return (JsonIterator)i;
 }
