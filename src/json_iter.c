@@ -5,18 +5,18 @@
 
 #define NEXT(iter)                                                                                 \
     ({                                                                                             \
-        Json __j = iter_next(iter);                                                                \
-        if (json_is_invalid(__j)) {                                                                \
+        IterOption __j = iter_next(iter);                                                          \
+        if (__j.type == ITER_DONE) {                                                               \
             return __j;                                                                            \
         }                                                                                          \
-        __j;                                                                                       \
+        __j.some;                                                                                  \
     })
 
 /// An IteratorFunc is the function that gets called every time `iter_next` is called.
 ///
 /// From the point of rust iterators, this would be the `next` function in the impl block for the
 /// iterator.
-typedef Json (*IteratorFunc)(JsonIterator);
+typedef IterOption (*IteratorFunc)(JsonIterator);
 
 /// A FreeFunc is the function that gets called when `iter_free` is called.
 ///
@@ -44,12 +44,17 @@ struct JsonIterator {
     FreeFunc free;
 };
 
+// clang-format off
+IterOption iter_none() { return (IterOption) {.type = ITER_DONE}; }
+IterOption iter_some(Json j) { return (IterOption) {.some = j, .type = ITER_SOME}; }
+// clang-format on
+
 /// Advances the iterator and returns the next value yielded.
 ///
 /// Will return a `json_invalid()` when the iterator is over.
-Json iter_next(JsonIterator iter) {
+IterOption iter_next(JsonIterator iter) {
     if (iter == NULL) {
-        return json_invalid();
+        return iter_none();
     }
     return iter->func(iter);
 }
@@ -98,7 +103,7 @@ static void free_func_next(JsonIterator i) {
         size_t index;                                                                              \
     } struct_name;                                                                                 \
                                                                                                    \
-    static Json next_func_name(JsonIterator);                                                      \
+    static IterOption next_func_name(JsonIterator);                                                \
                                                                                                    \
     JsonIterator create_func_name(Json j) {                                                        \
         struct_name *i = jrq_malloc(sizeof(struct_name));                                          \
@@ -116,60 +121,60 @@ static void free_func_next(JsonIterator i) {
 ///
 /// If `j` is not a list, the iterator will yield `json_invalid()`.
 JSON_DATA_ITERATOR(ListIter, iter_list, list_iter_next);
-static Json list_iter_next(JsonIterator i) {
+static IterOption list_iter_next(JsonIterator i) {
     ListIter *list_iter = (ListIter *)i;
 
     if (list_iter->index >= list_iter->data.inner.list.length) {
-        return json_invalid();
+        return iter_none();
     }
 
-    return list_iter->data.inner.list.data[list_iter->index++];
+    return iter_some(list_iter->data.inner.list.data[list_iter->index++]);
 }
 
 /// Returns an iterator over the keys of a json object.
 ///
 /// If `j` is not an object, the iterator will yield `json_invalid()`.
 JSON_DATA_ITERATOR(KeyIter, iter_obj_keys, key_iter_next);
-static Json key_iter_next(JsonIterator i) {
+static IterOption key_iter_next(JsonIterator i) {
     KeyIter *key_iter = (KeyIter *)i;
 
     if (key_iter->index >= key_iter->data.inner.object.length) {
-        return json_invalid();
+        return iter_none();
     }
 
-    return key_iter->data.inner.object.data[key_iter->index++].key;
+    return iter_some(key_iter->data.inner.object.data[key_iter->index++].key);
 }
 
 /// Returns an iterator over the values of a json object.
 ///
 /// If `j` is not an object, the iterator will yield `json_invalid()`.
 JSON_DATA_ITERATOR(ValueIter, iter_obj_values, value_iter_next);
-static Json value_iter_next(JsonIterator i) {
+static IterOption value_iter_next(JsonIterator i) {
     ValueIter *value_iter = (ValueIter *)i;
 
     if (value_iter->index >= value_iter->data.inner.object.length) {
-        return json_invalid();
+        return iter_none();
     }
 
-    return value_iter->data.inner.object.data[value_iter->index++].value;
+    return iter_some(value_iter->data.inner.object.data[value_iter->index++].value);
 }
 
 /// Returns an iterator over the keys and values of a json object.
 ///
 /// If `j` is not an object, the iterator will yield `json_invalid()`.
 JSON_DATA_ITERATOR(KeyValueIter, iter_obj_key_value, key_value_iter_next);
-static Json key_value_iter_next(JsonIterator i) {
+static IterOption key_value_iter_next(JsonIterator i) {
     KeyValueIter *kv_iter = (KeyValueIter *)i;
 
     if (kv_iter->index >= kv_iter->data.inner.object.length) {
-        return json_invalid();
+        return iter_none();
     }
 
     JsonObject obj = kv_iter->data.inner.object;
     Json ret = JSON_LIST(obj.data[kv_iter->index].key, obj.data[kv_iter->index].value);
     kv_iter->index += 1;
 
-    return ret;
+    return iter_some(ret);
 }
 
 /***********
@@ -195,12 +200,12 @@ typedef struct {
     void *closure_captures;
 } MapIter;
 
-static Json map_iter_next(JsonIterator i) {
+static IterOption map_iter_next(JsonIterator i) {
     MapIter *map_iter = (MapIter *)i;
 
     Json j = NEXT(map_iter->next);
 
-    return map_iter->map_func(j, map_iter->closure_captures);
+    return iter_some(map_iter->map_func(j, map_iter->closure_captures));
 }
 
 /// An iterator that maps the values yielded by `iter` with `func`.
@@ -251,14 +256,14 @@ typedef struct {
     void *closure_captures;
 } FilterIter;
 
-static Json filter_iter_next(JsonIterator i) {
+static IterOption filter_iter_next(JsonIterator i) {
     FilterIter *filter_iter = (FilterIter *)i;
 
     for (;;) {
         Json j = NEXT(filter_iter->next);
         // if the filter function returns true, return it
         if (filter_iter->filter_func(j, filter_iter->closure_captures)) {
-            return j;
+            return iter_some(j);
         }
     }
 }

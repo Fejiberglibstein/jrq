@@ -4,8 +4,15 @@
 #include "json.h"
 
 typedef struct JsonIterator *JsonIterator;
+typedef struct {
+    Json some;
+    enum {
+        ITER_SOME,
+        ITER_DONE,
+    } type;
+} IterOption;
 
-Json iter_next(JsonIterator iter);
+IterOption iter_next(JsonIterator iter);
 void iter_free(JsonIterator iter);
 
 JsonIterator iter_obj_keys(Json j);
