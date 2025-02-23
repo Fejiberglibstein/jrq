@@ -22,7 +22,7 @@
         __j;                                                                                       \
     })
 
-#define PROPOGATE_INVALID_JSON(j, free_list)                                                       \
+#define EXPECT_JSON(j, free_list)                                                       \
     ({                                                                                             \
         EvalResult __r = j;                                                                        \
         PROPOGATE_INVALID(                                                                         \
@@ -34,7 +34,7 @@
         __r.json;                                                                                  \
     })
 
-#define PROPOGATE_INVALID_ITER(j, free_list)                                                       \
+#define EXPECT_ITER(j, free_list)                                                       \
     ({                                                                                             \
         EvalResult __r = j;                                                                        \
         PROPOGATE_INVALID(                                                                         \
