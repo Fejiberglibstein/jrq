@@ -9,12 +9,18 @@ bool test_eval(char *expr, Json input, Json expected) {
     printf("Testing `%s`\n", expr);
     ASTNode *node = ast_parse(expr).node;
 
-    Json result = eval(node, input);
+    EvalResult result = eval(node, input);
+    if (result.type == EVAL_ERR) {
+        printf("%s\n", result.error);
+        free(result.error);
+        return false;
+    }
+    Json json = result.json;
 
-    bool r = json_equal(result, expected);
+    bool r = json_equal(json, expected);
 
     if (r == false) {
-        char *result_str = json_serialize(&result, 0);
+        char *result_str = json_serialize(&json, 0);
         char *expected_str = json_serialize(&expected, 0);
 
         printf("`%s` does not equal expected `%s`\n", result_str, expected_str);
@@ -25,7 +31,7 @@ bool test_eval(char *expr, Json input, Json expected) {
 
     json_free(input);
     json_free(expected);
-    json_free(result);
+    json_free(json);
 
     if (node != NULL) {
         ast_free(node);

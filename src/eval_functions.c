@@ -1,5 +1,6 @@
 #include "eval_private.h"
 #include "src/errors.h"
+#include "src/eval.h"
 #include "src/json.h"
 #include "src/json_iter.h"
 #include "src/parser.h"
@@ -33,24 +34,18 @@ Json vs_get_variable(VariableStack *vs, char *var_name) {
 
 static Json map_func(Json in, void *captures) {
     ASTNode *node = (ASTNode *)captures;
+    return json_null();
 }
 
-Json eval_function_map(Eval *e, ASTNode *node) {
+EvalResult eval_function_map(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_FUNCTION);
 
-    Json callee = PROPOGATE_INVALID(eval_node(e, node->inner.function.callee), (Json[]) {});
-    EXPECT_TYPE(
-        callee,
-        JSON_TYPE_LIST,
-        (Json[]) {},
-        "map function expected a list, got %s",
-        json_type(callee.type)
-    );
-    callee = json_copy(callee);
+    JsonIterator callee
+        = PROPOGATE_INVALID_ITER(eval_node(e, node->inner.function.callee), (Json[]) {});
 
     // TODO add error handling for parameters
     Vec_ASTNode args = node->inner.function.args;
     assert(args.data[0]->type == AST_TYPE_CLOSURE && args.length == 1);
 
-    JsonIterator iter = iter_map(iter_list(callee), &map_func, args.data[0]);
+    return eval_res_iter(iter_map(callee, &map_func, args.data[0]));
 }

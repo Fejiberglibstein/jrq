@@ -4,6 +4,7 @@
 #include "src/json.h"
 #include "src/parser.h"
 #include <assert.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,6 +21,21 @@ static EvalResult eval_grouping(Eval *e, ASTNode *node);
 
 EvalResult eval_res_json(Json j) {
     return (EvalResult) {.type = EVAL_JSON, .json = j};
+}
+
+EvalResult eval_res_error(char *format, ...) {
+    va_list args;
+    va_start(args, format);
+
+    char *msg;
+    vasprintf(&msg, format, args);
+    va_end(args);
+
+    return (EvalResult) {.type = EVAL_ERR, .error = msg};
+}
+
+EvalResult eval_res_iter(JsonIterator iter) {
+    return (EvalResult) {.type = EVAL_ITER, .iter = iter};
 }
 
 EvalResult eval(ASTNode *node, Json input) {
@@ -92,7 +108,7 @@ static EvalResult eval_access(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_ACCESS);
 
     ASTNode *inner_node = node->inner.access.inner;
-    Json inner = PROPOGATE_INVALID(eval_node(e, inner_node), (Json[]) {});
+    Json inner = PROPOGATE_INVALID_JSON(eval_node(e, inner_node), (Json[]) {});
 
     bool used_input = node->inner.access.inner == NULL;
 
@@ -104,7 +120,8 @@ static EvalResult eval_access(Eval *e, ASTNode *node) {
         json_free(inner);
     }
 
-    Json accessor = PROPOGATE_INVALID(eval_node(e, node->inner.access.accessor), (Json[]) {inner});
+    Json accessor
+        = PROPOGATE_INVALID_JSON(eval_node(e, node->inner.access.accessor), (Json[]) {inner});
     Json free_list[] = {(!used_input) ? inner : json_null(), accessor};
 
     Json ret;
@@ -143,7 +160,7 @@ static EvalResult eval_access(Eval *e, ASTNode *node) {
     }
     json_free(accessor);
 
-    return ret;
+    return eval_res_json(ret);
 }
 
 static EvalResult eval_list(Eval *e, ASTNode *node) {
@@ -154,10 +171,10 @@ static EvalResult eval_list(Eval *e, ASTNode *node) {
     Json free_list[] = {r};
 
     for (int i = 0; i < elems.length; i++) {
-        r = json_list_append(r, PROPOGATE_INVALID(eval_node(e, elems.data[i]), free_list));
+        r = json_list_append(r, PROPOGATE_INVALID_JSON(eval_node(e, elems.data[i]), free_list));
     }
 
-    return r;
+    return eval_res_json(r);
 }
 
 static EvalResult eval_json_object(Eval *e, ASTNode *node) {
@@ -172,7 +189,7 @@ static EvalResult eval_json_object(Eval *e, ASTNode *node) {
         ASTNode *field = elems.data[i];
         assert(field->type == AST_TYPE_JSON_FIELD);
 
-        Json key = PROPOGATE_INVALID(eval_node(e, field->inner.json_field.key), free_list);
+        Json key = PROPOGATE_INVALID_JSON(eval_node(e, field->inner.json_field.key), free_list);
         EXPECT_TYPE(
             key,
             JSON_TYPE_STRING,
@@ -181,18 +198,14 @@ static EvalResult eval_json_object(Eval *e, ASTNode *node) {
             json_type(key.type)
         );
 
-        Json value = PROPOGATE_INVALID(
-            eval_node(e, field->inner.json_field.value),
-            (Json[]) {
-                r,
-                key,
-            }
+        Json value = PROPOGATE_INVALID_JSON(
+            eval_node(e, field->inner.json_field.value), ((Json[]) {r, key})
         );
 
         r = json_object_set(r, key, value);
     }
 
-    return r;
+    return eval_res_json(r);
 }
 
 static EvalResult eval_grouping(Eval *e, ASTNode *node) {
@@ -207,7 +220,7 @@ static EvalResult eval_unary(Eval *e, ASTNode *node) {
 
     switch (node->inner.unary.operator) {
     case TOKEN_BANG:
-        r = PROPOGATE_INVALID(eval_node(e, node->inner.unary.rhs), (Json[]) {});
+        r = PROPOGATE_INVALID_JSON(eval_node(e, node->inner.unary.rhs), (Json[]) {});
         EXPECT_TYPE(
             r,
             JSON_TYPE_BOOL,
@@ -216,9 +229,9 @@ static EvalResult eval_unary(Eval *e, ASTNode *node) {
             json_type(r.type)
         );
         r.inner.boolean = !r.inner.boolean;
-        return r;
+        return eval_res_json(r);
     case TOKEN_MINUS:
-        r = PROPOGATE_INVALID(eval_node(e, node->inner.unary.rhs), (Json[]) {});
+        r = PROPOGATE_INVALID_JSON(eval_node(e, node->inner.unary.rhs), (Json[]) {});
         EXPECT_TYPE(
             r,
             JSON_TYPE_NUMBER,
@@ -227,7 +240,7 @@ static EvalResult eval_unary(Eval *e, ASTNode *node) {
             json_type(r.type)
         );
         r.inner.number = -r.inner.number;
-        return r;
+        return eval_res_json(r);
 
     default:
         // Unreachable
@@ -241,7 +254,7 @@ static EvalResult eval_binary(Eval *e, ASTNode *node) {
 
 #define BINARY_OP(lhs, rhs, _type, op, _inner, _new)                                               \
     do {                                                                                           \
-        (lhs) = eval_node(e, node->inner.binary.lhs);                                              \
+        (lhs) = PROPOGATE_INVALID_JSON(eval_node(e, node->inner.binary.lhs), (Json[]) {});         \
         EXPECT_TYPE(                                                                               \
             (lhs),                                                                                 \
             _type,                                                                                 \
@@ -250,7 +263,7 @@ static EvalResult eval_binary(Eval *e, ASTNode *node) {
             json_type(_type),                                                                      \
             json_type((lhs).type)                                                                  \
         );                                                                                         \
-        (rhs) = eval_node(e, node->inner.binary.rhs);                                              \
+        (rhs) = PROPOGATE_INVALID_JSON(eval_node(e, node->inner.binary.rhs), (Json[]) {lhs});      \
         EXPECT_TYPE(                                                                               \
             (rhs),                                                                                 \
             _type,                                                                                 \
@@ -268,22 +281,16 @@ static EvalResult eval_binary(Eval *e, ASTNode *node) {
 
     switch (node->inner.binary.operator) {
     case TOKEN_EQUAL:
-        lhs = eval_node(e, node->inner.binary.lhs);
-        rhs = eval_node(e, node->inner.binary.rhs);
-
-        ret = json_boolean(json_equal(lhs, rhs));
-        json_free(lhs);
-        json_free(rhs);
-        return ret;
-        break;
     case TOKEN_NOT_EQUAL:
-        lhs = eval_node(e, node->inner.binary.lhs);
-        rhs = eval_node(e, node->inner.binary.rhs);
+        lhs = PROPOGATE_INVALID_JSON(eval_node(e, node->inner.binary.lhs), (Json[]) {});
+        rhs = PROPOGATE_INVALID_JSON(eval_node(e, node->inner.binary.rhs), (Json[]) {lhs});
 
-        ret = json_boolean(!json_equal(lhs, rhs));
+        bool r = json_equal(lhs, rhs);
+        ret = json_boolean(node->inner.binary.operator== TOKEN_EQUAL ? r : !r);
         json_free(lhs);
         json_free(rhs);
-        return ret;
+        return eval_res_json(ret);
+        break;
     case TOKEN_OR:
         BINARY_OP(lhs, rhs, JSON_TYPE_BOOL, ||, boolean, json_boolean);
         break;
@@ -315,30 +322,30 @@ static EvalResult eval_binary(Eval *e, ASTNode *node) {
         BINARY_OP(lhs, rhs, JSON_TYPE_NUMBER, /, number, json_number);
         break;
     case TOKEN_PERC:
-        lhs = eval_node(e, node->inner.binary.lhs);
+        lhs = PROPOGATE_INVALID_JSON(eval_node(e, node->inner.binary.lhs), (Json[]) {});
         EXPECT_TYPE(
-            lhs,
+            (lhs),
             JSON_TYPE_NUMBER,
             (Json[]) {},
-            "Expected number in binary %% but got %s",
-            json_type(lhs.type)
+            "Invalid operands to binary %% (Expected number, but got %s)",
+            json_type((lhs).type)
         );
-        rhs = eval_node(e, node->inner.binary.rhs);
+        (rhs) = PROPOGATE_INVALID_JSON(eval_node(e, node->inner.binary.rhs), (Json[]) {lhs});
         EXPECT_TYPE(
-            rhs,
+            (rhs),
             JSON_TYPE_NUMBER,
             (Json[]) {lhs},
-            "Expected number in binary %% but got %s",
-            json_type(rhs.type)
+            "Invalid operands to binary %% (Expected number, but got %s)",
+            json_type((rhs).type)
         );
-        ret = json_number((int)lhs.inner.number % (int)rhs.inner.number);
+        ret = json_number((uint)lhs.inner.number % (uint)rhs.inner.number);
         break;
 
     default:
         assert(false);
         break;
     }
-    return ret;
+    return eval_res_json(ret);
 #undef BINARY_OP
 }
 
@@ -356,5 +363,5 @@ static EvalResult eval_function(Eval *e, ASTNode *node) {
     if (strcmp(function_name, "map") == 0) {
         return eval_function_map(e, node);
     }
-    return json_invalid_msg("TODO     Invalid function name");
+    return eval_res_error("TODO     Invalid function name");
 }
