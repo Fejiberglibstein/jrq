@@ -49,9 +49,9 @@ void enumerate_iter() {
 
     JsonIterator iter = iter_enumerate(iter_obj_key_value(obj));
     Json results[] = {
-        JSON_LIST(JSON_LIST(json_string_no_alloc("blhe"), json_null()), json_number(0)),
-        JSON_LIST(JSON_LIST(json_string_no_alloc("grhas"), json_boolean(false)), json_number(1)),
-        JSON_LIST(JSON_LIST(json_string_no_alloc("fhytr"), json_number(6)), json_number(2)),
+        JSON_LIST(JSON_LIST(json_string("blhe"), json_null()), json_number(0)),
+        JSON_LIST(JSON_LIST(json_string("grhas"), json_boolean(false)), json_number(1)),
+        JSON_LIST(JSON_LIST(json_string("fhytr"), json_number(6)), json_number(2)),
     };
 
     for (int i = 0; i < 3; i++) {

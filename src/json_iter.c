@@ -331,3 +331,20 @@ JsonIterator iter_enumerate(JsonIterator iter) {
 
     return (JsonIterator)i;
 }
+
+Json iter_collect(JsonIterator i) {
+    Json list = json_list(); // TODO make iter_sized_hint
+
+    IterOption opt;
+
+    for (;;) {
+        opt = iter_next(i);
+        if (opt.type == ITER_SOME) {
+            list = json_list_append(list, opt.some);
+        } else {
+            break;
+        }
+    }
+
+    return list;
+}

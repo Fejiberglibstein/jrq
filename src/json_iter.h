@@ -25,5 +25,6 @@ JsonIterator iter_map(JsonIterator iter, Json (*MapFunc)(Json, void *), void *ca
 JsonIterator iter_filter(JsonIterator iter, bool (*FilterFunc)(Json, void *), void *captures);
 
 JsonIterator iter_enumerate(JsonIterator iter);
+Json iter_collect(JsonIterator iter);
 
 #endif // _JSON_ITER_H
