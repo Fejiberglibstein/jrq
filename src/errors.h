@@ -15,7 +15,7 @@
 #define ERROR_EXPECTED_COLON "Expected colon ':' after key in json literal"
 
 // Error wrappers
-#define TYPE_ERROR(...) "Type Error: " __VA_ARGS__
-#define RUNTIME_ERROR(...) "Runtime Error: " __VA_ARGS__
+#define TYPE_ERROR(range, ...) "Type Error: " __VA_ARGS__
+#define RUNTIME_ERROR(range, ...) "Runtime Error: " __VA_ARGS__
 
 #endif // _ERRORS_H
