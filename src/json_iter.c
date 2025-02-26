@@ -92,6 +92,21 @@ static void free_func_next(JsonIterator i) {
     iter_free(iter->next);
 }
 
+/// Used for iterators like next--Iterators that can capture state via a void*.
+static void free_func_next_and_captures(JsonIterator i) {
+    struct {
+        struct JsonIterator i;
+        JsonIterator next;
+        void *closure_captures;
+        bool free_captures;
+    } *iter = (typeof(iter))i;
+
+    iter_free(iter->next);
+    if (iter->free_captures) {
+        free(iter->closure_captures);
+    }
+}
+
 #define JSON_DATA_ITERATOR(struct_name, create_func_name, next_func_name)                          \
     JsonIterator create_func_name(Json);                                                           \
                                                                                                    \
@@ -193,11 +208,12 @@ typedef struct {
     /// The iterator we're mapping over
     JsonIterator next;
 
-    /// Mapping function to apply to each element of the iterator
-    MapFunc map_func;
-
     /// Extra state to be passed into `func` when it's called
     void *closure_captures;
+    bool free_captures;
+
+    /// Mapping function to apply to each element of the iterator
+    MapFunc map_func;
 } MapIter;
 
 static IterOption map_iter_next(JsonIterator i) {
@@ -215,17 +231,18 @@ static IterOption map_iter_next(JsonIterator i) {
 ///
 /// `captures` will be passed in as a parameter into `func` every time it is
 /// called.
-JsonIterator iter_map(JsonIterator iter, MapFunc func, void *captures) {
+JsonIterator iter_map(JsonIterator iter, MapFunc func, void *captures, bool free_captures) {
     MapIter *map_iter = jrq_malloc(sizeof(MapIter));
 
     *map_iter = (MapIter) {
         .iter = { 
             .func = &map_iter_next,
-            .free = &free_func_next,
+            .free = &free_func_next_and_captures,
         },
         .next = iter,
         .map_func = func,
         .closure_captures = captures,
+        .free_captures = free_captures,
     };
 
     return (JsonIterator)map_iter;
@@ -249,11 +266,12 @@ typedef struct {
     /// The iterator we're mapping over
     JsonIterator next;
 
-    /// Filtering function to apply to each element of the iterator
-    FilterFunc filter_func;
-
     /// Extra state to be passed into `filter_func` when it's called
     void *closure_captures;
+    bool free_captures;
+
+    /// Filtering function to apply to each element of the iterator
+    FilterFunc filter_func;
 } FilterIter;
 
 static IterOption filter_iter_next(JsonIterator i) {
@@ -275,17 +293,18 @@ static IterOption filter_iter_next(JsonIterator i) {
 ///
 /// `captures` will be passed in as a parameter into `func` every time it is
 /// called.
-JsonIterator iter_filter(JsonIterator iter, FilterFunc func, void *captures) {
+JsonIterator iter_filter(JsonIterator iter, FilterFunc func, void *captures, bool free_captures) {
     FilterIter *filter_iter = jrq_malloc(sizeof(FilterIter));
 
     *filter_iter = (FilterIter) {
         .iter = { 
             .func = &filter_iter_next,
-            .free = &free_func_next,
+            .free = &free_func_next_and_captures,
         },
         .next = iter,
         .filter_func = func,
         .closure_captures = captures,
+        .free_captures = free_captures,
     };
 
     return (JsonIterator)filter_iter;
@@ -345,6 +364,7 @@ Json iter_collect(JsonIterator i) {
             break;
         }
     }
+    iter_free(i);
 
     return list;
 }

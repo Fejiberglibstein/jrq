@@ -34,7 +34,7 @@ void basic_iter() {
 void map_iter() {
     Json obj = JSON_OBJECT("foo", json_number(0), "bar", json_number(1), "baz", json_number(2));
     JsonIterator iter = iter_obj_values(obj);
-    iter = iter_map(iter, &mapper, NULL);
+    iter = iter_map(iter, &mapper, NULL, false);
     assert(json_equal(iter_next(iter).some, json_number(0)));
     assert(json_equal(iter_next(iter).some, json_number(2)));
     assert(json_equal(iter_next(iter).some, json_number(4)));
@@ -60,6 +60,7 @@ void enumerate_iter() {
         json_free(res.some);
         json_free(results[i]);
     }
+
     assert(iter_next(iter).type == ITER_DONE);
     assert(iter_next(iter).type == ITER_DONE);
 

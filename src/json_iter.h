@@ -21,8 +21,13 @@ JsonIterator iter_obj_key_value(Json j);
 
 JsonIterator iter_list(Json j);
 
-JsonIterator iter_map(JsonIterator iter, Json (*MapFunc)(Json, void *), void *captures);
-JsonIterator iter_filter(JsonIterator iter, bool (*FilterFunc)(Json, void *), void *captures);
+JsonIterator iter_map(JsonIterator i, Json (*f)(Json, void *), void *captures, bool free_captures);
+JsonIterator iter_filter(
+    JsonIterator iter,
+    bool (*filter_func)(Json, void *),
+    void *captures,
+    bool free_captures
+);
 
 JsonIterator iter_enumerate(JsonIterator iter);
 Json iter_collect(JsonIterator iter);
