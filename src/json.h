@@ -12,6 +12,7 @@ typedef enum JsonType {
     JSON_TYPE_NUMBER,
     JSON_TYPE_STRING,
     JSON_TYPE_BOOL,
+    JSON_TYPE_ITER,
 } JsonType;
 
 typedef Vec(struct Json) JsonList;
@@ -25,6 +26,7 @@ typedef struct Json {
         char *invalid;
         JsonObject object;
         JsonList list;
+        struct JsonIterator *iter;
     } inner;
     JsonType type;
 } Json;

@@ -1,7 +1,7 @@
 #ifndef _JSON_ITER_H
 #define _JSON_ITER_H
 
-#include "json.h"
+#include "src/json.h"
 
 typedef struct JsonIterator *JsonIterator;
 typedef struct {
