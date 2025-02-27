@@ -42,7 +42,7 @@ inline static EvalResult to_iter(EvalResult e, Range r) {
     if (e.type == EVAL_JSON) {
         if (e.json.type != JSON_TYPE_LIST) {
             return eval_res_error(
-                TYPE_ERROR(r, "Could not convert %s into an Iterator", json_type(e.json.type))
+                r, TYPE_ERROR("Could not convert %s into an Iterator", json_type(e.json.type))
             );
         }
         return eval_res_iter(iter_list(e.json));
@@ -51,11 +51,11 @@ inline static EvalResult to_iter(EvalResult e, Range r) {
 }
 
 /// Will return a copy of the json value associated with the variable name
-EvalResult vs_get_variable(VariableStack *vs, char *var_name, Range r) {
+Json vs_get_variable(VariableStack *vs, char *var_name, Range r) {
     // Iterate through the stack in reverse order
     for (uint i = vs->length - 1; i >= 0; i--) {
         if (strcmp(vs->data[i].name, var_name) == 0) {
-            return eval_res_json(json_copy(vs->data[i].value));
+            return json_copy(vs->data[i].value);
         }
     }
 

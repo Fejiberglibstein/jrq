@@ -106,19 +106,23 @@ static EvalResult eval_access(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_ACCESS);
 
     ASTNode *inner_node = node->inner.access.inner;
-    Json inner = BUBBLE_ERROR(eval_node(e, inner_node), (Json[]) {});
+    Json inner = EXPECT_JSON(inner_node->range, eval_node(e, inner_node), (Json[]) {});
 
     bool used_input = node->inner.access.inner == NULL;
 
     if (!used_input && inner_node->type == AST_TYPE_PRIMARY
         && inner_node->inner.primary.type == TOKEN_IDENT) {
         char *var_name = inner_node->inner.primary.inner.ident;
-        inner = BUBBLE_ERROR(vs_get_variable(&e->vars, var_name, inner_node->range), (Json[]) {});
+        inner = vs_get_variable(&e->vars, var_name, inner_node->range);
 
         json_free(inner);
     }
 
-    Json accessor = BUBBLE_ERROR(eval_node(e, node->inner.access.accessor), (Json[]) {inner});
+    Json accessor = EXPECT_JSON(
+        node->inner.access.accessor->range,
+        eval_node(e, node->inner.access.accessor),
+        (Json[]) {inner}
+    );
     Json free_list[] = {(!used_input) ? inner : json_null(), accessor};
 
     Json ret;
@@ -265,7 +269,9 @@ static EvalResult eval_unary(Eval *e, ASTNode *node) {
     static EvalResult _name(Eval *e, ASTNode *node) {                                              \
         assert(node->type == AST_TYPE_BINARY);                                                     \
                                                                                                    \
-        Json lhs = BUBBLE_ERROR(eval_node(e, node->inner.binary.lhs), (Json[]) {});                \
+        Json lhs = EXPECT_JSON(                                                                    \
+            node->inner.binary.lhs->range, eval_node(e, node->inner.binary.lhs), (Json[]) {}       \
+        );                                                                                         \
         EXPECT_TYPE(                                                                               \
             node->inner.binary.lhs->range,                                                         \
             lhs,                                                                                   \
@@ -275,7 +281,9 @@ static EvalResult eval_unary(Eval *e, ASTNode *node) {
             json_type(_expected_type),                                                             \
             json_type(lhs.type)                                                                    \
         );                                                                                         \
-        Json rhs = BUBBLE_ERROR(eval_node(e, node->inner.binary.rhs), (Json[]) {});                \
+        Json rhs = EXPECT_JSON(                                                                    \
+            node->inner.binary.rhs->range, eval_node(e, node->inner.binary.rhs), (Json[]) {}       \
+        );                                                                                         \
         EXPECT_TYPE(                                                                               \
             node->inner.binary.rhs->range,                                                         \
             rhs,                                                                                   \
@@ -330,37 +338,37 @@ static EvalResult eval_binary(Eval *e, ASTNode *node) {
         return eval_res(ret);
         break;
     case TOKEN_OR:
-        ret = BUBBLE_ERROR(eval_binary_or(e, node), (Json[]) {});
+        ret = EXPECT_JSON(node->range, eval_binary_or(e, node), (Json[]) {});
         break;
     case TOKEN_AND:
-        ret = BUBBLE_ERROR(eval_binary_and(e, node), (Json[]) {});
+        ret = EXPECT_JSON(node->range, eval_binary_and(e, node), (Json[]) {});
         break;
     case TOKEN_LT_EQUAL:
-        ret = BUBBLE_ERROR(eval_binary_lt_equal(e, node), (Json[]) {});
+        ret = EXPECT_JSON(node->range, eval_binary_lt_equal(e, node), (Json[]) {});
         break;
     case TOKEN_GT_EQUAL:
-        ret = BUBBLE_ERROR(eval_binary_gt_equal(e, node), (Json[]) {});
+        ret = EXPECT_JSON(node->range, eval_binary_gt_equal(e, node), (Json[]) {});
         break;
     case TOKEN_LANGLE:
-        ret = BUBBLE_ERROR(eval_binary_lt(e, node), (Json[]) {});
+        ret = EXPECT_JSON(node->range, eval_binary_lt(e, node), (Json[]) {});
         break;
     case TOKEN_RANGLE:
-        ret = BUBBLE_ERROR(eval_binary_gt(e, node), (Json[]) {});
+        ret = EXPECT_JSON(node->range, eval_binary_gt(e, node), (Json[]) {});
         break;
     case TOKEN_PLUS:
-        ret = BUBBLE_ERROR(eval_binary_add(e, node), (Json[]) {});
+        ret = EXPECT_JSON(node->range, eval_binary_add(e, node), (Json[]) {});
         break;
     case TOKEN_MINUS:
-        ret = BUBBLE_ERROR(eval_binary_sub(e, node), (Json[]) {});
+        ret = EXPECT_JSON(node->range, eval_binary_sub(e, node), (Json[]) {});
         break;
     case TOKEN_ASTERISK:
-        ret = BUBBLE_ERROR(eval_binary_times(e, node), (Json[]) {});
+        ret = EXPECT_JSON(node->range, eval_binary_times(e, node), (Json[]) {});
         break;
     case TOKEN_SLASH:
-        ret = BUBBLE_ERROR(eval_binary_div(e, node), (Json[]) {});
+        ret = EXPECT_JSON(node->range, eval_binary_div(e, node), (Json[]) {});
         break;
     case TOKEN_PERC:
-        ret = BUBBLE_ERROR(eval_binary_mod(e, node), (Json[]) {});
+        ret = EXPECT_JSON(node->range, eval_binary_mod(e, node), (Json[]) {});
         break;
 
     default:

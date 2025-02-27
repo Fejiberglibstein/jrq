@@ -19,7 +19,7 @@
             _FREE_FREE_LIST(free_list)                                                             \
             return __r;                                                                            \
         }                                                                                          \
-        __r.json;                                                                                  \
+        __r;                                                                                       \
     })
 
 #define EXPECT_TYPE(r, j, types, free_list, ...)                                                   \
@@ -34,15 +34,26 @@
         __r;                                                                                       \
     })
 
-#define EXPECT_JSON(r, j, free_list, ...)                                                          \
+#define EXPECT_JSON(range, j, free_list, ...)                                                      \
     /* Make sure that the json is not of type iterator */                                          \
     ({                                                                                             \
-        Json __r = BUBBLE_ERROR(j, free_list);                                                     \
-        if (__r.type != JSON_TYPE_ITER) {                                                          \
+        EvalResult __r = BUBBLE_ERROR(j, free_list);                                               \
+        if (__r.type == EVAL_ITER) {                                                               \
             _FREE_FREE_LIST(free_list);                                                            \
-            return eval_res_error(r, TYPE_ERROR(__VA_ARGS__));                                     \
+            return eval_res_error(range, TYPE_ERROR(__VA_ARGS__));                                 \
         }                                                                                          \
-        __r;                                                                                       \
+        __r.json;                                                                                  \
+    })
+
+#define EXPECT_ITER(range, j, free_list, ...)                                                      \
+    /* Make sure that the json is not of type iterator */                                          \
+    ({                                                                                             \
+        EvalResult __r = BUBBLE_ERROR(j, free_list);                                               \
+        if (__r.type == EVAL_JSON) {                                                               \
+            _FREE_FREE_LIST(free_list);                                                            \
+            return eval_res_error(range, TYPE_ERROR(__VA_ARGS__));                                 \
+        }                                                                                          \
+        __r.iter;                                                                                  \
     })
 
 struct Variable {
@@ -73,6 +84,6 @@ EvalResult eval_function_map(Eval *, ASTNode *);
 EvalResult eval_res(Json);
 EvalResult eval_res_error(Range r, char *format, ...);
 
-EvalResult vs_get_variable(VariableStack *vs, char *var_name, Range r);
+Json vs_get_variable(VariableStack *vs, char *var_name, Range r);
 
 #endif // _EVAL_PRIVATE_H
