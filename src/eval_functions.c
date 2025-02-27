@@ -6,17 +6,25 @@
 #include "src/parser.h"
 #include "src/vector.h"
 #include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 
-#define EXPECT_ARGS(args, number, function_name, range)                                            \
-    if (args.length != number) {                                                                   \
-        return eval_res_error(TYPE_ERROR(                                                          \
-            range,                                                                                 \
-            "Invalid number of parameters to " function_name " (Expected %d, got %d)",             \
-            number,                                                                                \
-            args.length                                                                            \
-        ));                                                                                        \
-    }
+#define EXPECT_ARGS(args, args_number, function_name, range)                                       \
+    ({                                                                                             \
+        if (args.length != args_number) {                                                          \
+            return eval_res_error(TYPE_ERROR(                                                      \
+                range,                                                                             \
+                "Invalid number of parameters to " function_name " (Expected %d, got %d)",         \
+                args_number,                                                                       \
+                args.length                                                                        \
+            ));                                                                                    \
+        }                                                                                          \
+    })
+
+struct closure {
+    Eval *e;
+    ASTNode *n;
+};
 
 static void vs_push_variables(VariableStack *vs, Vec_ASTNode closure) {
     for (int i = 0; i < closure.length; i++) {
@@ -55,22 +63,26 @@ EvalResult vs_get_variable(VariableStack *vs, char *var_name, Range r) {
 }
 
 static Json map_func(Json in, void *captures) {
-    ASTNode *node = (ASTNode *)captures;
+    struct closure *closure = captures;
+
     return json_null();
 }
 
 EvalResult eval_function_map(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_FUNCTION);
-    assert(node->inner.function.args.data[0]->type == AST_TYPE_CLOSURE);
 
     JsonIterator callee = EXPECT_ITER(
         node->range, to_iter(eval_node(e, node->inner.function.callee), node->range), (Json[]) {}
     );
 
     Vec_ASTNode args = node->inner.function.args;
-    EXPECT_ARGS(args, 1, "map", node->range)
+    EXPECT_ARGS(args, 1, "map", node->range);
 
-    return eval_res_iter(iter_map(callee, &map_func, args.data[0]));
+    struct closure *captures = malloc(sizeof(*captures));
+    captures->e = e;
+    captures->n = args.data[0];
+
+    return eval_res_iter(iter_map(callee, &map_func, args.data[0], true));
 }
 
 EvalResult eval_function_collect(Eval *e, ASTNode *node) {
@@ -81,7 +93,7 @@ EvalResult eval_function_collect(Eval *e, ASTNode *node) {
         = EXPECT_ITER(node->range, eval_node(e, node->inner.function.callee), (Json[]) {});
 
     Vec_ASTNode args = node->inner.function.args;
-    EXPECT_ARGS(args, 0, "collect", node->range)
+    EXPECT_ARGS(args, 0, "collect", node->range);
 
     return eval_res_json(iter_collect(callee));
 }
