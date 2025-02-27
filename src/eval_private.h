@@ -12,45 +12,38 @@
         json_free((free_list)[i]);                                                                 \
     }
 
-#define EXPECT_TYPE(r, j, _type, free_list, ...)                                                      \
-    ({                                                                                             \
-        Json __j = j;                                                                              \
-        if (__j.type != _type) {                                                                   \
-            _FREE_FREE_LIST(free_list)                                                             \
-            return eval_res_error(TYPE_ERROR(r, __VA_ARGS__));                                        \
-        }                                                                                          \
-        __j;                                                                                       \
-    })
-
-#define EXPECT_JSON(r, j, free_list)                                                               \
+#define BUBBLE_ERROR(j, free_list)                                                                 \
     ({                                                                                             \
         EvalResult __r = j;                                                                        \
-        PROPOGATE_INVALID(                                                                         \
-            __r,                                                                                   \
-            free_list,                                                                             \
-            EVAL_JSON,                                                                             \
-            eval_res_error(TYPE_ERROR(r, "Expected json value, got iterator"))                     \
-        );                                                                                         \
+        if (__r.type == EVAL_ERR) {                                                                \
+            _FREE_FREE_LIST(free_list)                                                             \
+            return __r;                                                                            \
+        }                                                                                          \
         __r.json;                                                                                  \
     })
 
-#define EXPECT_ITER(r, j, free_list)                                                               \
+#define EXPECT_TYPE(r, j, types, free_list, ...)                                                   \
     ({                                                                                             \
-        EvalResult __r = j;                                                                        \
-        PROPOGATE_INVALID(                                                                         \
-            __r,                                                                                   \
-            free_list,                                                                             \
-            EVAL_ITER,                                                                             \
-            eval_res_error(TYPE_ERROR(r, "Expected iterator, got json value"))                     \
-        );                                                                                         \
-        __r.iter;                                                                                  \
+        Json __r = j;                                                                              \
+        for (int __i = 0; __i < sizeof(types) / sizeof(*types); __i++) {                           \
+            if (__r.type != types[__i]) {                                                          \
+                _FREE_FREE_LIST(free_list);                                                        \
+                return eval_res_error(r, TYPE_ERROR(__VA_ARGS__));                                 \
+            }                                                                                      \
+        }                                                                                          \
+        __r;                                                                                       \
     })
 
-#define PROPOGATE_INVALID(__r, free_list, _type, err)                                              \
-    if (__r.type != _type) {                                                                       \
-        _FREE_FREE_LIST(free_list)                                                                 \
-        return __r.type == EVAL_ERR ? __r : err;                                                   \
-    }
+#define EXPECT_JSON(r, j, free_list, ...)                                                          \
+    /* Make sure that the json is not of type iterator */                                          \
+    ({                                                                                             \
+        Json __r = BUBBLE_ERROR(j, free_list);                                                     \
+        if (__r.type != JSON_TYPE_ITER) {                                                          \
+            _FREE_FREE_LIST(free_list);                                                            \
+            return eval_res_error(r, TYPE_ERROR(__VA_ARGS__));                                     \
+        }                                                                                          \
+        __r;                                                                                       \
+    })
 
 struct Variable {
     char *name;
@@ -77,9 +70,8 @@ typedef struct {
 EvalResult eval_node(Eval *e, ASTNode *node);
 EvalResult eval_function_map(Eval *, ASTNode *);
 
-EvalResult eval_res_json(Json);
-EvalResult eval_res_error(char *, ...);
-EvalResult eval_res_iter(JsonIterator);
+EvalResult eval_res(Json);
+EvalResult eval_res_error(Range r, char *format, ...);
 
 EvalResult vs_get_variable(VariableStack *vs, char *var_name, Range r);
 

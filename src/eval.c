@@ -21,11 +21,11 @@ static EvalResult eval_list(Eval *e, ASTNode *node);
 static EvalResult eval_json_object(Eval *e, ASTNode *node);
 static EvalResult eval_grouping(Eval *e, ASTNode *node);
 
-EvalResult eval_res_json(Json j) {
+EvalResult eval_res(Json j) {
     return (EvalResult) {.type = EVAL_JSON, .json = j};
 }
 
-EvalResult eval_res_error(char *format, ...) {
+EvalResult eval_res_error(Range r, char *format, ...) {
     va_list args;
     va_start(args, format);
 
@@ -36,17 +36,13 @@ EvalResult eval_res_error(char *format, ...) {
     return (EvalResult) {.type = EVAL_ERR, .error = msg};
 }
 
-EvalResult eval_res_iter(JsonIterator iter) {
-    return (EvalResult) {.type = EVAL_ITER, .iter = iter};
-}
-
 EvalResult eval(ASTNode *node, Json input) {
     return eval_node(&(Eval) {.input = input, .vars = (VariableStack) {}}, node);
 }
 
 EvalResult eval_node(Eval *e, ASTNode *node) {
     if (node == NULL) {
-        return eval_res_json(e->input);
+        return eval_res(e->input);
     }
 
     switch (node->type) {
@@ -67,11 +63,11 @@ EvalResult eval_node(Eval *e, ASTNode *node) {
     case AST_TYPE_GROUPING:
         return eval_grouping(e, node);
     case AST_TYPE_FALSE:
-        return eval_res_json(json_boolean(false));
+        return eval_res(json_boolean(false));
     case AST_TYPE_TRUE:
-        return eval_res_json(json_boolean(true));
+        return eval_res(json_boolean(true));
     case AST_TYPE_NULL:
-        return eval_res_json(json_null());
+        return eval_res(json_null());
 
     case AST_TYPE_CLOSURE:
     case AST_TYPE_JSON_FIELD:
@@ -90,15 +86,15 @@ static EvalResult eval_primary(Eval *e, ASTNode *node) {
     case TOKEN_IDENT:
         str = node->inner.primary.inner.string;
         node->inner.primary.inner.string = NULL;
-        return eval_res_json(json_string_no_alloc(str));
+        return eval_res(json_string_no_alloc(str));
     case TOKEN_NUMBER:
-        return eval_res_json(json_number(node->inner.primary.inner.number));
+        return eval_res(json_number(node->inner.primary.inner.number));
     case TOKEN_TRUE:
-        return eval_res_json(json_boolean(true));
+        return eval_res(json_boolean(true));
     case TOKEN_FALSE:
-        return eval_res_json(json_boolean(false));
+        return eval_res(json_boolean(false));
     case TOKEN_NULL:
-        return eval_res_json(json_null());
+        return eval_res(json_null());
     default:
         // Unreachable
         assert(false);
@@ -110,25 +106,19 @@ static EvalResult eval_access(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_ACCESS);
 
     ASTNode *inner_node = node->inner.access.inner;
-    Json inner = EXPECT_JSON(inner_node->range, eval_node(e, inner_node), (Json[]) {});
+    Json inner = BUBBLE_ERROR(eval_node(e, inner_node), (Json[]) {});
 
     bool used_input = node->inner.access.inner == NULL;
 
     if (!used_input && inner_node->type == AST_TYPE_PRIMARY
         && inner_node->inner.primary.type == TOKEN_IDENT) {
         char *var_name = inner_node->inner.primary.inner.ident;
-        inner = EXPECT_JSON(
-            inner_node->range, vs_get_variable(&e->vars, var_name, inner_node->range), (Json[]) {}
-        );
+        inner = BUBBLE_ERROR(vs_get_variable(&e->vars, var_name, inner_node->range), (Json[]) {});
 
         json_free(inner);
     }
 
-    Json accessor = EXPECT_JSON(
-        node->inner.access.accessor->range,
-        eval_node(e, node->inner.access.accessor),
-        (Json[]) {inner}
-    );
+    Json accessor = BUBBLE_ERROR(eval_node(e, node->inner.access.accessor), (Json[]) {inner});
     Json free_list[] = {(!used_input) ? inner : json_null(), accessor};
 
     Json ret;
@@ -138,7 +128,7 @@ static EvalResult eval_access(Eval *e, ASTNode *node) {
         EXPECT_TYPE(
             node->inner.access.accessor->range,
             accessor,
-            JSON_TYPE_NUMBER,
+            ((JsonType[]) {JSON_TYPE_NUMBER}),
             free_list,
             "Expected number in array access, got %s",
             json_type(accessor.type)
@@ -150,7 +140,7 @@ static EvalResult eval_access(Eval *e, ASTNode *node) {
         EXPECT_TYPE(
             node->inner.access.accessor->range,
             accessor,
-            JSON_TYPE_STRING,
+            ((JsonType[]) {JSON_TYPE_STRING}),
             free_list,
             "Expected string in object access, got %s",
             json_type(accessor.type)
@@ -169,7 +159,7 @@ static EvalResult eval_access(Eval *e, ASTNode *node) {
     }
     json_free(accessor);
 
-    return eval_res_json(ret);
+    return eval_res(ret);
 }
 
 static EvalResult eval_list(Eval *e, ASTNode *node) {
@@ -185,7 +175,7 @@ static EvalResult eval_list(Eval *e, ASTNode *node) {
         );
     }
 
-    return eval_res_json(r);
+    return eval_res(r);
 }
 
 static EvalResult eval_json_object(Eval *e, ASTNode *node) {
@@ -206,7 +196,7 @@ static EvalResult eval_json_object(Eval *e, ASTNode *node) {
         EXPECT_TYPE(
             field->inner.json_field.key->range,
             key,
-            JSON_TYPE_STRING,
+            ((JsonType[]) {JSON_TYPE_STRING}),
             free_list,
             "Expected string for json key, got %s",
             json_type(key.type)
@@ -221,7 +211,7 @@ static EvalResult eval_json_object(Eval *e, ASTNode *node) {
         r = json_object_set(r, key, value);
     }
 
-    return eval_res_json(r);
+    return eval_res(r);
 }
 
 static EvalResult eval_grouping(Eval *e, ASTNode *node) {
@@ -242,13 +232,13 @@ static EvalResult eval_unary(Eval *e, ASTNode *node) {
         EXPECT_TYPE(
             node->inner.unary.rhs->range,
             r,
-            JSON_TYPE_BOOL,
+            ((JsonType[]) {JSON_TYPE_BOOL}),
             (Json[]) {r},
             "Expected boolean in unary ! but got %s",
             json_type(r.type)
         );
         r.inner.boolean = !r.inner.boolean;
-        return eval_res_json(r);
+        return eval_res(r);
     case TOKEN_MINUS:
         r = EXPECT_JSON(
             node->inner.unary.rhs->range, eval_node(e, node->inner.unary.rhs), (Json[]) {}
@@ -256,13 +246,13 @@ static EvalResult eval_unary(Eval *e, ASTNode *node) {
         EXPECT_TYPE(
             node->inner.unary.rhs->range,
             r,
-            JSON_TYPE_NUMBER,
+            ((JsonType[]) {JSON_TYPE_NUMBER}),
             (Json[]) {r},
             "Expected number in unary - but got %s",
             json_type(r.type)
         );
         r.inner.number = -r.inner.number;
-        return eval_res_json(r);
+        return eval_res(r);
 
     default:
         // Unreachable
@@ -271,37 +261,53 @@ static EvalResult eval_unary(Eval *e, ASTNode *node) {
     }
 }
 
-static EvalResult eval_binary(Eval *e, ASTNode *node) {
-    assert(node->type == AST_TYPE_BINARY);
-
-#define BINARY_OP(lhs, rhs, _type, op, _inner, _new)                                               \
-    do {                                                                                           \
-        (lhs) = EXPECT_JSON(                                                                       \
-            node->inner.binary.lhs->range, eval_node(e, node->inner.binary.lhs), (Json[]) {}       \
-        );                                                                                         \
+#define EVAL_BINARY_OP(_name, _expected_type, _op_name, _out_function)                             \
+    static EvalResult _name(Eval *e, ASTNode *node) {                                              \
+        assert(node->type == AST_TYPE_BINARY);                                                     \
+                                                                                                   \
+        Json lhs = BUBBLE_ERROR(eval_node(e, node->inner.binary.lhs), (Json[]) {});                \
         EXPECT_TYPE(                                                                               \
             node->inner.binary.lhs->range,                                                         \
-            (lhs),                                                                                 \
-            _type,                                                                                 \
+            lhs,                                                                                   \
+            (JsonType[]) {_expected_type},                                                         \
             (Json[]) {},                                                                           \
-            "Invalid operands to binary " #op " (Expected %s, but got %s)",                        \
-            json_type(_type),                                                                      \
-            json_type((lhs).type)                                                                  \
+            "Invalid lhs argument to binary " _op_name " (expected %s but got %s)",                \
+            json_type(_expected_type),                                                             \
+            json_type(lhs.type)                                                                    \
         );                                                                                         \
-        (rhs) = EXPECT_JSON(                                                                       \
-            node->inner.binary.rhs->range, eval_node(e, node->inner.binary.rhs), (Json[]) {lhs}    \
-        );                                                                                         \
+        Json rhs = BUBBLE_ERROR(eval_node(e, node->inner.binary.rhs), (Json[]) {});                \
         EXPECT_TYPE(                                                                               \
             node->inner.binary.rhs->range,                                                         \
-            (rhs),                                                                                 \
-            _type,                                                                                 \
+            rhs,                                                                                   \
+            (JsonType[]) {_expected_type},                                                         \
             (Json[]) {lhs},                                                                        \
-            "Invalid operands to binary " #op " (Expected %s, but got %s)",                        \
-            json_type(_type),                                                                      \
-            json_type((rhs).type)                                                                  \
+            "Invalid rhs argument to binary " _op_name " (expected %s but got %s)",                \
+            json_type(_expected_type),                                                             \
+            json_type(lhs.type)                                                                    \
         );                                                                                         \
-        ret = _new((lhs).inner._inner op rhs.inner._inner);                                        \
-    } while (0)
+                                                                                                   \
+        Json ret = _out_function;                                                                  \
+        json_free(lhs);                                                                            \
+        json_free(rhs);                                                                            \
+        return eval_res(ret);                                                                      \
+    }
+
+// clang-format off
+EVAL_BINARY_OP(eval_binary_or, JSON_TYPE_BOOL, "||", json_boolean(lhs.inner.boolean || rhs.inner.boolean));
+EVAL_BINARY_OP(eval_binary_and, JSON_TYPE_BOOL, "&&", json_boolean(lhs.inner.boolean && rhs.inner.boolean));
+EVAL_BINARY_OP(eval_binary_lt_equal, JSON_TYPE_BOOL, "<=", json_boolean(lhs.inner.number <= rhs.inner.number));
+EVAL_BINARY_OP(eval_binary_gt_equal, JSON_TYPE_BOOL, ">=", json_boolean(lhs.inner.number >= rhs.inner.number));
+EVAL_BINARY_OP(eval_binary_lt, JSON_TYPE_BOOL, ">", json_boolean(lhs.inner.number > rhs.inner.number));
+EVAL_BINARY_OP(eval_binary_gt, JSON_TYPE_BOOL, "<", json_boolean(lhs.inner.number < rhs.inner.number));
+EVAL_BINARY_OP(eval_binary_add, JSON_TYPE_NUMBER, "+", json_number(lhs.inner.number + rhs.inner.number));
+EVAL_BINARY_OP(eval_binary_sub, JSON_TYPE_NUMBER, "-", json_number(lhs.inner.number - rhs.inner.number));
+EVAL_BINARY_OP(eval_binary_times, JSON_TYPE_NUMBER, "*", json_number(lhs.inner.number * rhs.inner.number));
+EVAL_BINARY_OP(eval_binary_div, JSON_TYPE_NUMBER, "/", json_number(lhs.inner.number / rhs.inner.number));
+EVAL_BINARY_OP(eval_binary_mod, JSON_TYPE_NUMBER, "%%", json_number(fmod(lhs.inner.number, rhs.inner.number)));
+// clang-format on
+
+static EvalResult eval_binary(Eval *e, ASTNode *node) {
+    assert(node->type == AST_TYPE_BINARY);
 
     Json lhs;
     Json rhs;
@@ -321,69 +327,47 @@ static EvalResult eval_binary(Eval *e, ASTNode *node) {
         ret = json_boolean(node->inner.binary.operator== TOKEN_EQUAL ? r : !r);
         json_free(lhs);
         json_free(rhs);
-        return eval_res_json(ret);
+        return eval_res(ret);
         break;
     case TOKEN_OR:
-        BINARY_OP(lhs, rhs, JSON_TYPE_BOOL, ||, boolean, json_boolean);
+        ret = BUBBLE_ERROR(eval_binary_or(e, node), (Json[]) {});
         break;
     case TOKEN_AND:
-        BINARY_OP(lhs, rhs, JSON_TYPE_BOOL, &&, boolean, json_boolean);
+        ret = BUBBLE_ERROR(eval_binary_and(e, node), (Json[]) {});
         break;
     case TOKEN_LT_EQUAL:
-        BINARY_OP(lhs, rhs, JSON_TYPE_NUMBER, <=, number, json_boolean);
+        ret = BUBBLE_ERROR(eval_binary_lt_equal(e, node), (Json[]) {});
         break;
     case TOKEN_GT_EQUAL:
-        BINARY_OP(lhs, rhs, JSON_TYPE_NUMBER, >=, number, json_boolean);
+        ret = BUBBLE_ERROR(eval_binary_gt_equal(e, node), (Json[]) {});
         break;
     case TOKEN_LANGLE:
-        BINARY_OP(lhs, rhs, JSON_TYPE_NUMBER, <, number, json_boolean);
+        ret = BUBBLE_ERROR(eval_binary_lt(e, node), (Json[]) {});
         break;
     case TOKEN_RANGLE:
-        BINARY_OP(lhs, rhs, JSON_TYPE_NUMBER, >, number, json_boolean);
+        ret = BUBBLE_ERROR(eval_binary_gt(e, node), (Json[]) {});
         break;
     case TOKEN_PLUS:
-        BINARY_OP(lhs, rhs, JSON_TYPE_NUMBER, +, number, json_number);
+        ret = BUBBLE_ERROR(eval_binary_add(e, node), (Json[]) {});
         break;
     case TOKEN_MINUS:
-        BINARY_OP(lhs, rhs, JSON_TYPE_NUMBER, -, number, json_number);
+        ret = BUBBLE_ERROR(eval_binary_sub(e, node), (Json[]) {});
         break;
     case TOKEN_ASTERISK:
-        BINARY_OP(lhs, rhs, JSON_TYPE_NUMBER, *, number, json_number);
+        ret = BUBBLE_ERROR(eval_binary_times(e, node), (Json[]) {});
         break;
     case TOKEN_SLASH:
-        BINARY_OP(lhs, rhs, JSON_TYPE_NUMBER, /, number, json_number);
+        ret = BUBBLE_ERROR(eval_binary_div(e, node), (Json[]) {});
         break;
     case TOKEN_PERC:
-        lhs = EXPECT_JSON(
-            node->inner.binary.lhs->range, eval_node(e, node->inner.binary.lhs), (Json[]) {}
-        );
-        EXPECT_TYPE(
-            node->inner.binary.lhs->range,
-            (lhs),
-            JSON_TYPE_NUMBER,
-            (Json[]) {},
-            "Invalid operands to binary %% (Expected number, but got %s)",
-            json_type((lhs).type)
-        );
-        (rhs) = EXPECT_JSON(
-            node->inner.binary.rhs->range, eval_node(e, node->inner.binary.rhs), (Json[]) {lhs}
-        );
-        EXPECT_TYPE(
-            node->inner.binary.rhs->range,
-            (rhs),
-            JSON_TYPE_NUMBER,
-            (Json[]) {lhs},
-            "Invalid operands to binary %% (Expected number, but got %s)",
-            json_type((rhs).type)
-        );
-        ret = json_number((uint)lhs.inner.number % (uint)rhs.inner.number);
+        ret = BUBBLE_ERROR(eval_binary_mod(e, node), (Json[]) {});
         break;
 
     default:
         assert(false);
         break;
     }
-    return eval_res_json(ret);
+    return eval_res(ret);
 #undef BINARY_OP
 }
 
@@ -401,5 +385,5 @@ static EvalResult eval_function(Eval *e, ASTNode *node) {
     if (strcmp(function_name, "map") == 0) {
         return eval_function_map(e, node);
     }
-    return eval_res_error("TODO     Invalid function name");
+    return eval_res_error(node->range, "TODO     Invalid function name");
 }
