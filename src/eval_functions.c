@@ -12,12 +12,14 @@
 #define EXPECT_ARGS(args, args_number, function_name, range)                                       \
     ({                                                                                             \
         if (args.length != args_number) {                                                          \
-            return eval_res_error(TYPE_ERROR(                                                      \
+            return eval_res_error(                                                                 \
                 range,                                                                             \
-                "Invalid number of parameters to " function_name " (Expected %d, got %d)",         \
-                args_number,                                                                       \
-                args.length                                                                        \
-            ));                                                                                    \
+                TYPE_ERROR(                                                                        \
+                    "Invalid number of parameters to " function_name " (Expected %d, got %d)",     \
+                    args_number,                                                                   \
+                    args.length                                                                    \
+                )                                                                                  \
+            );                                                                                     \
         }                                                                                          \
     })
 
@@ -51,15 +53,15 @@ inline static EvalResult to_iter(EvalResult e, Range r) {
 }
 
 /// Will return a copy of the json value associated with the variable name
-Json vs_get_variable(VariableStack *vs, char *var_name, Range r) {
+EvalResult vs_get_variable(VariableStack *vs, char *var_name, Range r) {
     // Iterate through the stack in reverse order
     for (uint i = vs->length - 1; i >= 0; i--) {
         if (strcmp(vs->data[i].name, var_name) == 0) {
-            return json_copy(vs->data[i].value);
+            return eval_res_json(json_copy(vs->data[i].value));
         }
     }
 
-    return eval_res_error(RUNTIME_ERROR(r, "Variable not in scope: %s", var_name));
+    return eval_res_error(r, RUNTIME_ERROR("Variable not in scope: %s", var_name));
 }
 
 static Json map_func(Json in, void *captures) {

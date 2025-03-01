@@ -40,7 +40,9 @@
         EvalResult __r = BUBBLE_ERROR(j, free_list);                                               \
         if (__r.type == EVAL_ITER) {                                                               \
             _FREE_FREE_LIST(free_list);                                                            \
-            return eval_res_error(range, TYPE_ERROR(__VA_ARGS__));                                 \
+            return eval_res_error(                                                                 \
+                range, TYPE_ERROR("Expected a json value, got an iterator instead")                \
+            );                                                                                     \
         }                                                                                          \
         __r.json;                                                                                  \
     })
@@ -51,7 +53,9 @@
         EvalResult __r = BUBBLE_ERROR(j, free_list);                                               \
         if (__r.type == EVAL_JSON) {                                                               \
             _FREE_FREE_LIST(free_list);                                                            \
-            return eval_res_error(range, TYPE_ERROR(__VA_ARGS__));                                 \
+            return eval_res_error(                                                                 \
+                range, TYPE_ERROR("Expected an iterator, got a json value instead")                \
+            );                                                                                     \
         }                                                                                          \
         __r.iter;                                                                                  \
     })
@@ -81,9 +85,10 @@ typedef struct {
 EvalResult eval_node(Eval *e, ASTNode *node);
 EvalResult eval_function_map(Eval *, ASTNode *);
 
-EvalResult eval_res(Json);
+EvalResult eval_res_json(Json);
+EvalResult eval_res_iter(JsonIterator i);
 EvalResult eval_res_error(Range r, char *format, ...);
 
-Json vs_get_variable(VariableStack *vs, char *var_name, Range r);
+EvalResult vs_get_variable(VariableStack *vs, char *var_name, Range r);
 
 #endif // _EVAL_PRIVATE_H
