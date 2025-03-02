@@ -39,10 +39,11 @@
     ({                                                                                             \
         EvalResult __r = BUBBLE_ERROR(j, free_list);                                               \
         if (__r.type == EVAL_ITER) {                                                               \
-            _FREE_FREE_LIST(free_list);                                                            \
+            __r.json = iter_collect(__r.iter);                                                     \
+            /* _FREE_FREE_LIST(free_list);                                                         \
             return eval_res_error(                                                                 \
                 range, TYPE_ERROR("Expected a json value, got an iterator instead")                \
-            );                                                                                     \
+            );  */                                                                                 \
         }                                                                                          \
         __r.json;                                                                                  \
     })
