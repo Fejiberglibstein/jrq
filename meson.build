@@ -1,5 +1,8 @@
 project('jrq', 'c')
 
+cc = meson.get_compiler('c')
+m_dep = cc.find_library('m', required: false)
+
 # .!find src/ -name "*.c" | grep -v "main.c" | xargs -I{} echo "'{}',"
 files = [
   'src/eval.c',
@@ -13,7 +16,7 @@ files = [
   'src/json_iter.c',
 ]
 
-executable('jrq', files + './src/main.c')
+executable('jrq', files + './src/main.c', dependencies: m_dep)
 
 tests = [
   ['json', 'serialize', './tests/json/serialize.c'],
@@ -26,6 +29,6 @@ tests = [
   ['lang', 'eval', './tests/lang/eval.c'],
 ]
 foreach test : tests
-  exe = executable('test_' + test[1], files + test[2])
+  exe = executable('test_' + test[1], files + test[2], dependencies: m_dep)
   test(test[1], exe, suite: test[0])
 endforeach
