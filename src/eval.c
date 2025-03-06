@@ -3,6 +3,7 @@
 #include "src/eval_private.h"
 #include "src/json.h"
 #include "src/json_iter.h"
+#include "src/json_serde.h"
 #include "src/lexer.h"
 #include "src/parser.h"
 #include <assert.h>
@@ -310,10 +311,10 @@ static EvalResult eval_unary(Eval *e, ASTNode *node) {
 // clang-format off
 EVAL_BINARY_OP(eval_binary_or, JSON_TYPE_BOOL, "||", json_boolean(lhs.inner.boolean || rhs.inner.boolean));
 EVAL_BINARY_OP(eval_binary_and, JSON_TYPE_BOOL, "&&", json_boolean(lhs.inner.boolean && rhs.inner.boolean));
-EVAL_BINARY_OP(eval_binary_lt_equal, JSON_TYPE_BOOL, "<=", json_boolean(lhs.inner.number <= rhs.inner.number));
-EVAL_BINARY_OP(eval_binary_gt_equal, JSON_TYPE_BOOL, ">=", json_boolean(lhs.inner.number >= rhs.inner.number));
-EVAL_BINARY_OP(eval_binary_lt, JSON_TYPE_BOOL, ">", json_boolean(lhs.inner.number > rhs.inner.number));
-EVAL_BINARY_OP(eval_binary_gt, JSON_TYPE_BOOL, "<", json_boolean(lhs.inner.number < rhs.inner.number));
+EVAL_BINARY_OP(eval_binary_lt_equal, JSON_TYPE_NUMBER, "<=", json_boolean(lhs.inner.number <= rhs.inner.number));
+EVAL_BINARY_OP(eval_binary_gt_equal, JSON_TYPE_NUMBER, ">=", json_boolean(lhs.inner.number >= rhs.inner.number));
+EVAL_BINARY_OP(eval_binary_gt, JSON_TYPE_NUMBER, ">", json_boolean(lhs.inner.number > rhs.inner.number));
+EVAL_BINARY_OP(eval_binary_lt, JSON_TYPE_NUMBER, "<", json_boolean(lhs.inner.number < rhs.inner.number));
 EVAL_BINARY_OP(eval_binary_add, JSON_TYPE_NUMBER, "+", json_number(lhs.inner.number + rhs.inner.number));
 EVAL_BINARY_OP(eval_binary_sub, JSON_TYPE_NUMBER, "-", json_number(lhs.inner.number - rhs.inner.number));
 EVAL_BINARY_OP(eval_binary_times, JSON_TYPE_NUMBER, "*", json_number(lhs.inner.number * rhs.inner.number));
