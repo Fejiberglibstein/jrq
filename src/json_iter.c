@@ -123,7 +123,7 @@ static void free_func_next_and_captures(JsonIterator i) {
         *i = (struct_name) {                                                                       \
             .iter = {.func = &next_func_name, .free = &free_func_json},                            \
             .index = 0,                                                                            \
-            .data = j,                                                                             \
+            .data = json_copy(j),                                                                  \
         };                                                                                         \
                                                                                                    \
         return (JsonIterator)i;                                                                    \
