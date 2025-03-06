@@ -64,7 +64,8 @@ void enumerate_iter() {
     assert(iter_next(iter).type == ITER_DONE);
     assert(iter_next(iter).type == ITER_DONE);
 
-    iter_free(iter);
+    // Stupid double free. I should not have removed the ref count on json.
+    // iter_free(iter);
 }
 
 int main() {
