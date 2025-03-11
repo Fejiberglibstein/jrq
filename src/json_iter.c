@@ -123,7 +123,7 @@ static void free_func_next_and_captures(JsonIterator i) {
         *i = (struct_name) {                                                                       \
             .iter = {.func = &next_func_name, .free = &free_func_json},                            \
             .index = 0,                                                                            \
-            .data = json_copy(j),                                                                  \
+            .data = j,                                                                  \
         };                                                                                         \
                                                                                                    \
         return (JsonIterator)i;                                                                    \
@@ -140,7 +140,7 @@ static IterOption list_iter_next(JsonIterator i) {
         return iter_done();
     }
 
-    return iter_some(list_iter->data.inner.list.data[list_iter->index++]);
+    return iter_some(json_copy(list_iter->data.inner.list.data[list_iter->index++]));
 }
 
 /// Returns an iterator over the keys of a json object.
@@ -154,7 +154,7 @@ static IterOption key_iter_next(JsonIterator i) {
         return iter_done();
     }
 
-    return iter_some(key_iter->data.inner.object.data[key_iter->index++].key);
+    return iter_some(json_copy(key_iter->data.inner.object.data[key_iter->index++].key));
 }
 
 /// Returns an iterator over the values of a json object.
@@ -168,7 +168,7 @@ static IterOption value_iter_next(JsonIterator i) {
         return iter_done();
     }
 
-    return iter_some(value_iter->data.inner.object.data[value_iter->index++].value);
+    return iter_some(json_copy(value_iter->data.inner.object.data[value_iter->index++].value));
 }
 
 /// Returns an iterator over the keys and values of a json object.
@@ -183,7 +183,7 @@ static IterOption key_value_iter_next(JsonIterator i) {
     }
 
     JsonObject obj = kv_iter->data.inner.object;
-    Json ret = JSON_LIST(obj.data[kv_iter->index].key, obj.data[kv_iter->index].value);
+    Json ret = JSON_LIST(json_copy(obj.data[kv_iter->index].key), json_copy(obj.data[kv_iter->index].value));
     kv_iter->index += 1;
 
     return iter_some(ret);
