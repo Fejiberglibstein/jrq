@@ -2,7 +2,6 @@
 #define _ERRORS_H
 
 #include "src/lexer.h"
-#include <stdio.h>
 
 #define ERROR_MISSING_RPAREN "Missing closing parenthesis ')'"
 #define ERROR_MISSING_RBRACKET "Missing closing bracket ']'"
@@ -26,6 +25,8 @@
     TYPE_ERROR("Unexpected arguments to unary - (expected number, got %s)", t)
 #define EVAL_ERR_UNARY_NOT(t)                                                                      \
     TYPE_ERROR("Unexpected arguments to unary ! (expected bool, got %s)", t)
+#define EVAL_ERR_BINARY_OP(OP, exp, t)                                                             \
+    TYPE_ERROR("Unexpected arguments to binary " OP " (expected %s, got %s)", exp, t)
 
 typedef struct {
     char *err;

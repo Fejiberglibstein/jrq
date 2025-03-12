@@ -22,14 +22,14 @@
         return eval_from_json(json_null());                                                        \
     }
 
-#define EXPECT_TYPE(e, j, t, ERR)                                                                  \
+#define EXPECT_TYPE(e, j, t, ERR...)                                                               \
     if (j.type != t && e->err.err == NULL) {                                                       \
         eval_set_err(e, ERR);                                                                      \
     }
 
 #define eval_set_err(e, ERR...)                                                                    \
     if (e->err.err == NULL) {                                                                      \
-        e->err = jrq_error(e->range, ERR);                                                        \
+        e->err = jrq_error(e->range, ERR);                                                         \
     }
 
 typedef struct {
