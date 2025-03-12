@@ -80,6 +80,54 @@ EvalData eval_node(Eval *e, ASTNode *node) {
     }
 }
 
+static EvalData eval_node_json(Eval *e, ASTNode *node) {
+    assert(node->type == AST_TYPE_JSON_OBJECT);
+
+    Vec_ASTNode elems = node->inner.json_object;
+    Json obj = json_object_sized(elems.length);
+
+    for (int i = 0; i < elems.length; i++) {
+        ASTNode *field = elems.data[i];
+        assert(field->type == AST_TYPE_JSON_FIELD);
+
+        Json key = eval_to_json(e, eval_node(e, field->inner.json_field.key));
+        Json value = eval_to_json(e, eval_node(e, field->inner.json_field.value));
+        EXPECT_TYPE(e, key, JSON_TYPE_STRING, EVAL_ERR_JSON_KEY_STRING(json_type(key.type)));
+        BUBBLE_ERROR(e, (Json[]) {obj, key, value});
+
+        json_object_set(obj, key, value);
+    }
+
+    e->range = node->range;
+    return eval_from_json(obj);
+}
+
+static EvalData eval_node_list(Eval *e, ASTNode *node) {
+    assert(node->type == AST_TYPE_LIST);
+
+    Vec_ASTNode elems = node->inner.list;
+    Json list = json_list_sized(elems.length);
+
+    for (int i = 0; i < elems.length; i++) {
+        Json el = eval_to_json(e, eval_node(e, elems.data[i]));
+        BUBBLE_ERROR(e, (Json[]) {list, el});
+
+        json_list_append(list, el);
+    }
+    e->range = node->range;
+
+    return eval_from_json(list);
+}
+
+static EvalData eval_node_grouping(Eval *e, ASTNode *node) {
+    assert(node->type == AST_TYPE_GROUPING);
+
+    EvalData ret = eval_node(e, node->inner.grouping);
+    e->range = node->range;
+
+    return ret;
+}
+
 static EvalData eval_node_primary(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_PRIMARY);
     char *str;
@@ -149,6 +197,7 @@ static EvalData eval_node_unary(Eval *e, ASTNode *node) {
         Json ret = _OUT_FUNCTION;                                                                  \
         json_free(lhs);                                                                            \
         json_free(rhs);                                                                            \
+        e->range = node->range;                                                                    \
         return eval_from_json(ret);                                                                \
     }
 
@@ -179,6 +228,7 @@ static EvalData eval_node_binary(Eval *e, ASTNode *node) {
         json_free(lhs);
         json_free(rhs);
 
+        e->range = node->range;
         b = (node->inner.binary.operator== TOKEN_EQUAL) ? b : !b;
         return eval_from_json(json_boolean(b));
     case TOKEN_OR:

@@ -27,6 +27,7 @@
     TYPE_ERROR("Unexpected arguments to unary ! (expected bool, got %s)", t)
 #define EVAL_ERR_BINARY_OP(OP, exp, t)                                                             \
     TYPE_ERROR("Unexpected arguments to binary " OP " (expected %s, got %s)", exp, t)
+#define EVAL_ERR_JSON_KEY_STRING(t) TYPE_ERROR("Expected string in json key, got %s", t)
 
 typedef struct {
     char *err;
