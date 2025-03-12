@@ -5,20 +5,31 @@
 #include "src/json_iter.h"
 #include "src/parser.h"
 
-#define _clean_up(FREE, FREE_LEN)                                                                  \
-    for (int i = 0; i < FREE_LEN; i++) {                                                           \
-        json_free(FREE[i]);                                                                        \
+#define _clean_up(FREE_LEN, FREE...)                                                               \
+    for (int _i = 0; _i < FREE_LEN; _i++) {                                                        \
+        json_free(FREE[_i]);                                                                       \
     }
 
+// will clean up everything in the free list and return from the function.
+//
+// This (i think) can be used at any point during the execution of the function,
+// as long as it's before anything meaningful is done with the evaluated json.
+// This way, we can delay bubbling until everything has been evaluated and we
+// only have one bubble.
 #define BUBBLE_ERROR(e, FREE...)                                                                   \
     if (e->err.err != NULL) {                                                                      \
-        _clean_up(FREE, sizeof(FREE) / sizeof(*FREE));                                             \
+        _clean_up(sizeof(FREE) / sizeof(*FREE), FREE);                                             \
         return eval_from_json(json_null());                                                        \
     }
 
-#define EXPECT_TYPE(e, j, t, fmt)                                                               \
-    if (j.type != t) {                                                                             \
-        e->err = jrq_error(e->range, fmt);                                             \
+#define EXPECT_TYPE(e, j, t, ERR)                                                                  \
+    if (j.type != t && e->err.err == NULL) {                                                       \
+        eval_set_err(e, ERR);                                                                      \
+    }
+
+#define eval_set_err(e, ERR...)                                                                    \
+    if (e->err.err == NULL) {                                                                      \
+        e->err = jrq_error(e->range, ERR);                                                        \
     }
 
 typedef struct {
