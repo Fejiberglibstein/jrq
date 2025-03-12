@@ -4,6 +4,17 @@
 #include "src/json_iter.h"
 #include "src/parser.h"
 
+#define _clean_up(FREE, FREE_LEN)                                                                  \
+    for (int i = 0; i < FREE_LEN; i++) {                                                           \
+        json_free(FREE[i]);                                                                        \
+    }
+
+#define BUBBLE_ERROR(E, FREE...)                                                                   \
+    if (E->err.err != NULL) {                                                                      \
+        _clean_up(FREE, sizeof(FREE) / sizeof(*FREE));                     \
+        return eval_from_json(json_null());                                                        \
+    }
+
 typedef struct {
     union {
         Json json;
@@ -27,7 +38,7 @@ typedef struct {
     Range range;
 } Eval;
 
-/// If `d` is already json, do nothing. 
+/// If `d` is already json, do nothing.
 /// Otherwise, implictly convert the iterator into json
 Json eval_to_json(Eval *e, EvalData d);
 /// If `d` is already an iterator, do nothing.
