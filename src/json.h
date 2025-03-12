@@ -3,6 +3,7 @@
 
 #include "src/vector.h"
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef enum JsonType {
     JSON_TYPE_INVALID,

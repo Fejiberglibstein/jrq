@@ -10,6 +10,8 @@
         json_free(FREE[_i]);                                                                       \
     }
 
+#define unreachable(str) assert(false && str)
+
 // will clean up everything in the free list and return from the function.
 //
 // This (i think) can be used at any point during the execution of the function,
@@ -64,6 +66,9 @@ Json eval_to_json(Eval *e, EvalData d);
 /// If d is not a json list, this function will cause e->err to be set.
 JsonIterator eval_to_iter(Eval *e, EvalData d);
 
-EvalData eval_node(Eval *e, ASTNode *node);
+/// Create an EvalData from j
+EvalData eval_from_json(Json j);
+/// Create an EvalData from i
+EvalData eval_from_iter(JsonIterator i);
 
 #endif // _EVAL_PRIVATE_H
