@@ -223,10 +223,10 @@ static void test_access_function_expr() {
 }
 
 static void test_json_literals() {
-    test_parse("{\"foo\": 10-2}", NULL, &(ASTNode) {
+    test_parse("{\"foo\": 10-2, \"bl\": 10}", NULL, &(ASTNode) {
         .type = AST_TYPE_JSON_OBJECT,
         .inner.json_object = (Vec_ASTNode) {
-            .length = 1,
+            .length = 2,
             .data = (ASTNode*[]) {
                 &(ASTNode) {
                     .type = AST_TYPE_JSON_FIELD,
@@ -256,7 +256,74 @@ static void test_json_literals() {
                         .inner.binary.operator = TOKEN_MINUS,
                     },
                 },
+                &(ASTNode) {
+                    .type = AST_TYPE_JSON_FIELD,
+                    .inner.json_field.key = &(ASTNode) {
+                        .type = AST_TYPE_PRIMARY,
+                        .inner.primary = (Token_norange) {
+                            .type = TOKEN_STRING,
+                            .inner.string = "bl"
+                        },
+                    },
+                    .inner.json_field.value = &(ASTNode) {
+                        .type = AST_TYPE_PRIMARY,
+                        .inner.primary = (Token_norange) {
+                            .type = TOKEN_NUMBER,
+                            .inner.number = 10,
+                        },
+                    },
+                },
             },
+        },
+    });
+    test_parse("{\"foo\": .foo + 2}.bleh", NULL, &(ASTNode) {
+        .type = AST_TYPE_ACCESS,
+        .inner.access.inner = &(ASTNode) {
+            .type = AST_TYPE_JSON_OBJECT,
+            .inner.json_object = (Vec_ASTNode) {
+                .length = 1,
+                .data = (ASTNode*[]) {
+                    &(ASTNode) {
+                        .type = AST_TYPE_JSON_FIELD,
+                        .inner.json_field.key = &(ASTNode) {
+                            .type = AST_TYPE_PRIMARY,
+                            .inner.primary = (Token_norange) {
+                                .type = TOKEN_STRING,
+                                .inner.string = "foo"
+                            },
+                        },
+                        .inner.json_field.value = &(ASTNode) {
+                            .type = AST_TYPE_BINARY,
+                            .inner.binary.lhs = &(ASTNode) {
+                                .type = AST_TYPE_ACCESS,
+                                .inner.access.inner = NULL,
+                                .inner.access.accessor = &(ASTNode) {
+                                    .type = AST_TYPE_PRIMARY,
+                                    .inner.primary = (Token_norange) {
+                                        .type = TOKEN_IDENT,
+                                        .inner.ident = "foo",
+                                    }
+                                },
+                            },
+                            .inner.binary.rhs = &(ASTNode) {
+                                .type = AST_TYPE_PRIMARY,
+                                .inner.primary = (Token_norange) {
+                                    .type = TOKEN_NUMBER,
+                                    .inner.number = 2,
+                                },
+                            },
+                            .inner.binary.operator = TOKEN_PLUS,
+                        },
+                    },
+                },
+            },
+        },
+        .inner.access.accessor = &(ASTNode) {
+            .type = AST_TYPE_PRIMARY,
+            .inner.primary = (Token_norange) {
+                .type = TOKEN_IDENT,
+                .inner.ident = "bleh",
+            }
         },
     });
 }

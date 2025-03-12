@@ -3,10 +3,12 @@
 #include "src/eval_private.h"
 #include "src/json.h"
 #include "src/json_iter.h"
+#include "src/json_serde.h"
 #include "src/parser.h"
 #include <assert.h>
 #include <math.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #define unreachable(str) assert(false && str)
 
@@ -45,7 +47,7 @@ static EvalData eval_node_access(Eval *e, ASTNode *node);
 
 EvalData eval_node(Eval *e, ASTNode *node) {
     if (node == NULL) {
-        return eval_from_json(e->input);
+        return eval_from_json(json_copy(e->input));
     }
 
     switch (node->type) {
@@ -84,6 +86,7 @@ EvalData eval_node(Eval *e, ASTNode *node) {
 
 static EvalData eval_node_access(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_ACCESS);
+    printf("    h\n");
 
     ASTNode *inner_node = node->inner.access.inner;
     Json inner = eval_to_json(e, eval_node(e, inner_node));
@@ -105,7 +108,7 @@ static EvalData eval_node_access(Eval *e, ASTNode *node) {
 
     Json res = json_null();
 
-    Json free_list[] = {!used_input ? inner : json_null(), accessor};
+    Json free_list[] = {inner, accessor};
     switch (inner.type) {
     case JSON_TYPE_LIST:
         EXPECT_TYPE(e, accessor, JSON_TYPE_NUMBER, EVAL_ERR_LIST_ACCESS(json_type(accessor.type)));
@@ -125,9 +128,7 @@ static EvalData eval_node_access(Eval *e, ASTNode *node) {
     }
 
     json_free(accessor);
-    if (!used_input) {
-        json_free(inner);
-    }
+    json_free(inner);
 
     e->range = node->range;
     return eval_from_json(res);
@@ -148,7 +149,7 @@ static EvalData eval_node_json(Eval *e, ASTNode *node) {
         EXPECT_TYPE(e, key, JSON_TYPE_STRING, EVAL_ERR_JSON_KEY_STRING(json_type(key.type)));
         BUBBLE_ERROR(e, (Json[]) {obj, key, value});
 
-        json_object_set(obj, key, value);
+        obj = json_object_set(obj, key, value);
     }
 
     e->range = node->range;
@@ -165,7 +166,7 @@ static EvalData eval_node_list(Eval *e, ASTNode *node) {
         Json el = eval_to_json(e, eval_node(e, elems.data[i]));
         BUBBLE_ERROR(e, (Json[]) {list, el});
 
-        json_list_append(list, el);
+        list = json_list_append(list, el);
     }
     e->range = node->range;
 
@@ -271,12 +272,13 @@ EVAL_BINARY_OP(eval_binary_mod, JSON_TYPE_NUMBER, "%%", json_number(fmod(lhs.inn
 static EvalData eval_node_binary(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_BINARY);
 
-    Json lhs = eval_to_json(e, eval_node(e, node->inner.binary.lhs));
-    Json rhs = eval_to_json(e, eval_node(e, node->inner.binary.rhs));
-    BUBBLE_ERROR(e, (Json[]) {lhs, rhs});
     switch (node->inner.binary.operator) {
     case TOKEN_EQUAL:
     case TOKEN_NOT_EQUAL:
+        Json lhs = eval_to_json(e, eval_node(e, node->inner.binary.lhs));
+        Json rhs = eval_to_json(e, eval_node(e, node->inner.binary.rhs));
+        BUBBLE_ERROR(e, (Json[]) {lhs, rhs});
+
         bool b = json_equal(lhs, rhs);
         json_free(lhs);
         json_free(rhs);

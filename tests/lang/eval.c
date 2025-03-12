@@ -96,6 +96,16 @@ void accesor_eval() {
     assert(test_eval(
         "{\"bar\": .fooo > 4- 2}.bar", JSON_OBJECT("fooo", json_number(4)), json_boolean(true)
     ));
+    assert(test_eval(
+        "{\"bar\": .fooo != 4 - 2, {\"foo\": \"J\"}.foo: [10,[4].0, .fooo, .bh.0]}",
+        JSON_OBJECT("fooo", json_string("bleh"), "bh", JSON_LIST(json_number(2))),
+        JSON_OBJECT(
+            "bar",
+            json_boolean(true),
+            "J",
+            JSON_LIST(json_number(10), json_number(4), json_string("bleh"), json_number(2))
+        )
+    ));
 }
 
 int main() {
