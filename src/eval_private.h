@@ -1,95 +1,41 @@
 #ifndef _EVAL_PRIVATE_H
 #define _EVAL_PRIVATE_H
-
-#include "src/eval.h"
-#include "src/json.h"
+#include "eval.h"
 #include "src/json_iter.h"
 #include "src/parser.h"
 
-#define _FREE_FREE_LIST(free_list)                                                                 \
-    uint __list_size = sizeof(free_list) / sizeof(*free_list);                                     \
-    for (uint i = 0; i < __list_size; i++) {                                                       \
-        json_free((free_list)[i]);                                                                 \
-    }
-
-#define BUBBLE_ERROR(j, free_list)                                                                 \
-    ({                                                                                             \
-        EvalResult __r = j;                                                                        \
-        if (__r.type == EVAL_ERR) {                                                                \
-            _FREE_FREE_LIST(free_list)                                                             \
-            return __r;                                                                            \
-        }                                                                                          \
-        __r;                                                                                       \
-    })
-
-#define EXPECT_TYPE(r, j, types, free_list, ...)                                                   \
-    ({                                                                                             \
-        Json __r = j;                                                                              \
-        for (int __i = 0; __i < sizeof(types) / sizeof(*types); __i++) {                           \
-            if (__r.type != types[__i]) {                                                          \
-                _FREE_FREE_LIST(free_list);                                                        \
-                return eval_res_error(r, TYPE_ERROR(__VA_ARGS__));                                 \
-            }                                                                                      \
-        }                                                                                          \
-        __r;                                                                                       \
-    })
-
-#define EXPECT_JSON(range, j, free_list, ...)                                                      \
-    /* Make sure that the json is not of type iterator */                                          \
-    ({                                                                                             \
-        EvalResult __r = BUBBLE_ERROR(j, free_list);                                               \
-        if (__r.type == EVAL_ITER) {                                                               \
-            __r.json = iter_collect(__r.iter);                                                     \
-            /* _FREE_FREE_LIST(free_list);                                                         \
-            return eval_res_error(                                                                 \
-                range, TYPE_ERROR("Expected a json value, got an iterator instead")                \
-            );  */                                                                                 \
-        }                                                                                          \
-        __r.json;                                                                                  \
-    })
-
-#define EXPECT_ITER(range, j, free_list, ...)                                                      \
-    /* Make sure that the json is not of type iterator */                                          \
-    ({                                                                                             \
-        EvalResult __r = BUBBLE_ERROR(j, free_list);                                               \
-        if (__r.type == EVAL_JSON) {                                                               \
-            _FREE_FREE_LIST(free_list);                                                            \
-            return eval_res_error(                                                                 \
-                range, TYPE_ERROR("Expected an iterator, got a json value instead")                \
-            );                                                                                     \
-        }                                                                                          \
-        __r.iter;                                                                                  \
-    })
-
-struct Variable {
-    char *name;
-    Json value;
-};
-
-typedef Vec(struct Variable) VariableStack;
+typedef struct {
+    union {
+        Json json;
+        JsonIterator iter;
+    };
+    enum {
+        SOME_JSON,
+        SOME_ITER,
+    } type;
+} EvalData;
 
 typedef struct {
-    /// The input json from invoking the program
+    /// The input json that the evaluator is called on
     Json input;
 
-    /// The variables that are currently in scope.
-    ///
-    /// This is represented as a stack so that we can allow for variable
-    /// shadowing:
-    ///
-    ///  [{"foo": 4}].map(|v| v.foo.map(|v| v))
-    ///
-    /// will create a stack like [v: {"foo": 4}, v: 4].
-    VariableStack vars;
+    /// Any error that has occurred while running. `err.err` will be NULL if
+    /// there is no error, and not NULL if there is an error
+    JrqError err;
+
+    /// The range of the node that is currently being looked at.
+    Range range;
 } Eval;
 
-EvalResult eval_node(Eval *e, ASTNode *node);
-EvalResult eval_function_map(Eval *, ASTNode *);
+/// If `d` is already json, do nothing. 
+/// Otherwise, implictly convert the iterator into json
+Json eval_to_json(Eval *e, EvalData d);
+/// If `d` is already an iterator, do nothing.
+/// Otherwise, implictly convert d if it is a json list to an iterator.
+///
+/// If d is not a json list, this function will cause e->err to be set.
+JsonIterator eval_to_iter(Eval *e, EvalData d);
 
-EvalResult eval_res_json(Json);
-EvalResult eval_res_iter(JsonIterator i);
-EvalResult eval_res_error(Range r, char *format, ...);
-
-EvalResult vs_get_variable(VariableStack *vs, char *var_name, Range r);
+EvalData eval_node(Eval *e, ASTNode *node);
 
 #endif // _EVAL_PRIVATE_H

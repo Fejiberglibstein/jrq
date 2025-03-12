@@ -1,23 +1,21 @@
 #ifndef _EVAL_H
 #define _EVAL_H
 
+#include "src/errors.h"
 #include "src/json.h"
 #include "src/json_iter.h"
+#include "src/lexer.h"
 #include "src/parser.h"
-
-typedef enum {
-    EVAL_ERR,
-    EVAL_JSON,
-    EVAL_ITER,
-} EvalResultType;
 
 typedef struct {
     union {
-        char *error;
+        JrqError err;
         Json json;
-        JsonIterator iter;
     };
-    EvalResultType type;
+    enum {
+        EVAL_OK,
+        EVAL_ERR,
+    } type;
 } EvalResult;
 
 EvalResult eval(ASTNode *node, Json input);
