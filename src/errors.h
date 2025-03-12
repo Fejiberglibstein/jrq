@@ -36,6 +36,8 @@
 #define EVAL_ERR_JSON_ACCESS(t) TYPE_ERROR("Expected string in object access, got %s", t)
 #define EVAL_ERR_INNER_ACCESS(t) TYPE_ERROR("Can not index a %s", t)
 
+#define EVAL_ERR_FUNC_NOT_FOUND(t) TYPE_ERROR("No function named %s", t)
+
 typedef struct {
     char *err;
     Range range;
