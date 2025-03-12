@@ -5,6 +5,7 @@
 #include "src/json_iter.h"
 #include "src/parser.h"
 #include <assert.h>
+#include <stdint.h>
 
 #define unreachable(str) assert(false && str)
 
@@ -95,6 +96,31 @@ static EvalData eval_node_primary(Eval *e, ASTNode *node) {
         return eval_from_json(json_number(node->inner.primary.inner.number));
     default:
         unreachable("All primary tokens covered, booleans and null are separate AST nodes");
+        break;
+    }
+}
+
+static EvalData eval_node_unary(Eval *e, ASTNode *node) {
+    assert(node->type == AST_TYPE_UNARY);
+
+    Json j = eval_to_json(e, eval_node(e, node->inner.unary.rhs));
+    BUBBLE_ERROR(e, (Json[]) {});
+
+    switch (node->inner.unary.operator) {
+    case TOKEN_MINUS:
+        EXPECT_TYPE(e, j, JSON_TYPE_NUMBER, EVAL_ERR_UNARY_MINUS(json_type(j.type)));
+        BUBBLE_ERROR(e, (Json[]) {j});
+
+        j.inner.number = -j.inner.number;
+        return eval_from_json(j);
+    case TOKEN_BANG:
+        EXPECT_TYPE(e, j, JSON_TYPE_BOOL, EVAL_ERR_UNARY_NOT(json_type(j.type)));
+        BUBBLE_ERROR(e, (Json[]) {j});
+
+        j.inner.boolean = !j.inner.boolean;
+        return eval_from_json(j);
+    default:
+        unreachable("No other token is a unary operator");
         break;
     }
 }

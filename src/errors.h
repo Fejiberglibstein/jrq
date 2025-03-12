@@ -21,6 +21,12 @@
 #define TYPE_ERROR(...) "Type Error: " __VA_ARGS__
 #define RUNTIME_ERROR(...) "Runtime Error: " __VA_ARGS__
 
+// Eval errors
+#define EVAL_ERR_UNARY_MINUS(t)                                                                    \
+    TYPE_ERROR("Unexpected arguments to unary - (expected number, got %s)", t)
+#define EVAL_ERR_UNARY_NOT(t)                                                                      \
+    TYPE_ERROR("Unexpected arguments to unary ! (expected bool, got %s)", t)
+
 typedef struct {
     char *err;
     Range range;

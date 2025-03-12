@@ -1,6 +1,7 @@
 #ifndef _EVAL_PRIVATE_H
 #define _EVAL_PRIVATE_H
 #include "eval.h"
+#include "src/json.h"
 #include "src/json_iter.h"
 #include "src/parser.h"
 
@@ -9,10 +10,15 @@
         json_free(FREE[i]);                                                                        \
     }
 
-#define BUBBLE_ERROR(E, FREE...)                                                                   \
-    if (E->err.err != NULL) {                                                                      \
-        _clean_up(FREE, sizeof(FREE) / sizeof(*FREE));                     \
+#define BUBBLE_ERROR(e, FREE...)                                                                   \
+    if (e->err.err != NULL) {                                                                      \
+        _clean_up(FREE, sizeof(FREE) / sizeof(*FREE));                                             \
         return eval_from_json(json_null());                                                        \
+    }
+
+#define EXPECT_TYPE(e, j, t, fmt)                                                               \
+    if (j.type != t) {                                                                             \
+        e->err = jrq_error(e->range, fmt);                                             \
     }
 
 typedef struct {
