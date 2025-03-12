@@ -165,6 +165,7 @@ static ASTNode *access(Parser *p) {
             // {"foo": {"bar": 10}}.foo.bar - ok
             // [10, 2].1 - ok
             // [10, 48, 2].2.2 - technically ok, gets index 2
+            // true.foo - ok, this can be parsed but won't be evaluated
             //
             // [10]."fooo" - not ok, its a string
             // {"foo": 10}.true - not ok, true is a keyword

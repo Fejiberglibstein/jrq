@@ -23,11 +23,18 @@
 // Eval errors
 #define EVAL_ERR_UNARY_MINUS(t)                                                                    \
     TYPE_ERROR("Unexpected arguments to unary - (expected number, got %s)", t)
+
 #define EVAL_ERR_UNARY_NOT(t)                                                                      \
     TYPE_ERROR("Unexpected arguments to unary ! (expected bool, got %s)", t)
+
 #define EVAL_ERR_BINARY_OP(OP, exp, t)                                                             \
     TYPE_ERROR("Unexpected arguments to binary " OP " (expected %s, got %s)", exp, t)
+
 #define EVAL_ERR_JSON_KEY_STRING(t) TYPE_ERROR("Expected string in json key, got %s", t)
+
+#define EVAL_ERR_LIST_ACCESS(t) TYPE_ERROR("Expected number in list access, got %s", t)
+#define EVAL_ERR_JSON_ACCESS(t) TYPE_ERROR("Expected string in object access, got %s", t)
+#define EVAL_ERR_INNER_ACCESS(t) TYPE_ERROR("Can not index a %s", t)
 
 typedef struct {
     char *err;
