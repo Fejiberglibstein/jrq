@@ -3,7 +3,7 @@ project('jrq', 'c')
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required: false)
 
-# .!find src/ -name "*.c" | grep -v "main.c" | xargs -I{} echo "'{}',"
+# :.!find src/ -name "*.c" | grep -v "main.c" | xargs -I{} echo "'{}',"
 files = [
   'src/eval.c',
   'src/json_serialize.c',
@@ -11,8 +11,8 @@ files = [
   'src/alloc.c',
   'src/json.c',
   'src/json_deserialize.c',
-  'src/eval_functions.c',
   'src/parser.c',
+  'src/errors.c',
   'src/json_iter.c',
 ]
 

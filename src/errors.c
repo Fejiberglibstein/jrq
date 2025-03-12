@@ -1,5 +1,6 @@
 #include "src/errors.h"
 #include <stdarg.h>
+#include <stdio.h>
 
 JrqError jrq_error(Range r, const char *fmt, ...) {
     va_list args;

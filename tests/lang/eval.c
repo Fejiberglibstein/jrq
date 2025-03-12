@@ -11,8 +11,8 @@ bool test_eval(char *expr, Json input, Json expected) {
 
     EvalResult result = eval(node, input);
     if (result.type == EVAL_ERR) {
-        printf("%s\n", result.error);
-        free(result.error);
+        printf("%s\n", result.err.err);
+        free(result.err.err);
         return false;
     }
     Json json = result.json;
