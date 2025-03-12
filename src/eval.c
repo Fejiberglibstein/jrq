@@ -40,8 +40,8 @@ static EvalData eval_node_grouping(Eval *e, ASTNode *node);
 static EvalData eval_node_list(Eval *e, ASTNode *node);
 static EvalData eval_node_json(Eval *e, ASTNode *node);
 static EvalData eval_node_access(Eval *e, ASTNode *node);
-static EvalData eval_node_function(Eval *e, ASTNode *node);
-static EvalData eval_node_closure(Eval *e, ASTNode *node);
+// static EvalData eval_node_function(Eval *e, ASTNode *node);
+// static EvalData eval_node_closure(Eval *e, ASTNode *node);
 
 EvalData eval_node(Eval *e, ASTNode *node) {
     if (node == NULL) {
@@ -64,9 +64,11 @@ EvalData eval_node(Eval *e, ASTNode *node) {
     case AST_TYPE_ACCESS:
         return eval_node_access(e, node);
     case AST_TYPE_FUNCTION:
-        return eval_node_function(e, node);
+        unreachable("");
+        // return eval_node_function(e, node);
     case AST_TYPE_CLOSURE:
-        return eval_node_closure(e, node);
+        unreachable("");
+        // return eval_node_closure(e, node);
     case AST_TYPE_TRUE:
         return eval_from_json(json_boolean(true));
     case AST_TYPE_FALSE:
@@ -86,34 +88,46 @@ static EvalData eval_node_access(Eval *e, ASTNode *node) {
     ASTNode *inner_node = node->inner.access.inner;
     Json inner = eval_to_json(e, eval_node(e, inner_node));
 
+    bool used_input = inner_node == NULL;
+
     // TODO
-    if (inner_node == NULL) {
-    }
+    // if (!used_input && inner_node->type == AST_TYPE_PRIMARY
+    //     && inner_node->inner.primary.type == TOKEN_IDENT) {
+    //     char *var_name = inner_node->inner.primary.inner.ident;
+    //     inner = EXPECT_JSON(
+    //         inner_node->range, vs_get_variable(&e->vars, var_name, inner_node->range), (Json[])
+    //         {}
+    //     );
+    //     json_free(inner);
+    // }
 
     Json accessor = eval_to_json(e, eval_node(e, node->inner.access.accessor));
 
     Json res = json_null();
+
+    Json free_list[] = {!used_input ? inner : json_null(), accessor};
     switch (inner.type) {
     case JSON_TYPE_LIST:
         EXPECT_TYPE(e, accessor, JSON_TYPE_NUMBER, EVAL_ERR_LIST_ACCESS(json_type(accessor.type)));
-        BUBBLE_ERROR(e, (Json[]) {inner, accessor});
+        BUBBLE_ERROR(e, free_list);
 
         res = json_copy(json_list_get(inner, (uint)accessor.inner.number));
         break;
     case JSON_TYPE_OBJECT:
         EXPECT_TYPE(e, accessor, JSON_TYPE_STRING, EVAL_ERR_JSON_ACCESS(json_type(accessor.type)));
-        BUBBLE_ERROR(e, (Json[]) {inner, accessor});
+        BUBBLE_ERROR(e, free_list);
 
         res = json_copy(json_object_get(&inner, accessor.inner.string));
         break;
     default:
         EXPECT_TYPE(e, inner, JSON_TYPE_LIST, EVAL_ERR_INNER_ACCESS(json_type(inner.type)));
-        BUBBLE_ERROR(e, (Json[]) {inner, accessor});
+        BUBBLE_ERROR(e, free_list);
     }
 
-    // TODO: will break on input used
-    json_free(inner);
     json_free(accessor);
+    if (!used_input) {
+        json_free(inner);
+    }
 
     e->range = node->range;
     return eval_from_json(res);
