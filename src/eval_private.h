@@ -34,7 +34,7 @@
         e->err = jrq_error(e->range, ERR);                                                         \
     }
 
-#define eval_has_err(e) (e->err.err == NULL)
+#define eval_has_err(e) (e->err.err != NULL)
 
 typedef struct {
     union {

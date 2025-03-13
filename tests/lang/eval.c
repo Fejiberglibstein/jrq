@@ -108,7 +108,16 @@ void accesor_eval() {
     ));
 }
 
+void function_eval() {
+    assert(test_eval(
+        ".map(|v| v).collect()",
+        JSON_LIST(json_number(10), json_number(2)),
+        JSON_LIST(json_number(10), json_number(2))
+    ));
+}
+
 int main() {
     simple_eval();
     accesor_eval();
+    function_eval();
 }

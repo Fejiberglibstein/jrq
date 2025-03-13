@@ -42,11 +42,7 @@ EvalData eval_node(Eval *e, ASTNode *node) {
     case AST_TYPE_ACCESS:
         return eval_node_access(e, node);
     case AST_TYPE_FUNCTION:
-        eval_node_function(e, node);
-        // return eval_node_function(e, node);
-    case AST_TYPE_CLOSURE:
-        unreachable("");
-        // return eval_node_closure(e, node);
+        return eval_node_function(e, node);
     case AST_TYPE_TRUE:
         return eval_from_json(json_boolean(true));
     case AST_TYPE_FALSE:
@@ -56,7 +52,8 @@ EvalData eval_node(Eval *e, ASTNode *node) {
     case AST_TYPE_JSON_FIELD:
         // This is handled when we eval the json_object type
         unreachable("Json Field shouldn't be eval'd");
-        break;
+    case AST_TYPE_CLOSURE:
+        unreachable("We shouldn't be evaluating closures");
     }
 }
 

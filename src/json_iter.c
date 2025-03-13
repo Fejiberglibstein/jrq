@@ -123,7 +123,7 @@ static void free_func_next_and_captures(JsonIterator i) {
         *i = (struct_name) {                                                                       \
             .iter = {.func = &next_func_name, .free = &free_func_json},                            \
             .index = 0,                                                                            \
-            .data = j,                                                                  \
+            .data = j,                                                                             \
         };                                                                                         \
                                                                                                    \
         return (JsonIterator)i;                                                                    \
@@ -183,7 +183,9 @@ static IterOption key_value_iter_next(JsonIterator i) {
     }
 
     JsonObject obj = kv_iter->data.inner.object;
-    Json ret = JSON_LIST(json_copy(obj.data[kv_iter->index].key), json_copy(obj.data[kv_iter->index].value));
+    Json ret = JSON_LIST(
+        json_copy(obj.data[kv_iter->index].key), json_copy(obj.data[kv_iter->index].value)
+    );
     kv_iter->index += 1;
 
     return iter_some(ret);
@@ -345,6 +347,9 @@ JsonIterator iter_enumerate(JsonIterator iter) {
 }
 
 Json iter_collect(JsonIterator i) {
+    if (i == NULL) {
+        return json_null();
+    }
     Json list = json_list(); // TODO make iter_sized_hint
 
     IterOption opt;
