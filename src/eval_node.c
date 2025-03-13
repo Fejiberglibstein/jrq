@@ -280,20 +280,3 @@ static EvalData eval_node_binary(Eval *e, ASTNode *node) {
         unreachable("No other token is a binary operator");
     }
 }
-
-EvalResult eval(ASTNode *node, Json input) {
-    Eval e = (Eval) {
-        .input = input,
-        .err = {0},
-    };
-
-    EvalData j = eval_node(&e, node);
-    if (e.vs.data != NULL) {
-        free(e.vs.data);
-    }
-    if (e.err.err != NULL) {
-        return (EvalResult) {.err = e.err, .type = EVAL_ERR};
-    } else {
-        return (EvalResult) {.json = eval_to_json(&e, j)};
-    }
-}
