@@ -10,8 +10,15 @@ bool test_eval(char *expr, Json input, Json expected) {
     ASTNode *node = ast_parse(expr).node;
 
     EvalResult result = eval(node, input);
+    if (node != NULL) {
+        ast_free(node);
+    }
+
     if (result.type == EVAL_ERR) {
+        json_free(input);
+        json_free(expected);
         printf("%s\n", result.err.err);
+        fflush(stdout);
         free(result.err.err);
         return false;
     }
@@ -32,10 +39,7 @@ bool test_eval(char *expr, Json input, Json expected) {
     json_free(input);
     json_free(expected);
     json_free(json);
-
-    if (node != NULL) {
-        ast_free(node);
-    }
+    fflush(stdout);
 
     return r;
 }
