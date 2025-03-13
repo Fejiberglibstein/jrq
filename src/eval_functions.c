@@ -203,8 +203,12 @@ static Json eval_func_collect(Eval *e, ASTNode *node) {
     return eval_to_json(e, eval_node(e, node->inner.function.callee));
 }
 
-static JsonIterator eval_func_keys(Eval *e, ASTNode *node) {
+static JsonIterator eval_func_iter(Eval *e, ASTNode *node) {
+    // TODO this should probably error if the type wasn't json.
+    return eval_to_iter(e, eval_node(e, node->inner.function.callee));
+}
 
+static JsonIterator eval_func_keys(Eval *e, ASTNode *node) {
     // Not expecting any arguments, hence the 0 length array
     Json evaled_args[0] = {};
 
@@ -220,6 +224,22 @@ static JsonIterator eval_func_keys(Eval *e, ASTNode *node) {
     return iter_obj_keys(json);
 }
 
+static JsonIterator eval_func_values(Eval *e, ASTNode *node) {
+    // Not expecting any arguments, hence the 0 length array
+    Json evaled_args[0] = {};
+
+    EvalData j = expect_function_args(
+        e, "values", node, evaled_args, JSON_TYPE_OBJECT, LIST((JsonType[]) {})
+    );
+    if (eval_has_err(e)) {
+        return NULL;
+    }
+
+    Json json = j.json;
+    assert(json.type == JSON_TYPE_OBJECT);
+    return iter_obj_values(json);
+}
+
 EvalData eval_node_function(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_FUNCTION);
     char *func_name = node->inner.function.function_name.inner.string;
@@ -228,8 +248,12 @@ EvalData eval_node_function(Eval *e, ASTNode *node) {
         return eval_from_iter(eval_func_map(e, node));
     } else if (strcmp(func_name, "collect") == 0) {
         return eval_from_json(eval_func_collect(e, node));
+    } else if (strcmp(func_name, "iter") == 0) {
+        return eval_from_iter(eval_func_iter(e, node));
     } else if (strcmp(func_name, "keys") == 0) {
         return eval_from_iter(eval_func_keys(e, node));
+    } else if (strcmp(func_name, "values") == 0) {
+        return eval_from_iter(eval_func_values(e, node));
     }
 
     eval_set_err(e, EVAL_ERR_FUNC_NOT_FOUND(func_name));
