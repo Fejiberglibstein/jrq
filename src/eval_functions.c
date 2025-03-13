@@ -114,10 +114,15 @@ static Json mapper(Json j, void *aux) {
     return ret;
 }
 
-static JsonIterator eval_func_map(Eval *e, ASTNode *node) {
+static Json eval_func_collect(Eval *e, ASTNode *node) {
+    // TODO this should probably error if the type wasn't an iterator..
+    return eval_to_json(e, eval_node(e, node->inner.function.callee));
+}
 
+static JsonIterator eval_func_map(Eval *e, ASTNode *node) {
     Json evaled_args[1] = {0};
     Vec_ASTNode args = node->inner.function.args;
+
     expect_function_args(e, "map", args, evaled_args, LIST((JsonType[]) {JSON_TYPE_CLOSURE}));
     if (eval_has_err(e)) {
         return NULL;
@@ -144,11 +149,14 @@ static JsonIterator eval_func_map(Eval *e, ASTNode *node) {
 EvalData eval_node_function(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_FUNCTION);
     char *func_name = node->inner.function.function_name.inner.string;
+
     if (strcmp(func_name, "map") == 0) {
         return eval_from_iter(eval_func_map(e, node));
-    } else {
-        eval_set_err(e, EVAL_ERR_FUNC_NOT_FOUND(func_name));
-        BUBBLE_ERROR(e, (Json[]) {});
-        unreachable("Bubbling would have returned the error");
+    } else if (strcmp(func_name, "collect") == 0) {
+        return eval_from_json(eval_func_collect(e, node));
     }
+
+    eval_set_err(e, EVAL_ERR_FUNC_NOT_FOUND(func_name));
+    BUBBLE_ERROR(e, (Json[]) {});
+    unreachable("Bubbling would have returned the error");
 }
