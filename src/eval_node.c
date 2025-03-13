@@ -19,7 +19,6 @@ static EvalData eval_node_list(Eval *e, ASTNode *node);
 static EvalData eval_node_json(Eval *e, ASTNode *node);
 static EvalData eval_node_access(Eval *e, ASTNode *node);
 // static EvalData eval_node_closure(Eval *e, ASTNode *node);
-extern EvalData eval_node_function(Eval *e, ASTNode *node);
 
 EvalData eval_node(Eval *e, ASTNode *node) {
     if (node == NULL) {
@@ -58,17 +57,6 @@ EvalData eval_node(Eval *e, ASTNode *node) {
         // This is handled when we eval the json_object type
         unreachable("Json Field shouldn't be eval'd");
         break;
-    }
-}
-
-EvalData eval_node_function(Eval *e, ASTNode *node) {
-    assert(node->type == AST_TYPE_FUNCTION);
-    char *func_name = node->inner.function.function_name.inner.string;
-    if (strcmp(func_name, "map") == 0) {
-        return eval_from_iter(eval_func_map(e, node));
-    } else {
-        eval_set_err(e, EVAL_ERR_FUNC_NOT_FOUND(func_name));
-        BUBBLE_ERROR(e, (Json[]) {});
     }
 }
 

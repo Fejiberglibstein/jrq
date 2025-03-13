@@ -34,6 +34,8 @@
         e->err = jrq_error(e->range, ERR);                                                         \
     }
 
+#define eval_has_err(e) (e->err.err == NULL)
+
 typedef struct {
     union {
         Json json;
@@ -46,6 +48,13 @@ typedef struct {
 } EvalData;
 
 typedef struct {
+    char *name;
+    Json value;
+} Variable;
+
+typedef Vec(Variable) VariableStack;
+
+typedef struct {
     /// The input json that the evaluator is called on
     Json input;
 
@@ -55,7 +64,25 @@ typedef struct {
 
     /// The range of the node that is currently being looked at.
     Range range;
+
+    /// The list of all variables in scope.
+    /// Variables are declared in closures like so
+    ///
+    ///     .map(|var_name| ...)
+    ///
+    /// Variables can "shadow" variables of the same name, like in rust:
+    ///
+    ///     .map(|v| .v.filter(|v| v > 0))
+    ///
+    /// Here, two variables named 'v' exist. For this reason, we use a stack for
+    /// all our variables: we would push v for the map, then push another v for
+    /// the filter.
+    VariableStack vs;
 } Eval;
+
+void vs_push_variable(VariableStack *vs, char *var_name, Json value);
+void vs_pop_variable(VariableStack *vs, char *var_name);
+Json vs_get_variable(Eval *e, char *var_name);
 
 /// If `d` is already json, do nothing.
 /// Otherwise, implictly convert the iterator into json
@@ -70,5 +97,8 @@ JsonIterator eval_to_iter(Eval *e, EvalData d);
 EvalData eval_from_json(Json j);
 /// Create an EvalData from i
 EvalData eval_from_iter(JsonIterator i);
+
+EvalData eval_node(Eval *e, ASTNode *node);
+EvalData eval_node_function(Eval *e, ASTNode *node);
 
 #endif // _EVAL_PRIVATE_H
