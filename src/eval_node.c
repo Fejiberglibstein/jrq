@@ -65,15 +65,12 @@ static EvalData eval_node_access(Eval *e, ASTNode *node) {
 
     bool used_input = inner_node == NULL;
 
-    // TODO
+    // // TODO
     // if (!used_input && inner_node->type == AST_TYPE_PRIMARY
     //     && inner_node->inner.primary.type == TOKEN_IDENT) {
     //     char *var_name = inner_node->inner.primary.inner.ident;
-    //     inner = EXPECT_JSON(
-    //         inner_node->range, vs_get_variable(&e->vars, var_name, inner_node->range), (Json[])
-    //         {}
-    //     );
     //     json_free(inner);
+    //     inner = vs_get_variable(e, var_name);
     // }
 
     Json accessor = eval_to_json(e, eval_node(e, node->inner.access.accessor));
@@ -160,8 +157,9 @@ static EvalData eval_node_primary(Eval *e, ASTNode *node) {
     e->range = node->range;
 
     switch (node->inner.primary.type) {
-    case TOKEN_STRING:
     case TOKEN_IDENT:
+        return eval_from_json(vs_get_variable(e, node->inner.primary.inner.ident));
+    case TOKEN_STRING:
         // This is done to avoid a reallocation since the inner string is guaranteed to be heap
         // allocated.
         str = node->inner.primary.inner.string;
@@ -295,6 +293,9 @@ EvalResult eval(ASTNode *node, Json input) {
     };
 
     EvalData j = eval_node(&e, node);
+    if (e.vs.data != NULL) {
+        free(e.vs.data);
+    }
     if (e.err.err != NULL) {
         return (EvalResult) {.err = e.err, .type = EVAL_ERR};
     } else {

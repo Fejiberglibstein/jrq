@@ -187,6 +187,9 @@ static ASTNode *access(Parser *p) {
                 }
             } else {
                 ASTNode *access = jrq_calloc(sizeof(ASTNode), 1);
+                if (ident.type == TOKEN_IDENT) {
+                    ident.type = TOKEN_STRING;
+                }
                 access->type = AST_TYPE_PRIMARY;
                 access->inner.primary = tok_norange(ident);
 
@@ -383,6 +386,7 @@ void ast_free(ASTNode *n) {
     case AST_TYPE_FUNCTION:
         ast_free(n->inner.function.callee);
         ast_vec_free(n->inner.function.args);
+        tok_free((Token *)&n->inner.function.function_name);
         break;
     case AST_TYPE_CLOSURE:
         ast_free(n->inner.closure.body);

@@ -139,7 +139,7 @@ static JsonIterator eval_func_map(Eval *e, ASTNode *node) {
 
     *c = (struct map_closure) {
         .e = e,
-        .node = node->inner.closure.body,
+        .node = args.data[0]->inner.closure.body,
         // TODO: error checking here lol
         .param1_name = args.data[0]->inner.closure.args.data[0]->inner.primary.inner.ident,
     };
