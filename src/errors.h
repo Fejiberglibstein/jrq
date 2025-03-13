@@ -49,6 +49,8 @@
     TYPE_ERROR("Invalid arguments to function (unexpected closure)")
 #define EVAL_ERR_FUNC_WRONG_ARGS(exp, act)                                                         \
     TYPE_ERROR("Invalid arguments to function (expected %s, got %s)", exp, act)
+#define EVAL_ERR_FUNC_WRONG_CALLER(exp, act)                                                       \
+    TYPE_ERROR("Invalid caller on function (expected %s, got %s)", exp, act)
 #define EVAL_ERR_VAR_NOT_FOUND(t) RUNTIME_ERROR("Use of undeclared variable %s", t)
 
 typedef struct {

@@ -20,26 +20,76 @@ struct map_closure {
 
 #define JSON_TYPE_ANY (-1)
 #define JSON_TYPE_CLOSURE (-2)
+#define JSON_TYPE_ITERATOR (-3)
+
+void free_eval_data(EvalData *e) {
+    switch (e->type) {
+    case SOME_ITER:
+        iter_free(e->iter);
+        break;
+    case SOME_JSON:
+        json_free(e->json);
+        break;
+    }
+}
 
 /// Assert that the arguments of the function call all match. In addition to all the normal
-/// JsonTypes, you can also use JSON_TYPE_ANY and JSON_TYPE_CLOSURE. `evaluated_args` should be
+/// JsonTypes, you can also use JSON_TYPE_ANY and JSON_TYPE_CLOSURE.
 ///
-/// pointer to an initially empty list. This function will evaluate each ASTNode in `args`, provided
-/// the node isn't a closure.
-void expect_function_args(
+/// `evaluated_args` should be pointer to an initially empty list. This function will evaluate each
+/// ASTNode in `args`, provided the node isn't a closure.
+///
+/// This function will return the evaluated caller. For [1, 2].map(), the caller would be [1,2]
+/// If this function causes an error, the evaluated caller should not be used because it will be
+/// freed.
+EvalData expect_function_args(
     Eval *e,
     char *function_name,
-    Vec_ASTNode args,
+    ASTNode *function_node,
     Json *evaluated_args,
+    JsonType expected_caller_type,
     JsonType *expected_types,
     uint length
 ) {
     if (eval_has_err(e)) {
-        return;
+        return eval_from_json(json_invalid());
     }
+    ASTNode *caller_node = function_node->inner.function.callee;
+    Vec_ASTNode args = function_node->inner.function.args;
     if (length != args.length) {
         eval_set_err(e, EVAL_ERR_FUNC_PARAM_NUMBER(function_name, length, args.length));
-        return;
+        return eval_from_json(json_invalid());
+    }
+
+    EvalData caller = eval_node(e, caller_node);
+
+    if (expected_caller_type != JSON_TYPE_ANY && expected_caller_type != JSON_TYPE_ITERATOR) {
+        Json jcaller = eval_to_json(e, caller);
+        EXPECT_TYPE(
+            e,
+            jcaller,
+            expected_caller_type,
+            EVAL_ERR_FUNC_WRONG_CALLER(json_type(expected_caller_type), json_type(jcaller.type))
+        );
+        if (eval_has_err(e)) {
+            json_free(jcaller);
+            return eval_from_json(json_null());
+        }
+
+        // Cast back into an EvalData like this because when we casted caller into json we may have
+        // converted an iterator into a list.
+        caller = eval_from_json(jcaller);
+    } else if (expected_caller_type == JSON_TYPE_ITERATOR) {
+        JsonIterator icaller = eval_to_iter(e, caller);
+        if (eval_has_err(e)) {
+            if (icaller != NULL) {
+                iter_free(icaller);
+            }
+            return eval_from_json(json_invalid());
+        }
+
+        // Cast back into an EvalData for the same reason as above.
+        caller = eval_from_iter(icaller);
     }
 
     for (int i = 0; i < length; i++) {
@@ -53,7 +103,8 @@ void expect_function_args(
             if (args.data[i]->type != AST_TYPE_CLOSURE) {
                 eval_set_err(e, EVAL_ERR_FUNC_NO_CLOSURE);
                 _clean_up(i, evaluated_args);
-                return;
+                free_eval_data(&caller);
+                return eval_from_json(json_invalid());
             }
             break;
         default:
@@ -62,7 +113,8 @@ void expect_function_args(
 
                 // i - 1 here because we never evaluated this node
                 _clean_up(i - 1, evaluated_args);
-                return;
+                free_eval_data(&caller);
+                return eval_from_json(json_invalid());
             }
             j = eval_to_json(e, eval_node(e, args.data[i]));
             // Make sure that our types match as long as we don't have an any type
@@ -75,13 +127,16 @@ void expect_function_args(
                 );
                 if (eval_has_err(e)) {
                     _clean_up(i, evaluated_args);
-                    return;
+                    free_eval_data(&caller);
+                    return eval_from_json(json_invalid());
                 }
                 evaluated_args[i] = j;
                 break;
             }
         }
     }
+
+    return caller;
 }
 
 void vs_push_variable(VariableStack *vs, char *var_name, Json value) {
@@ -118,18 +173,18 @@ static Json mapper(Json j, void *aux) {
 
 static JsonIterator eval_func_map(Eval *e, ASTNode *node) {
     Json evaled_args[1] = {0};
-    Vec_ASTNode args = node->inner.function.args;
 
-    expect_function_args(e, "map", args, evaled_args, LIST((JsonType[]) {JSON_TYPE_CLOSURE}));
+    Vec_ASTNode args = node->inner.function.args;
+    EvalData i = expect_function_args(
+        e, "map", node, evaled_args, JSON_TYPE_ITERATOR, LIST((JsonType[]) {JSON_TYPE_CLOSURE})
+    );
     if (eval_has_err(e)) {
         return NULL;
     }
     assert(args.data[0]->type == AST_TYPE_CLOSURE);
 
-    JsonIterator iter = eval_to_iter(e, eval_node(e, node->inner.function.callee));
-    if (eval_has_err(e)) {
-        return NULL;
-    }
+    // Safe to get iter here because we already made sure there were no errors
+    JsonIterator iter = i.iter;
 
     struct map_closure *c = malloc(sizeof(*c));
 
@@ -149,21 +204,20 @@ static Json eval_func_collect(Eval *e, ASTNode *node) {
 }
 
 static JsonIterator eval_func_keys(Eval *e, ASTNode *node) {
+
+    // Not expecting any arguments, hence the 0 length array
     Json evaled_args[0] = {};
-    Vec_ASTNode args = node->inner.function.args;
 
-    expect_function_args(e, "keys", args, evaled_args, LIST((JsonType[]) {}));
+    EvalData j = expect_function_args(
+        e, "keys", node, evaled_args, JSON_TYPE_OBJECT, LIST((JsonType[]) {})
+    );
     if (eval_has_err(e)) {
         return NULL;
     }
 
-    Json j = eval_to_json(e, eval_node(e, node->inner.function.callee));
-    EXPECT_TYPE(e, j, JSON_TYPE_OBJECT, "keys needs an object callee");
-    if (eval_has_err(e)) {
-        return NULL;
-    }
-
-    return iter_obj_keys(j);
+    Json json = j.json;
+    assert(json.type == JSON_TYPE_OBJECT);
+    return iter_obj_keys(json);
 }
 
 EvalData eval_node_function(Eval *e, ASTNode *node) {
