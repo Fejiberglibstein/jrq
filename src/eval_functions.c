@@ -90,6 +90,7 @@ void vs_push_variable(VariableStack *vs, char *var_name, Json value) {
 
 void vs_pop_variable(VariableStack *vs, char *var_name) {
     Variable v = vec_pop(*vs);
+    json_free(v.value);
     assert(strcmp(v.name, var_name) == 0);
 }
 
@@ -97,7 +98,7 @@ Json vs_get_variable(Eval *e, char *var_name) {
     VariableStack vs = e->vs;
     for (uint i = vs.length - 1; i >= 0; i--) {
         if (strcmp(vs.data[i].name, var_name) == 0) {
-            return vs.data[i].value;
+            return json_copy(vs.data[i].value);
         }
     }
 

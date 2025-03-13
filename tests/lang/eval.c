@@ -110,9 +110,29 @@ void accesor_eval() {
 
 void function_eval() {
     assert(test_eval(
+        ".map(|v| 1).collect()",
+        JSON_LIST(json_number(10), json_number(2)),
+        JSON_LIST(json_number(1), json_number(1))
+    ));
+    assert(test_eval(
         ".map(|v| v).collect()",
         JSON_LIST(json_number(10), json_number(2)),
         JSON_LIST(json_number(10), json_number(2))
+    ));
+    assert(test_eval(
+        "[10, 2].map(|v| v).collect()",
+        json_null(),
+        JSON_LIST(json_number(10), json_number(2))
+    ));
+    assert(test_eval(
+        ".map(|v| v.0).collect()",
+        JSON_LIST(JSON_LIST(json_number(10), json_number(2)), JSON_LIST(json_number(2), json_number(1))),
+        JSON_LIST(json_number(10), json_number(2))
+    ));
+    assert(test_eval(
+        ".map(|v| v.f + 2).collect()",
+        JSON_LIST(JSON_OBJECT("f", json_number(2)), JSON_OBJECT("f", json_number(1))),
+        JSON_LIST(json_number(4), json_number(3))
     ));
 }
 

@@ -153,18 +153,13 @@ static EvalData eval_node_grouping(Eval *e, ASTNode *node) {
 
 static EvalData eval_node_primary(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_PRIMARY);
-    char *str;
     e->range = node->range;
 
     switch (node->inner.primary.type) {
     case TOKEN_IDENT:
         return eval_from_json(vs_get_variable(e, node->inner.primary.inner.ident));
     case TOKEN_STRING:
-        // This is done to avoid a reallocation since the inner string is guaranteed to be heap
-        // allocated.
-        str = node->inner.primary.inner.string;
-        node->inner.primary.inner.string = NULL;
-        return eval_from_json(json_string_no_alloc(str));
+        return eval_from_json(json_string(node->inner.primary.inner.string));
     case TOKEN_NUMBER:
         return eval_from_json(json_number(node->inner.primary.inner.number));
     default:
