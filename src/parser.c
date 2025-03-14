@@ -62,7 +62,7 @@ static ASTNode *json(Parser *p);
                 .rhs = rhs,                                                                        \
             };                                                                                     \
             expr = new_expr;                                                                       \
-            expr->range = range_combine(start, p->prev.range);                                     \
+            expr->range = range_combine(start, rhs->range);                                        \
         }                                                                                          \
         return expr;                                                                               \
     }
@@ -91,7 +91,7 @@ static ASTNode *unary(Parser *p) {
         new_expr->type = AST_TYPE_UNARY;
         new_expr->inner.unary = (typeof(new_expr->inner.unary)) {.rhs = rhs, .operator= operator, };
 
-        new_expr->range = range_combine(start, p->prev.range);
+        new_expr->range = range_combine(start, rhs->range);
         return new_expr;
     }
     return access(p);
@@ -107,17 +107,20 @@ static Vec_ASTNode closure_params(Parser *p) {
             ASTNode *param = jrq_calloc(sizeof(ASTNode), 1);
             param->type = AST_TYPE_PRIMARY;
             param->inner.primary = tok_norange(tok);
+            param->range = tok.range;
 
             vec_append(params, param);
         } else if (parser_matches(p, LIST((TokenType[]) {TOKEN_LBRACKET}))) {
             // We can also parse a list, this will be similar to tuple destructuring in rust
+            Range start = p->prev.range;
             Vec_ASTNode inner_params = closure_params(p);
             parser_expect(p, TOKEN_RBRACKET, ERROR_MISSING_RBRACKET);
 
             ASTNode *param = jrq_calloc(sizeof(ASTNode), 1);
             param->type = AST_TYPE_LIST;
-
             param->inner.list = inner_params;
+            param->range = range_combine(start, p->prev.range);
+
             vec_append(params, param);
         } else {
             parser_expect(p, -1, ERROR_EXPECTED_IDENT);
@@ -368,6 +371,8 @@ ParseResult ast_parse(char *input) {
     ASTNode *node = expression(p);
 
     if (p->error != NULL) {
+        tok_free(&p->prev);
+        tok_free(&p->curr);
         ast_free(node);
         return (ParseResult) {.error_message = p->error};
     } else {
@@ -375,6 +380,8 @@ ParseResult ast_parse(char *input) {
         // an EOF and then error if it's not
         parser_expect(p, TOKEN_EOF, ERROR_EXPECTED_EOF);
         if (p->error != NULL) {
+            tok_free(&p->prev);
+            tok_free(&p->curr);
             ast_free(node);
             return (ParseResult) {.error_message = p->error};
         }
