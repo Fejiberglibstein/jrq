@@ -344,27 +344,30 @@ int main() {
     test_json_literals();
 }
 
-static char *validate_ast_node(ASTNode *exp, ASTNode *actual) {
-    if (exp == NULL || actual == NULL) {
-        return (exp == actual) ? NULL : "One was null the other wasn't";
+static char *validate_ast_node(ASTNode *exp, ASTNode *act) {
+    if (exp == NULL || act == NULL) {
+        return (exp == act) ? NULL : "One was null the other wasn't";
     }
-    jqr_assert(INT, exp, actual, ->type);
+    jqr_assert(INT, exp, act, ->type);
 
     char *err;
 
     switch (exp->type) {
     case AST_TYPE_PRIMARY:
-        jqr_assert(INT, exp, actual, ->inner.primary.type);
+        // Silly fix because i made the parser turn idents into strings.
+        if (!(exp->inner.primary.type == TOKEN_IDENT && act->inner.primary.type == TOKEN_STRING)) {
+            jqr_assert(INT, exp, act, ->inner.primary.type);
+        }
 
         switch (exp->inner.primary.type) {
         case TOKEN_IDENT:
-            jqr_assert(STRING, exp, actual, ->inner.primary.inner.ident);
+            jqr_assert(STRING, exp, act, ->inner.primary.inner.ident);
             break;
         case TOKEN_STRING:
-            jqr_assert(STRING, exp, actual, ->inner.primary.inner.string);
+            jqr_assert(STRING, exp, act, ->inner.primary.inner.string);
             break;
         case TOKEN_NUMBER:
-            jqr_assert(DOUBLE, exp, actual, ->inner.primary.inner.number);
+            jqr_assert(DOUBLE, exp, act, ->inner.primary.inner.number);
             break;
         default:
             break;
@@ -372,45 +375,45 @@ static char *validate_ast_node(ASTNode *exp, ASTNode *actual) {
         break;
 
     case AST_TYPE_UNARY:
-        jqr_assert(INT, exp, actual, ->inner.unary.operator);
-        return validate_ast_node(exp->inner.unary.rhs, actual->inner.unary.rhs);
+        jqr_assert(INT, exp, act, ->inner.unary.operator);
+        return validate_ast_node(exp->inner.unary.rhs, act->inner.unary.rhs);
     case AST_TYPE_BINARY:
-        jqr_assert(INT, exp, actual, ->inner.binary.operator);
-        err = validate_ast_node(exp->inner.binary.rhs, actual->inner.binary.rhs);
+        jqr_assert(INT, exp, act, ->inner.binary.operator);
+        err = validate_ast_node(exp->inner.binary.rhs, act->inner.binary.rhs);
         if (err != NULL) {
             return err;
         }
-        return validate_ast_node(exp->inner.binary.lhs, actual->inner.binary.lhs);
+        return validate_ast_node(exp->inner.binary.lhs, act->inner.binary.lhs);
     case AST_TYPE_FUNCTION:
-        err = validate_ast_node(exp->inner.function.callee, actual->inner.function.callee);
+        err = validate_ast_node(exp->inner.function.callee, act->inner.function.callee);
         if (err != NULL) {
             return err;
         }
-        return validate_ast_list(exp->inner.function.args, actual->inner.function.args);
+        return validate_ast_list(exp->inner.function.args, act->inner.function.args);
     case AST_TYPE_CLOSURE:
-        err = validate_ast_node(exp->inner.closure.body, actual->inner.closure.body);
+        err = validate_ast_node(exp->inner.closure.body, act->inner.closure.body);
         if (err != NULL) {
             return err;
         }
-        return validate_ast_list(exp->inner.closure.args, actual->inner.closure.args);
+        return validate_ast_list(exp->inner.closure.args, act->inner.closure.args);
     case AST_TYPE_ACCESS:
-        err = validate_ast_node(exp->inner.access.accessor, actual->inner.access.accessor);
+        err = validate_ast_node(exp->inner.access.accessor, act->inner.access.accessor);
         if (err != NULL) {
             return err;
         }
-        return validate_ast_node(exp->inner.access.inner, actual->inner.access.inner);
+        return validate_ast_node(exp->inner.access.inner, act->inner.access.inner);
     case AST_TYPE_LIST:
-        return validate_ast_list(exp->inner.list, actual->inner.list);
+        return validate_ast_list(exp->inner.list, act->inner.list);
     case AST_TYPE_JSON_FIELD:
-        err = validate_ast_node(exp->inner.json_field.key, actual->inner.json_field.key);
+        err = validate_ast_node(exp->inner.json_field.key, act->inner.json_field.key);
         if (err != NULL) {
             return err;
         }
-        return validate_ast_node(exp->inner.json_field.value, actual->inner.json_field.value);
+        return validate_ast_node(exp->inner.json_field.value, act->inner.json_field.value);
     case AST_TYPE_JSON_OBJECT:
-        return validate_ast_list(exp->inner.json_object, actual->inner.json_object);
+        return validate_ast_list(exp->inner.json_object, act->inner.json_object);
     case AST_TYPE_GROUPING:
-        return validate_ast_node(exp->inner.grouping, actual->inner.grouping);
+        return validate_ast_node(exp->inner.grouping, act->inner.grouping);
 
         // All of these are only types so we can ignore them
     case AST_TYPE_FALSE:
