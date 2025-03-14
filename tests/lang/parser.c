@@ -4,10 +4,12 @@
 #include "src/lexer.h"
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static char *validate_ast_node(ASTNode *exp, ASTNode *actual);
 static char *validate_ast_list(Vec_ASTNode exp, Vec_ASTNode actual);
+static Range range_new(uint start_col, uint start_line, uint end_col, uint end_line);
 
 static void test_parse(char *input, char *expected_err, ASTNode *exp) {
     printf("Testing '%s'\n", input);
@@ -63,9 +65,9 @@ void test_primary_expr() {
 
     };
 
-    test_parse("10 - 2", NULL, initial);
+    test_parse("10   - 2", NULL, initial);
 
-    test_parse(" 10    -2==  ofoobar ", NULL, &(ASTNode) {
+    test_parse("10 -   2\n   ==  ofoobar ", NULL, &(ASTNode) {
         .type = AST_TYPE_BINARY,
 
         .inner.binary.lhs = initial,
@@ -77,10 +79,12 @@ void test_primary_expr() {
                 .type = TOKEN_IDENT,
                 .inner.ident = "ofoobar",
             },
-        }
+            .range = range_new(2, 8, 2, 14),
+        },
+        .range = range_new(1, 1, 2, 14),
     });
 
-    test_parse(" \"foo\" * (10 - 2  )", NULL, &(ASTNode) {
+    test_parse("  \"foo\" * \n(10 - \n2  )", NULL, &(ASTNode) {
             .type = AST_TYPE_BINARY,
 
             .inner.binary.lhs = &(ASTNode) {
@@ -89,6 +93,7 @@ void test_primary_expr() {
                     .type = TOKEN_STRING,
                     .inner.string = "foo",
                 },
+                .range = range_new(1, 3, 1, 7),
             },
 
             .inner.binary.operator = TOKEN_ASTERISK,
@@ -96,7 +101,9 @@ void test_primary_expr() {
             .inner.binary.rhs = &(ASTNode) {
                 .type = AST_TYPE_GROUPING,
                 .inner.grouping = initial,
+                .range = range_new(2, 1, 3, 4),
             },
+            .range = range_new(1, 3, 3, 4),
     });
 }
 
@@ -371,6 +378,24 @@ static char *validate_ast_node(ASTNode *exp, ASTNode *act) {
 
     char *err;
 
+    if (exp->range.start.col != 0) {
+        __jqr_assert(
+            exp->range.start.col == act->range.start.col
+                && exp->range.start.line == act->range.start.line
+                && exp->range.end.col == act->range.end.col
+                && exp->range.end.line == act->range.end.line,
+            ".range not equal: Expected (%d:%d-%d:%d), got (%d:%d-%d:%d)",
+
+            exp->range.start.line,
+            exp->range.start.col,
+            exp->range.end.line,
+            exp->range.end.col,
+            act->range.start.line,
+            act->range.start.col,
+            act->range.end.line,
+            act->range.end.col
+        );
+    }
     switch (exp->type) {
     case AST_TYPE_PRIMARY:
         // Silly fix because i made the parser turn idents into strings.
@@ -453,4 +478,14 @@ static char *validate_ast_list(Vec_ASTNode exp, Vec_ASTNode actual) {
         }
     }
     return NULL;
+}
+
+static Range range_new(uint start_line, uint start_col, uint end_line, uint end_col) {
+    return (Range) {
+        .start.col = start_col,
+        .start.line = start_line,
+
+        .end.col = end_col,
+        .end.line = end_line,
+    };
 }

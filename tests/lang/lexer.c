@@ -207,6 +207,24 @@ void test_simple_lex() {
             .inner.number = 4.3
         },
     }));
+    lex("   \"foo\"   \n  foo" , LIST((Token[]) {
+        (Token) {
+            .range = (Range) {
+                .start = (Position) {.col = 4, .line = 1},
+                .end = (Position) {.col = 8, .line = 1},
+            },
+            .type = TOKEN_STRING,
+            .inner.string = "foo",
+        },
+        (Token) {
+            .range = (Range) {
+                .start = (Position) {.col = 3, .line = 2},
+                .end = (Position) {.col = 5, .line = 2},
+            },
+            .type = TOKEN_IDENT,
+            .inner.ident = "foo",
+        },
+    }));
 }
 
 int main() {

@@ -1,3 +1,4 @@
+#include "src/eval.h"
 #include "src/eval_private.h"
 #include "src/json.h"
 #include "src/json_iter.h"

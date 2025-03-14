@@ -104,5 +104,6 @@ void tok_free(Token *tok);
 Token_norange tok_norange(Token t);
 
 Range range_combine(Range, Range);
+void range_print(Range);
 
 #endif // _LEXER_H

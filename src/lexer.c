@@ -347,12 +347,16 @@ Token_norange tok_norange(Token t) {
 inline Range range_combine(Range r1, Range r2) {
     return (Range) {
         .start = (Position) {
-            .col = min(r1.start.col, r2.start.col), 
-            .line = min(r1.start.line, r2.start.line),
+            .col = r1.start.col,
+            .line = r1.start.line,
         },
         .end = (Position) {
-            .col = max(r1.end.col, r2.end.col),
-            .line = max(r1.end.line, r2.end.line),
+            .col = r2.end.col,
+            .line = r2.end.line,
         },
     };
+}
+
+void range_print(Range r) {
+    printf("(%d:%d-%d:%d)\n", r.start.line, r.start.col, r.end.line, r.end.col);
 }

@@ -62,7 +62,7 @@ static ASTNode *json(Parser *p);
                 .rhs = rhs,                                                                        \
             };                                                                                     \
             expr = new_expr;                                                                       \
-            expr->range = range_combine(start, rhs->range);                                        \
+            expr->range = range_combine(start, p->prev.range);                                     \
         }                                                                                          \
         return expr;                                                                               \
     }
@@ -371,8 +371,6 @@ ParseResult ast_parse(char *input) {
     ASTNode *node = expression(p);
 
     if (p->error != NULL) {
-        tok_free(&p->prev);
-        tok_free(&p->curr);
         ast_free(node);
         return (ParseResult) {.error_message = p->error};
     } else {
@@ -380,8 +378,6 @@ ParseResult ast_parse(char *input) {
         // an EOF and then error if it's not
         parser_expect(p, TOKEN_EOF, ERROR_EXPECTED_EOF);
         if (p->error != NULL) {
-            tok_free(&p->prev);
-            tok_free(&p->curr);
             ast_free(node);
             return (ParseResult) {.error_message = p->error};
         }
