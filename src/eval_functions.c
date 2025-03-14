@@ -130,14 +130,37 @@ static JsonIterator eval_func_map(Eval *e, ASTNode *node) {
     return iter_map(iter, &mapper, c, true);
 }
 
+static struct function_data COLLECT_FUNC = {
+    .function_name = "collect",
+    .caller_type = JSON_TYPE_ITERATOR,
+
+    .parameter_types = (JsonType[]) {},
+    .parameter_amount = 0,
+};
 static Json eval_func_collect(Eval *e, ASTNode *node) {
-    // TODO this should probably error if the type wasn't an iterator..
-    return eval_to_json(e, eval_node(e, node->inner.function.callee));
+    EvalData j = func_expect_args(e, node, NULL, COLLECT_FUNC);
+    if (eval_has_err(e)) {
+        return json_invalid();
+    }
+    return eval_to_json(e, j);
 }
 
+static struct function_data ITER_FUNC = {
+    .function_name = "iter",
+    .caller_type = JSON_TYPE_ITERATOR,
+
+    .parameter_types = (JsonType[]) {},
+    .parameter_amount = 0,
+};
 static JsonIterator eval_func_iter(Eval *e, ASTNode *node) {
-    // TODO this should probably error if the type wasn't json.
-    return eval_to_iter(e, eval_node(e, node->inner.function.callee));
+    EvalData i = func_expect_args(e, node, NULL, ITER_FUNC);
+    if (eval_has_err(e)) {
+        return NULL;
+    }
+
+    // func_expect_args will automatically cast into an iterator for us because we expect the type
+    // to be an iterator
+    return i.iter;
 }
 
 static struct function_data KEYS_FUNC = {
