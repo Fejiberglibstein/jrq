@@ -37,7 +37,7 @@
 #define EVAL_ERR_INNER_ACCESS(t) TYPE_ERROR("Can not index a %s", t)
 
 #define EVAL_ERR_FUNC_NOT_FOUND(t) TYPE_ERROR("No function named %s", t)
-#define EVAL_ERR_FUNC_PARAM_NUMBER(func_name, exp, act)                                            \
+#define EVAL_ERR_FUNC_PARAM_NUMBER(exp, act)                                                       \
     TYPE_ERROR(                                                                                    \
         "Too %s arguments to function (expected %d, have %zu)",                                    \
         exp > act ? "few" : "many",                                                                \
@@ -45,6 +45,13 @@
         act                                                                                        \
     )
 #define EVAL_ERR_FUNC_NO_CLOSURE TYPE_ERROR("Invalid arguments to function (expected closure)")
+#define EVAL_ERR_FUNC_CLOSURE_PARAM_NUMBER(exp, act)                                               \
+    TYPE_ERROR(                                                                                    \
+        "Too %s parameters in closure (expected %d, have %d)",                                     \
+        exp > act ? "few" : "many",                                                                \
+        exp,                                                                                       \
+        act                                                                                        \
+    )
 #define EVAL_ERR_FUNC_UNEXPECTED_CLOSURE                                                           \
     TYPE_ERROR("Invalid arguments to function (unexpected closure)")
 #define EVAL_ERR_FUNC_WRONG_ARGS(exp, act)                                                         \
