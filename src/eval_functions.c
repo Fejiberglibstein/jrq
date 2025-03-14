@@ -1,6 +1,4 @@
-#include "src/alloc.h"
 #include "src/errors.h"
-#include "src/eval.h"
 #include "src/eval_private.h"
 #include "src/json.h"
 #include "src/json_iter.h"
@@ -279,8 +277,6 @@ static void func_eval_params(
     Json *evaluated_args,
     struct function_data func_data
 ) {
-    EvalData err = eval_from_json(json_invalid());
-
     Vec_ASTNode params = function_node->inner.function.args;
     assert(params.length == func_data.parameter_amount);
 

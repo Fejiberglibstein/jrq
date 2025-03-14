@@ -133,12 +133,23 @@ void function_eval() {
         )
     ));
     assert(test_eval(
-        ".keys().map(|v| { v: 10 - \"f\" }).collect()",
+        ".keys().map(|v| { v: 10}).collect()",
         JSON_OBJECT("foo", json_null(), "bar", json_null(), "baz", json_null()),
         JSON_LIST(
             JSON_OBJECT("foo", json_number(10)),
             JSON_OBJECT("bar", json_number(10)),
             JSON_OBJECT("baz", json_number(10))
+        )
+    ));
+    assert(test_eval(
+        ".map(|v| { v.1: v.0}).collect()",
+        JSON_OBJECT(
+            "foo", json_string("kys"), "bar", json_string("blurs"), "baz", json_string("hdfw")
+        ),
+        JSON_LIST(
+            JSON_OBJECT("kys", json_string("foo")),
+            JSON_OBJECT("blurs", json_string("bar")),
+            JSON_OBJECT("hdfw", json_string("baz"))
         )
     ));
 }
