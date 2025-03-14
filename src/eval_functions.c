@@ -96,11 +96,7 @@ int vs_push_closure_variable(Eval *e, ASTNode *var, Json value) {
         int pushed = 0;
         for (int i = 0; i < value.inner.list.length; i++) {
             pushed += vs_push_closure_variable(e, var->inner.list.data[i], json_list_get(value, i));
-            // set to null so we can free the list without worrying about freeing stuff inside the
-            // list
-            json_list_set(value, i, json_null());
         }
-        json_free(value);
         return pushed;
         break;
     default:
@@ -113,7 +109,7 @@ int vs_push_closure_variable(Eval *e, ASTNode *var, Json value) {
 /// You should pass in the amount of variables that were pushed into this function through `amt`
 ///
 /// Will return the amount popped off the stack
-int vs_pop_closure_variable(Eval *e, ASTNode *var) {
+int vs_pop_closure_variable(Eval *e, ASTNode *var, Json value) {
     VariableStack *vs = &e->vs;
     int popped = 0;
 
@@ -123,9 +119,22 @@ int vs_pop_closure_variable(Eval *e, ASTNode *var) {
         vs_pop_variable(vs, var->inner.primary.inner.ident);
         return 1;
     case AST_TYPE_LIST:
-        for (int i = (int)var->inner.list.length - 1; i >= 0; i--) {
-            popped += vs_pop_closure_variable(e, var->inner.list.data[i]);
+        if (value.type != JSON_TYPE_LIST) {
+            json_free(value);
+            eval_set_err(e, EVAL_ERR_FUNC_CLOSURE_TUPLE);
+            return 0;
         }
+        if (value.inner.list.length != var->inner.list.length) {
+            json_free(value);
+            // change the error message here, it's not accurate
+            eval_set_err(e, EVAL_ERR_FUNC_CLOSURE_TUPLE);
+            return 0;
+        }
+        for (int i = (int)var->inner.list.length - 1; i >= 0; i--) {
+            popped += vs_pop_closure_variable(e, var->inner.list.data[i], json_list_get(value, i));
+            json_list_set(value, i, json_null());
+        }
+        json_free(value);
         return popped;
     default:
         unreachable("Closure cannot be anything else");
@@ -146,8 +155,11 @@ static Json mapper(Json j, void *aux) {
     struct simple_closure *c = aux;
 
     int pushed = vs_push_closure_variable(c->e, c->params.data[0], j);
-    Json ret = eval_to_json(c->e, eval_node(c->e, c->node));
-    int popped = vs_pop_closure_variable(c->e, c->params.data[0]);
+    Json ret = json_invalid();
+    if (!eval_has_err(c->e)) {
+        ret = eval_to_json(c->e, eval_node(c->e, c->node));
+    }
+    int popped = vs_pop_closure_variable(c->e, c->params.data[0], j);
     assert(pushed == popped);
 
     return ret;

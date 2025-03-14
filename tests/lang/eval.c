@@ -152,6 +152,11 @@ void function_eval() {
             JSON_OBJECT("hdfw", json_string("baz"))
         )
     ));
+    assert(test_eval(
+        ".map(|[[v, k], v2]| { k: v + v2}).collect().0 .hji",
+        JSON_LIST(JSON_LIST(JSON_LIST(json_number(10), json_string("hji")), json_number(4))),
+        json_number(14)
+    ));
 }
 
 int main() {
