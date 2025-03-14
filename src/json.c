@@ -215,6 +215,22 @@ Json json_list_get(Json j, uint index) {
     return j.inner.list.data[index];
 }
 
+// TODO this does not match the behavior of object_set
+//
+// object_set will free the value that was previously there.
+//
+// I don't like this behavior, it should be up to the caller to what happens with the old value.
+// ideally these two functions should return the previous value, but with the way this is setup it
+// doesn't work out too well
+
+///
+Json json_list_set(Json j, uint index, Json val) {
+    assert(j.type == JSON_TYPE_LIST);
+
+    j.inner.list.data[index] = val;
+    return j;
+}
+
 Json json_object_sized(size_t i) {
     JsonObject j = {0};
     vec_grow(j, i);

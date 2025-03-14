@@ -57,6 +57,7 @@ Json json_invalid_msg(char *, ...);
 Json json_list_append(Json, Json);
 Json json_list_sized(size_t);
 Json json_list_get(Json, uint);
+Json json_list_set(Json j, uint index, Json val);
 
 // clang-format off
 #define JSON_LIST_1(e1) json_list_append(json_list(), e1)
