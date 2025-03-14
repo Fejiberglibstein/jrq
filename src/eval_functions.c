@@ -72,54 +72,61 @@ Json vs_get_variable(Eval *e, char *var_name) {
     return json_null();
 }
 
-void vs_push_closure_variable(Eval *e, ASTNode *var, Json value) {
+/// Push all the variables of a closure onto the stack.
+///
+/// Will return the amount of variables that were pushed onto the stack
+int vs_push_closure_variable(Eval *e, ASTNode *var, Json value) {
     VariableStack *vs = &e->vs;
     switch (var->type) {
     case AST_TYPE_PRIMARY:
         assert(var->inner.primary.type == TOKEN_IDENT);
         vs_push_variable(vs, var->inner.primary.inner.ident, value);
+        return 1;
         break;
     case AST_TYPE_LIST:
         if (value.type != JSON_TYPE_LIST) {
             eval_set_err(e, EVAL_ERR_FUNC_CLOSURE_TUPLE);
-            return;
+            return 0;
         }
         if (value.inner.list.length != var->inner.list.length) {
             // change the error message here, it's not accurate
             eval_set_err(e, EVAL_ERR_FUNC_CLOSURE_TUPLE);
-            return;
+            return 0;
         }
+        int pushed = 0;
         for (int i = 0; i < value.inner.list.length; i++) {
-            vs_push_closure_variable(e, var->inner.list.data[i], json_list_get(value, i));
+            pushed += vs_push_closure_variable(e, var->inner.list.data[i], json_list_get(value, i));
+            // set to null so we can free the list without worrying about freeing stuff inside the
+            // list
+            json_list_set(value, i, json_null());
         }
+        json_free(value);
+        return pushed;
         break;
     default:
         unreachable("Closure cannot be anything else");
     }
 }
 
-void vs_pop_closure_variable(Eval *e, ASTNode *var, Json value) {
+/// Pop all the variables of a closure onto the stack.
+///
+/// You should pass in the amount of variables that were pushed into this function through `amt`
+///
+/// Will return the amount popped off the stack
+int vs_pop_closure_variable(Eval *e, ASTNode *var) {
     VariableStack *vs = &e->vs;
+    int popped = 0;
+
     switch (var->type) {
     case AST_TYPE_PRIMARY:
         assert(var->inner.primary.type == TOKEN_IDENT);
         vs_pop_variable(vs, var->inner.primary.inner.ident);
-        break;
+        return 1;
     case AST_TYPE_LIST:
-        if (value.type != JSON_TYPE_LIST) {
-            eval_set_err(e, EVAL_ERR_FUNC_CLOSURE_TUPLE);
-            return;
+        for (int i = (int)var->inner.list.length - 1; i >= 0; i--) {
+            popped += vs_pop_closure_variable(e, var->inner.list.data[i]);
         }
-        if (value.inner.list.length != var->inner.list.length) {
-            // change the error message here, it's not accurate
-            eval_set_err(e, EVAL_ERR_FUNC_CLOSURE_TUPLE);
-            return;
-        }
-        // Pop everything in reverse order
-        for (uint i = value.inner.list.length - 1; i <= 0; i--) {
-            vs_pop_closure_variable(e, var->inner.list.data[i], json_list_get(value, i));
-        }
-        break;
+        return popped;
     default:
         unreachable("Closure cannot be anything else");
     }
@@ -138,9 +145,10 @@ struct simple_closure {
 static Json mapper(Json j, void *aux) {
     struct simple_closure *c = aux;
 
-    vs_push_closure_variable(c->e, c->params.data[0], j);
+    int pushed = vs_push_closure_variable(c->e, c->params.data[0], j);
     Json ret = eval_to_json(c->e, eval_node(c->e, c->node));
-    vs_pop_closure_variable(c->e, c->params.data[0], j);
+    int popped = vs_pop_closure_variable(c->e, c->params.data[0]);
+    assert(pushed == popped);
 
     return ret;
 }
