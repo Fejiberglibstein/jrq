@@ -5,6 +5,7 @@
 #include "src/parser.h"
 #include "src/vector.h"
 #include <assert.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -71,27 +72,80 @@ Json vs_get_variable(Eval *e, char *var_name) {
     return json_null();
 }
 
+void vs_push_closure_variable(Eval *e, ASTNode *var, Json value) {
+    VariableStack *vs = &e->vs;
+    switch (var->type) {
+    case AST_TYPE_PRIMARY:
+        assert(var->inner.primary.type == TOKEN_IDENT);
+        vs_push_variable(vs, var->inner.primary.inner.ident, value);
+        break;
+    case AST_TYPE_LIST:
+        if (value.type != JSON_TYPE_LIST) {
+            eval_set_err(e, EVAL_ERR_FUNC_CLOSURE_TUPLE);
+            return;
+        }
+        if (value.inner.list.length != var->inner.list.length) {
+            // change the error message here, it's not accurate
+            eval_set_err(e, EVAL_ERR_FUNC_CLOSURE_TUPLE);
+            return;
+        }
+        for (int i = 0; i < value.inner.list.length; i++) {
+            vs_push_closure_variable(e, var->inner.list.data[i], json_list_get(value, i));
+        }
+        break;
+    default:
+        unreachable("Closure cannot be anything else");
+    }
+}
+
+void vs_pop_closure_variable(Eval *e, ASTNode *var, Json value) {
+    VariableStack *vs = &e->vs;
+    switch (var->type) {
+    case AST_TYPE_PRIMARY:
+        assert(var->inner.primary.type == TOKEN_IDENT);
+        vs_pop_variable(vs, var->inner.primary.inner.ident);
+        break;
+    case AST_TYPE_LIST:
+        if (value.type != JSON_TYPE_LIST) {
+            eval_set_err(e, EVAL_ERR_FUNC_CLOSURE_TUPLE);
+            return;
+        }
+        if (value.inner.list.length != var->inner.list.length) {
+            // change the error message here, it's not accurate
+            eval_set_err(e, EVAL_ERR_FUNC_CLOSURE_TUPLE);
+            return;
+        }
+        // Pop everything in reverse order
+        for (uint i = value.inner.list.length - 1; i <= 0; i--) {
+            vs_pop_closure_variable(e, var->inner.list.data[i], json_list_get(value, i));
+        }
+        break;
+    default:
+        unreachable("Closure cannot be anything else");
+    }
+}
+
 //
 // BEGIN FUNCTIONS
 //
 
-struct map_closure {
+struct simple_closure {
     Eval *e;
     ASTNode *node;
-    char *param1_name;
+    Vec_ASTNode params;
 };
 
 static Json mapper(Json j, void *aux) {
-    struct map_closure *c = aux;
+    struct simple_closure *c = aux;
 
-    vs_push_variable(&c->e->vs, c->param1_name, j);
+    vs_push_closure_variable(c->e, c->params.data[0], j);
     Json ret = eval_to_json(c->e, eval_node(c->e, c->node));
-    vs_pop_variable(&c->e->vs, c->param1_name);
+    vs_pop_closure_variable(c->e, c->params.data[0], j);
 
     return ret;
 }
 
-static struct function_data MAP_FUNC = {
+static struct function_data FUNC_MAP = {
     .function_name = "map",
     .caller_type = JSON_TYPE_ITERATOR,
 
@@ -102,7 +156,7 @@ static JsonIterator eval_func_map(Eval *e, ASTNode *node) {
     Json evaled_args[1] = {0};
 
     Vec_ASTNode args = node->inner.function.args;
-    EvalData i = func_expect_args(e, node, evaled_args, MAP_FUNC);
+    EvalData i = func_expect_args(e, node, evaled_args, FUNC_MAP);
     if (eval_has_err(e)) {
         return NULL;
     }
@@ -111,24 +165,18 @@ static JsonIterator eval_func_map(Eval *e, ASTNode *node) {
     // Safe to get iter here because we already made sure there were no errors
     JsonIterator iter = i.iter;
 
-    struct map_closure *c = malloc(sizeof(*c));
+    struct simple_closure *c = malloc(sizeof(*c));
 
-    *c = (struct map_closure) {
+    *c = (struct simple_closure) {
         .e = e,
         .node = args.data[0]->inner.closure.body,
-        // TODO allow for |[foo, bar]| variable name types to work
-        //   (tuple closure parameters, like in rust: `|(foo, bar)|`)
-
-        // clang-format off
-        .param1_name = args.data[0]->inner.closure.args.data[0] // the length of the closure was already checked, so this is fine to do.
-              ->inner.primary.inner.ident, // TODO this is not what we want to do, see above todo comment
-        // clang-format on
+        .params = args.data[0]->inner.closure.args,
     };
 
     return iter_map(iter, &mapper, c, true);
 }
 
-static struct function_data COLLECT_FUNC = {
+static struct function_data FUNC_COLLECT = {
     .function_name = "collect",
     .caller_type = JSON_TYPE_ITERATOR,
 
@@ -136,14 +184,14 @@ static struct function_data COLLECT_FUNC = {
     .parameter_amount = 0,
 };
 static Json eval_func_collect(Eval *e, ASTNode *node) {
-    EvalData j = func_expect_args(e, node, NULL, COLLECT_FUNC);
+    EvalData j = func_expect_args(e, node, NULL, FUNC_COLLECT);
     if (eval_has_err(e)) {
         return json_invalid();
     }
     return eval_to_json(e, j);
 }
 
-static struct function_data ITER_FUNC = {
+static struct function_data FUNC_ITER = {
     .function_name = "iter",
     .caller_type = JSON_TYPE_ITERATOR,
 
@@ -151,7 +199,7 @@ static struct function_data ITER_FUNC = {
     .parameter_amount = 0,
 };
 static JsonIterator eval_func_iter(Eval *e, ASTNode *node) {
-    EvalData i = func_expect_args(e, node, NULL, ITER_FUNC);
+    EvalData i = func_expect_args(e, node, NULL, FUNC_ITER);
     if (eval_has_err(e)) {
         return NULL;
     }
@@ -161,7 +209,7 @@ static JsonIterator eval_func_iter(Eval *e, ASTNode *node) {
     return i.iter;
 }
 
-static struct function_data KEYS_FUNC = {
+static struct function_data FUNC_KEYS = {
     .function_name = "keys",
     .caller_type = JSON_TYPE_OBJECT,
 
@@ -171,7 +219,7 @@ static struct function_data KEYS_FUNC = {
 static JsonIterator eval_func_keys(Eval *e, ASTNode *node) {
     // Not expecting any arguments, hence the 0 length array
     Json evaled_args[0] = {};
-    EvalData j = func_expect_args(e, node, evaled_args, KEYS_FUNC);
+    EvalData j = func_expect_args(e, node, evaled_args, FUNC_KEYS);
     if (eval_has_err(e)) {
         return NULL;
     }
@@ -181,7 +229,7 @@ static JsonIterator eval_func_keys(Eval *e, ASTNode *node) {
     return iter_obj_keys(json);
 }
 
-static struct function_data VALUES_FUNC = {
+static struct function_data FUNC_VALUES = {
     .function_name = "values",
     .caller_type = JSON_TYPE_OBJECT,
 
@@ -192,7 +240,7 @@ static JsonIterator eval_func_values(Eval *e, ASTNode *node) {
     // Not expecting any arguments, hence the 0 length array
     Json evaled_args[0] = {};
 
-    EvalData j = func_expect_args(e, node, evaled_args, VALUES_FUNC);
+    EvalData j = func_expect_args(e, node, evaled_args, FUNC_VALUES);
     if (eval_has_err(e)) {
         return NULL;
     }

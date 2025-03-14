@@ -10,7 +10,7 @@
         json_free(FREE[_i]);                                                                       \
     }
 
-#define unreachable(str) assert(false && str)
+#define unreachable(str) assert(false && "unreachable: " str)
 
 // will clean up everything in the free list and return from the function.
 //

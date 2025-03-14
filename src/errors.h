@@ -45,6 +45,8 @@
         act                                                                                        \
     )
 #define EVAL_ERR_FUNC_NO_CLOSURE TYPE_ERROR("Invalid arguments to function (expected closure)")
+#define EVAL_ERR_FUNC_CLOSURE_TUPLE /* the wording of this error msg is bad */                     \
+    TYPE_ERROR("Could not perform tuple destructuring (type was not a list)")
 #define EVAL_ERR_FUNC_CLOSURE_PARAM_NUMBER(exp, act)                                               \
     TYPE_ERROR(                                                                                    \
         "Too %s parameters in closure (expected %d, have %d)",                                     \

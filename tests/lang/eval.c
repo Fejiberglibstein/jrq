@@ -142,7 +142,7 @@ void function_eval() {
         )
     ));
     assert(test_eval(
-        ".map(|v| { v.1: v.0}).collect()",
+        ".map(|[k, v]| { v: k}).collect()",
         JSON_OBJECT(
             "foo", json_string("kys"), "bar", json_string("blurs"), "baz", json_string("hdfw")
         ),
