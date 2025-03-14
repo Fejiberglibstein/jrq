@@ -170,7 +170,7 @@ static void test_access_function_expr() {
         .inner.function.function_name = bar->inner.primary,
     });
 
-    test_parse("foo.bar(|| 10, 10, |foo| (foo.bar))", NULL, &(ASTNode) {
+    test_parse("foo.bar(|| 10, 10, |foo, [bar, [baz], foo]| (foo.bar))", NULL, &(ASTNode) {
         .type = AST_TYPE_FUNCTION,
         .inner.function.args = (Vec_ASTNode) {
             .data = (ASTNode*[]) {
@@ -187,8 +187,27 @@ static void test_access_function_expr() {
                     .inner.closure.args = (Vec_ASTNode) {
                         .data = (ASTNode*[]) {
                             foo,
+                            &(ASTNode) {
+                                .type = AST_TYPE_LIST,
+                                .inner.list = (Vec_ASTNode) {
+                                    .data = (ASTNode*[]) {
+                                        bar,
+                                        &(ASTNode) {
+                                            .type = AST_TYPE_LIST,
+                                            .inner.list = (Vec_ASTNode) {
+                                                .data = (ASTNode*[]) {
+                                                    baz,
+                                                },
+                                                .length = 1,
+                                            },
+                                        },
+                                        foo,
+                                    },
+                                    .length = 3,
+                                },
+                            },
                         },
-                        .length = 1,
+                        .length = 2,
                     },
                     .inner.closure.body = &(ASTNode) {
                         .type = AST_TYPE_GROUPING,

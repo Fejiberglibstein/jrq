@@ -1,6 +1,8 @@
 #include "src/parser.h"
+#include "src/alloc.h"
 #include "src/errors.h"
 #include "src/lexer.h"
+#include "src/vector.h"
 #include <string.h>
 #include <strings.h>
 
@@ -95,6 +97,36 @@ static ASTNode *unary(Parser *p) {
     return access(p);
 }
 
+static Vec_ASTNode closure_params(Parser *p) {
+    Vec_ASTNode params = (Vec_ASTNode) {0};
+    do {
+        if (parser_matches(p, LIST((TokenType[]) {TOKEN_IDENT}))) {
+            // We can parse an ident, this is our variable name
+            Token tok = p->prev;
+
+            ASTNode *param = jrq_calloc(sizeof(ASTNode), 1);
+            param->type = AST_TYPE_PRIMARY;
+            param->inner.primary = tok_norange(tok);
+
+            vec_append(params, param);
+        } else if (parser_matches(p, LIST((TokenType[]) {TOKEN_LBRACKET}))) {
+            // We can also parse a list, this will be similar to tuple destructuring in rust
+            Vec_ASTNode inner_params = closure_params(p);
+            parser_expect(p, TOKEN_RBRACKET, ERROR_MISSING_RBRACKET);
+
+            ASTNode *param = jrq_calloc(sizeof(ASTNode), 1);
+            param->type = AST_TYPE_LIST;
+
+            param->inner.list = inner_params;
+            vec_append(params, param);
+        } else {
+            parser_expect(p, -1, ERROR_EXPECTED_IDENT);
+        }
+
+    } while (parser_matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
+    return params;
+}
+
 static ASTNode *closure(Parser *p) {
     if (!parser_matches(p, LIST((TokenType[]) {TOKEN_BAR, TOKEN_OR}))) {
         return expression(p);
@@ -107,17 +139,7 @@ static ASTNode *closure(Parser *p) {
     // On the other hand, if we had just a "|", then we have arguments in
     // the closure and must have a closing bar after the arguments.
     if (p->prev.type == TOKEN_BAR) {
-        do {
-            parser_expect(p, TOKEN_IDENT, ERROR_EXPECTED_IDENT);
-            Token tok = p->prev;
-
-            ASTNode *arg = jrq_calloc(sizeof(ASTNode), 1);
-            arg->type = AST_TYPE_PRIMARY;
-            arg->inner.primary = tok_norange(tok);
-
-            vec_append(closure_args, arg);
-
-        } while (parser_matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
+        closure_args = closure_params(p);
         parser_expect(p, TOKEN_BAR, ERROR_MISSING_CLOSURE);
     }
     ASTNode *closure_body = expression(p);
