@@ -177,8 +177,9 @@ static void test_access_function_expr() {
         .inner.function.function_name = bar->inner.primary,
     });
 
-    test_parse("foo.bar(|| 10, 10, |foo, [bar, [baz], foo]| (foo.bar))", NULL, &(ASTNode) {
+    test_parse("foo\n.bar(\n|| 10, \n10, |foo\n, [bar, [baz], \nfoo]| \n(foo.bar)\n)", NULL, &(ASTNode) {
         .type = AST_TYPE_FUNCTION,
+        .range = range_new(2, 1, 8, 1),
         .inner.function.args = (Vec_ASTNode) {
             .data = (ASTNode*[]) {
                 &(ASTNode) {
@@ -187,19 +188,23 @@ static void test_access_function_expr() {
                         .length = 0,
                     },
                     .inner.closure.body = ten,
+                    .range = range_new(3, 1, 3, 5),
                 },
                 ten,
                 &(ASTNode) {
                     .type = AST_TYPE_CLOSURE,
+                    .range = range_new(4, 5, 7, 9),
                     .inner.closure.args = (Vec_ASTNode) {
                         .data = (ASTNode*[]) {
                             foo,
                             &(ASTNode) {
+                                .range = range_new(5, 3, 6, 4),
                                 .type = AST_TYPE_LIST,
                                 .inner.list = (Vec_ASTNode) {
                                     .data = (ASTNode*[]) {
                                         bar,
                                         &(ASTNode) {
+                                            .range = range_new(5, 9, 5, 13),
                                             .type = AST_TYPE_LIST,
                                             .inner.list = (Vec_ASTNode) {
                                                 .data = (ASTNode*[]) {
@@ -217,6 +222,7 @@ static void test_access_function_expr() {
                         .length = 2,
                     },
                     .inner.closure.body = &(ASTNode) {
+                        .range = range_new(7, 1, 7, 9),
                         .type = AST_TYPE_GROUPING,
                         .inner.grouping = foo_bar,
                     },
