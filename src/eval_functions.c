@@ -93,13 +93,18 @@ static Json mapper(Json j, void *aux) {
     return ret;
 }
 
+static struct function_data MAP_FUNC = {
+    .function_name = "map",
+    .caller_type = JSON_TYPE_ITERATOR,
+
+    .parameter_types = (JsonType[]) {JSON_TYPE_CLOSURE_WITH_PARAMS(1)},
+    .parameter_amount = 1,
+};
 static JsonIterator eval_func_map(Eval *e, ASTNode *node) {
     Json evaled_args[1] = {0};
 
     Vec_ASTNode args = node->inner.function.args;
-    EvalData i = expect_function_args(
-        e, "map", node, evaled_args, JSON_TYPE_ITERATOR, LIST((JsonType[]) {JSON_TYPE_CLOSURE})
-    );
+    EvalData i = func_expect_args(e, node, evaled_args, MAP_FUNC);
     if (eval_has_err(e)) {
         return NULL;
     }
@@ -113,8 +118,13 @@ static JsonIterator eval_func_map(Eval *e, ASTNode *node) {
     *c = (struct map_closure) {
         .e = e,
         .node = args.data[0]->inner.closure.body,
-        // TODO: error checking here lol
-        .param1_name = args.data[0]->inner.closure.args.data[0]->inner.primary.inner.ident,
+        // TODO allow for |[foo, bar]| variable name types to work
+        //   (tuple closure parameters, like in rust: `|(foo, bar)|`)
+
+        // clang-format off
+        .param1_name = args.data[0]->inner.closure.args.data[0] // the length of the closure was already checked, so this is fine to do.
+              ->inner.primary.inner.ident, // TODO this is not what we want to do, see above todo comment
+        // clang-format on
     };
 
     return iter_map(iter, &mapper, c, true);
@@ -130,13 +140,17 @@ static JsonIterator eval_func_iter(Eval *e, ASTNode *node) {
     return eval_to_iter(e, eval_node(e, node->inner.function.callee));
 }
 
+static struct function_data KEYS_FUNC = {
+    .function_name = "keys",
+    .caller_type = JSON_TYPE_OBJECT,
+
+    .parameter_types = (JsonType[]) {},
+    .parameter_amount = 0,
+};
 static JsonIterator eval_func_keys(Eval *e, ASTNode *node) {
     // Not expecting any arguments, hence the 0 length array
     Json evaled_args[0] = {};
-
-    EvalData j = expect_function_args(
-        e, "keys", node, evaled_args, JSON_TYPE_OBJECT, LIST((JsonType[]) {})
-    );
+    EvalData j = func_expect_args(e, node, evaled_args, KEYS_FUNC);
     if (eval_has_err(e)) {
         return NULL;
     }
@@ -146,13 +160,18 @@ static JsonIterator eval_func_keys(Eval *e, ASTNode *node) {
     return iter_obj_keys(json);
 }
 
+static struct function_data VALUES_FUNC = {
+    .function_name = "values",
+    .caller_type = JSON_TYPE_OBJECT,
+
+    .parameter_types = (JsonType[]) {},
+    .parameter_amount = 0,
+};
 static JsonIterator eval_func_values(Eval *e, ASTNode *node) {
     // Not expecting any arguments, hence the 0 length array
     Json evaled_args[0] = {};
 
-    EvalData j = expect_function_args(
-        e, "values", node, evaled_args, JSON_TYPE_OBJECT, LIST((JsonType[]) {})
-    );
+    EvalData j = func_expect_args(e, node, evaled_args, VALUES_FUNC);
     if (eval_has_err(e)) {
         return NULL;
     }
@@ -197,7 +216,7 @@ void free_eval_data(EvalData *e) {
 static EvalData func_eval_caller(Eval *e, ASTNode *function_node, struct function_data func) {
     EvalData err = eval_from_json(json_invalid());
 
-    EvalData caller = eval_node(e, function_node);
+    EvalData caller = eval_node(e, function_node->inner.function.callee);
 
     if (func.caller_type != JSON_TYPE_ITERATOR && func.caller_type != JSON_TYPE_ANY) {
         // cast caller into json
@@ -256,7 +275,7 @@ static void func_eval_params(
             }
             assert(node->type == AST_TYPE_CLOSURE);
 
-            int exp_closure_params = -((int)func_data.parameter_types[i] + JSON_TYPE_CLOSURE);
+            int exp_closure_params = -((int)func_data.parameter_types[i] - JSON_TYPE_CLOSURE);
             uint act_closure_params = node->inner.closure.args.length;
             if (exp_closure_params != act_closure_params) {
                 eval_set_err(
@@ -325,6 +344,7 @@ static EvalData func_expect_args(
     // Make sure the parameters are of the correct type
     func_eval_params(e, function_node, evaluated_args, func_data);
     if (eval_has_err(e)) {
+        free_eval_data(&caller);
         return err;
     }
 
