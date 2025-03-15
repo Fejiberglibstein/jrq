@@ -273,6 +273,7 @@ static JsonIterator eval_func_values(Eval *e, ASTNode *node) {
 EvalData eval_node_function(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_FUNCTION);
     char *func_name = node->inner.function.function_name.inner.string;
+    e->range = node->range;
 
     if (strcmp(func_name, "map") == 0) {
         return eval_from_iter(eval_func_map(e, node));
