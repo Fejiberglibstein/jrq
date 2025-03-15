@@ -70,5 +70,6 @@ typedef struct {
 } JrqError;
 
 JrqError jrq_error(Range r, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+char *jrq_error_format(JrqError err, char *text);
 
 #endif // _ERRORS_H
