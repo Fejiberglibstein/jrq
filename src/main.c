@@ -1,4 +1,8 @@
+#include "src/errors.h"
+#include "src/eval.h"
+#include "src/json.h"
 #include "src/json_serde.h"
+#include "src/parser.h"
 #include <memory.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -41,7 +45,13 @@ char *read_from_file(int fd) {
     return start;
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char *argv[]) {
+    EvalResult res = eval(ast_parse(argv[1]).node, json_null());
+
+    printf("%s\n", jrq_error_format(res.err, argv[1]));
+}
+
+int h_main(int argc, char **argv) {
     char *str = read_from_file(STDIN_FILENO);
 
     DeserializeResult res = json_deserialize(str);
@@ -60,4 +70,5 @@ int main(int argc, char **argv) {
     printf("%s\n", out);
 
     free(out);
+    return 0;
 }
