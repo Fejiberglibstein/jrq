@@ -196,6 +196,60 @@ static JsonIterator eval_func_map(Eval *e, ASTNode *node) {
     return iter_map(iter, &mapper, c, true);
 }
 
+static bool filter(Json j, void *aux) {
+    struct simple_closure *c = aux;
+
+    int pushed = vs_push_closure_variable(c->e, c->params.data[0], j);
+    Json ret = json_invalid();
+    if (!eval_has_err(c->e)) {
+        ret = eval_to_json(c->e, eval_node(c->e, c->node));
+    }
+    int popped = vs_pop_closure_variable(c->e, c->params.data[0], j);
+    assert(pushed == popped);
+
+    EXPECT_TYPE(
+        c->e,
+        ret,
+        JSON_TYPE_BOOL,
+        EVAL_ERR_CLOSURE_RETURN(json_type(JSON_TYPE_BOOL), json_type(ret.type))
+    );
+    if (!eval_has_err(c->e)) {
+        return false;
+    }
+
+    return ret.inner.boolean;
+}
+static struct function_data FUNC_FILTER = {
+    .function_name = "filter",
+    .caller_type = JSON_TYPE_ITERATOR,
+
+    .parameter_types = (JsonType[]) {JSON_TYPE_CLOSURE_WITH_PARAMS(1)},
+    .parameter_amount = 1,
+};
+static JsonIterator eval_func_filter(Eval *e, ASTNode *node) {
+    Json evaled_args[1] = {0};
+
+    Vec_ASTNode args = node->inner.function.args;
+    EvalData i = func_expect_args(e, node, evaled_args, FUNC_FILTER);
+    if (eval_has_err(e)) {
+        return NULL;
+    }
+    assert(args.data[0]->type == AST_TYPE_CLOSURE);
+
+    // Safe to get iter here because we already made sure there were no errors
+    JsonIterator iter = i.iter;
+
+    struct simple_closure *c = malloc(sizeof(*c));
+
+    *c = (struct simple_closure) {
+        .e = e,
+        .node = args.data[0]->inner.closure.body,
+        .params = args.data[0]->inner.closure.args,
+    };
+
+    return iter_filter(iter, &filter, c, true);
+}
+
 static struct function_data FUNC_COLLECT = {
     .function_name = "collect",
     .caller_type = JSON_TYPE_ITERATOR,
@@ -307,6 +361,8 @@ EvalData eval_node_function(Eval *e, ASTNode *node) {
         return eval_from_iter(eval_func_values(e, node));
     } else if (strcmp(func_name, "enumerate") == 0) {
         return eval_from_iter(eval_func_enumerate(e, node));
+    } else if (strcmp(func_name, "filter") == 0) {
+        return eval_from_iter(eval_func_filter(e, node));
     }
 
     eval_set_err(e, EVAL_ERR_FUNC_NOT_FOUND(func_name));
