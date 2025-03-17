@@ -270,6 +270,26 @@ static JsonIterator eval_func_values(Eval *e, ASTNode *node) {
     return iter_obj_values(json);
 }
 
+static struct function_data FUNC_ENUMERATE = {
+    .function_name = "enumerate",
+    .caller_type = JSON_TYPE_ITERATOR,
+
+    .parameter_types = (JsonType[]) {},
+    .parameter_amount = 0,
+};
+static JsonIterator eval_func_enumerate(Eval *e, ASTNode *node) {
+    // Not expecting any arguments, hence the 0 length array
+    Json evaled_args[0] = {};
+
+    EvalData j = func_expect_args(e, node, evaled_args, FUNC_ENUMERATE);
+    if (eval_has_err(e)) {
+        return NULL;
+    }
+
+    JsonIterator iter = j.iter;
+    return iter_enumerate(iter);
+}
+
 EvalData eval_node_function(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_FUNCTION);
     char *func_name = node->inner.function.function_name.inner.string;
@@ -285,6 +305,8 @@ EvalData eval_node_function(Eval *e, ASTNode *node) {
         return eval_from_iter(eval_func_keys(e, node));
     } else if (strcmp(func_name, "values") == 0) {
         return eval_from_iter(eval_func_values(e, node));
+    } else if (strcmp(func_name, "enumerate") == 0) {
+        return eval_from_iter(eval_func_enumerate(e, node));
     }
 
     eval_set_err(e, EVAL_ERR_FUNC_NOT_FOUND(func_name));
