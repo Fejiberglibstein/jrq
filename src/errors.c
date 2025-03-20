@@ -19,6 +19,45 @@ JrqError jrq_error(Range r, const char *fmt, ...) {
     return (JrqError) {.range = r, .err = msg};
 }
 
+struct error_msg_data {
+    /// The start of the actual erroring code
+    char *err_start;
+    /// The end of the actual erroring code
+    char *err_end;
+
+    /// The start of the error, plus some margin at the beginning
+    char *margin_start;
+    /// The end of the error, plus some margin at the end
+    char *margin_end;
+
+    /// Total height (amount of lines) that the error makes up
+    uint height;
+    /// Total width (amount of characters) that the longest line of the error
+    /// makes up
+    uint width;
+};
+
+struct error_msg_data jrq_get_error_data(JrqError err, char *start) {
+    char *err_start = start;
+    char *err_end = start;
+
+    char *start_line = start;
+    char *end_line = start;
+
+    int lines = 1;
+    char *end;
+    for (end = start; *end != '\0'; end++) {
+        if (lines > err.range.end.line) {
+            break;
+        }
+    }
+
+    return (struct error_msg_data) {
+        .err_end = err_end,
+        .err_start = err_start,
+    };
+}
+
 char *jrq_error_format(JrqError err, char *text) {
 
     char *start_line = text;
