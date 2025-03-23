@@ -344,6 +344,30 @@ static JsonIterator eval_func_enumerate(Eval *e, ASTNode *node) {
     return iter_enumerate(iter);
 }
 
+static struct function_data FUNC_ZIP = {
+    .function_name = "zip",
+    .caller_type = JSON_TYPE_ITERATOR,
+
+    .parameter_types = (JsonType[]) {JSON_TYPE_LIST},
+    .parameter_amount = 1,
+};
+static JsonIterator eval_func_zip(Eval *e, ASTNode *node) {
+    Json evaled_args[1] = {};
+
+    EvalData j = func_expect_args(e, node, evaled_args, FUNC_ZIP);
+    if (eval_has_err(e)) {
+        return NULL;
+    }
+    assert(evaled_args[0].type == JSON_TYPE_LIST);
+
+    JsonIterator a = j.iter;
+    // TODO maybe expect_args can expect an iterator type here instead of a
+    // list type
+    JsonIterator b = iter_list(evaled_args[0]);
+
+    return iter_zip(a, b);
+}
+
 EvalData eval_node_function(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_FUNCTION);
     char *func_name = node->inner.function.function_name.inner.string;
@@ -363,6 +387,8 @@ EvalData eval_node_function(Eval *e, ASTNode *node) {
         return eval_from_iter(eval_func_enumerate(e, node));
     } else if (strcmp(func_name, "filter") == 0) {
         return eval_from_iter(eval_func_filter(e, node));
+    } else if (strcmp(func_name, "zip") == 0) {
+        return eval_from_iter(eval_func_zip(e, node));
     }
 
     eval_set_err(e, EVAL_ERR_FUNC_NOT_FOUND(func_name));

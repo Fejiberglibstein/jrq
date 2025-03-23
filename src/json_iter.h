@@ -28,8 +28,8 @@ JsonIterator iter_filter(
     void *captures,
     bool free_captures
 );
-
 JsonIterator iter_enumerate(JsonIterator iter);
+JsonIterator iter_zip(JsonIterator a, JsonIterator b);
 Json iter_collect(JsonIterator iter);
 
 #endif // _JSON_ITER_H
