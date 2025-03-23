@@ -108,7 +108,7 @@ static void free_func_next_and_captures(JsonIterator _i) {
     JsonIterator create_func_name(Json);                                                           \
                                                                                                    \
     typedef struct {                                                                               \
-        struct JsonIterator parent;                                                                  \
+        struct JsonIterator parent;                                                                \
         /* the json data being iterating over */                                                   \
         Json data;                                                                                 \
         /* the current index of the data we're iterating over */                                   \
@@ -118,10 +118,10 @@ static void free_func_next_and_captures(JsonIterator _i) {
     static IterOption NEXT_FUNC_NAME(JsonIterator);                                                \
                                                                                                    \
     JsonIterator CREATE_FUNC_NAME(Json j) {                                                        \
-        STRUCT_NAME *i = jrq_malloc(sizeof(STRUCT_NAME));                                          \
+        STRUCT_NAME *i = jrq_malloc(sizeof(*i));                                                   \
                                                                                                    \
         *i = (STRUCT_NAME) {                                                                       \
-            .parent = {.func = &NEXT_FUNC_NAME, .free = &free_func_json},                            \
+            .parent = {.func = &NEXT_FUNC_NAME, .free = &free_func_json},                          \
             .index = 0,                                                                            \
             .data = j,                                                                             \
         };                                                                                         \
@@ -183,9 +183,7 @@ static IterOption key_value_iter_next(JsonIterator _i) {
     }
 
     JsonObject obj = i->data.inner.object;
-    Json ret = JSON_LIST(
-        json_copy(obj.data[i->index].key), json_copy(obj.data[i->index].value)
-    );
+    Json ret = JSON_LIST(json_copy(obj.data[i->index].key), json_copy(obj.data[i->index].value));
     i->index += 1;
 
     return iter_some(ret);
@@ -332,7 +330,7 @@ static IterOption enumerate_iter_next(JsonIterator _i) {
 ///
 /// The iterator yields values in the form of [value, i]
 JsonIterator iter_enumerate(JsonIterator iter) {
-    EnumerateIter *i = jrq_malloc(sizeof(EnumerateIter));
+    EnumerateIter *i = jrq_malloc(sizeof(*i));
 
     *i = (EnumerateIter) {
         .parent = { 
@@ -366,4 +364,42 @@ Json iter_collect(JsonIterator i) {
     iter_free(i);
 
     return list;
+}
+
+/***********
+ * ZipIter *
+ ***********/
+
+/// An iterator that iterates over two other iterators simultaneously
+///
+/// The iterator yields values in the form [a, b]
+typedef struct {
+    struct JsonIterator parent;
+
+    JsonIterator a;
+    JsonIterator b;
+} ZipIter;
+
+IterOption zip_iter_next(JsonIterator _i) {
+    ZipIter *i = (ZipIter *)_i;
+
+    Json a = NEXT(i->a);
+    Json b = NEXT(i->b);
+
+    return iter_some(JSON_LIST(a, b));
+}
+
+JsonIterator iter_zip(JsonIterator a, JsonIterator b) {
+    ZipIter *i = jrq_malloc(sizeof(*i));
+
+    *i = (ZipIter) {
+        .parent = { 
+            .func = &zip_iter_next,
+            .free = &free_func_next,
+        },
+        .a = a,
+        .b = b,
+    };
+
+    return (JsonIterator)i;
 }
