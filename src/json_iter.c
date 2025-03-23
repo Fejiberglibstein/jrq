@@ -72,56 +72,56 @@ void iter_free(JsonIterator i) {
 
 /// When using this method as the free function, you must have a `Json data`
 /// field immediately after the JsonIterator in the iterator's struct definition
-static void free_func_json(JsonIterator i) {
+static void free_func_json(JsonIterator _i) {
     struct {
-        struct JsonIterator i;
+        struct JsonIterator parent;
         Json data;
-    } *iter = (typeof(iter))i;
+    } *i = (typeof(i))_i;
 
-    json_free(iter->data);
+    json_free(i->data);
 }
 
 /// When using this method as the free function, you must have a `JsonIterator next`
 /// field immediately after the JsonIterator in the iterator's struct definition
-static void free_func_next(JsonIterator i) {
+static void free_func_next(JsonIterator _i) {
     struct {
-        struct JsonIterator i;
-        JsonIterator next;
-    } *iter = (typeof(iter))i;
+        struct JsonIterator parent;
+        JsonIterator iter;
+    } *i = (typeof(i))_i;
 
-    iter_free(iter->next);
+    iter_free(i->iter);
 }
 
 /// Used for iterators like next--Iterators that can capture state via a void*.
-static void free_func_next_and_captures(JsonIterator i) {
+static void free_func_next_and_captures(JsonIterator _i) {
     struct {
-        struct JsonIterator i;
-        JsonIterator next;
+        struct JsonIterator parent;
+        JsonIterator iter;
         void *closure_captures;
-    } *iter = (typeof(iter))i;
+    } *i = (typeof(i))_i;
 
-    iter_free(iter->next);
-    free(iter->closure_captures);
+    iter_free(i->iter);
+    free(i->closure_captures);
 }
 
-#define JSON_DATA_ITERATOR(struct_name, create_func_name, next_func_name)                          \
+#define JSON_DATA_ITERATOR(STRUCT_NAME, CREATE_FUNC_NAME, NEXT_FUNC_NAME)                          \
     JsonIterator create_func_name(Json);                                                           \
                                                                                                    \
     typedef struct {                                                                               \
-        struct JsonIterator iter;                                                                  \
+        struct JsonIterator parent;                                                                  \
         /* the json data being iterating over */                                                   \
         Json data;                                                                                 \
         /* the current index of the data we're iterating over */                                   \
         size_t index;                                                                              \
-    } struct_name;                                                                                 \
+    } STRUCT_NAME;                                                                                 \
                                                                                                    \
-    static IterOption next_func_name(JsonIterator);                                                \
+    static IterOption NEXT_FUNC_NAME(JsonIterator);                                                \
                                                                                                    \
-    JsonIterator create_func_name(Json j) {                                                        \
-        struct_name *i = jrq_malloc(sizeof(struct_name));                                          \
+    JsonIterator CREATE_FUNC_NAME(Json j) {                                                        \
+        STRUCT_NAME *i = jrq_malloc(sizeof(STRUCT_NAME));                                          \
                                                                                                    \
-        *i = (struct_name) {                                                                       \
-            .iter = {.func = &next_func_name, .free = &free_func_json},                            \
+        *i = (STRUCT_NAME) {                                                                       \
+            .parent = {.func = &NEXT_FUNC_NAME, .free = &free_func_json},                            \
             .index = 0,                                                                            \
             .data = j,                                                                             \
         };                                                                                         \
@@ -133,60 +133,60 @@ static void free_func_next_and_captures(JsonIterator i) {
 ///
 /// If `j` is not a list, the iterator will yield `json_invalid()`.
 JSON_DATA_ITERATOR(ListIter, iter_list, list_iter_next);
-static IterOption list_iter_next(JsonIterator i) {
-    ListIter *list_iter = (ListIter *)i;
+static IterOption list_iter_next(JsonIterator _i) {
+    ListIter *i = (ListIter *)_i;
 
-    if (list_iter->index >= list_iter->data.inner.list.length) {
+    if (i->index >= i->data.inner.list.length) {
         return iter_done();
     }
 
-    return iter_some(json_copy(list_iter->data.inner.list.data[list_iter->index++]));
+    return iter_some(json_copy(i->data.inner.list.data[i->index++]));
 }
 
 /// Returns an iterator over the keys of a json object.
 ///
 /// If `j` is not an object, the iterator will yield `json_invalid()`.
 JSON_DATA_ITERATOR(KeyIter, iter_obj_keys, key_iter_next);
-static IterOption key_iter_next(JsonIterator i) {
-    KeyIter *key_iter = (KeyIter *)i;
+static IterOption key_iter_next(JsonIterator _i) {
+    KeyIter *i = (KeyIter *)_i;
 
-    if (key_iter->index >= key_iter->data.inner.object.length) {
+    if (i->index >= i->data.inner.object.length) {
         return iter_done();
     }
 
-    return iter_some(json_copy(key_iter->data.inner.object.data[key_iter->index++].key));
+    return iter_some(json_copy(i->data.inner.object.data[i->index++].key));
 }
 
 /// Returns an iterator over the values of a json object.
 ///
 /// If `j` is not an object, the iterator will yield `json_invalid()`.
 JSON_DATA_ITERATOR(ValueIter, iter_obj_values, value_iter_next);
-static IterOption value_iter_next(JsonIterator i) {
-    ValueIter *value_iter = (ValueIter *)i;
+static IterOption value_iter_next(JsonIterator _i) {
+    ValueIter *i = (ValueIter *)_i;
 
-    if (value_iter->index >= value_iter->data.inner.object.length) {
+    if (i->index >= i->data.inner.object.length) {
         return iter_done();
     }
 
-    return iter_some(json_copy(value_iter->data.inner.object.data[value_iter->index++].value));
+    return iter_some(json_copy(i->data.inner.object.data[i->index++].value));
 }
 
 /// Returns an iterator over the keys and values of a json object.
 ///
 /// If `j` is not an object, the iterator will yield `json_invalid()`.
 JSON_DATA_ITERATOR(KeyValueIter, iter_obj_key_value, key_value_iter_next);
-static IterOption key_value_iter_next(JsonIterator i) {
-    KeyValueIter *kv_iter = (KeyValueIter *)i;
+static IterOption key_value_iter_next(JsonIterator _i) {
+    KeyValueIter *i = (KeyValueIter *)_i;
 
-    if (kv_iter->index >= kv_iter->data.inner.object.length) {
+    if (i->index >= i->data.inner.object.length) {
         return iter_done();
     }
 
-    JsonObject obj = kv_iter->data.inner.object;
+    JsonObject obj = i->data.inner.object;
     Json ret = JSON_LIST(
-        json_copy(obj.data[kv_iter->index].key), json_copy(obj.data[kv_iter->index].value)
+        json_copy(obj.data[i->index].key), json_copy(obj.data[i->index].value)
     );
-    kv_iter->index += 1;
+    i->index += 1;
 
     return iter_some(ret);
 }
@@ -202,10 +202,10 @@ static IterOption key_value_iter_next(JsonIterator i) {
 typedef Json (*MapFunc)(Json, void *);
 /// An iterator that maps elements of `iter` by applying `func`
 typedef struct {
-    struct JsonIterator iter;
+    struct JsonIterator parent;
 
     /// The iterator we're mapping over
-    JsonIterator next;
+    JsonIterator iter;
 
     /// Extra state to be passed into `func` when it's called
     void *closure_captures;
@@ -214,12 +214,12 @@ typedef struct {
     MapFunc map_func;
 } MapIter;
 
-static IterOption map_iter_next(JsonIterator i) {
-    MapIter *map_iter = (MapIter *)i;
+static IterOption map_iter_next(JsonIterator _i) {
+    MapIter *i = (MapIter *)_i;
 
-    Json j = NEXT(map_iter->next);
+    Json j = NEXT(i->iter);
 
-    return iter_some(map_iter->map_func(j, map_iter->closure_captures));
+    return iter_some(i->map_func(j, i->closure_captures));
 }
 
 /// An iterator that maps the values yielded by `iter` with `func`.
@@ -233,11 +233,11 @@ JsonIterator iter_map(JsonIterator iter, MapFunc func, void *captures, bool free
     MapIter *i = jrq_malloc(sizeof(*i));
 
     *i = (MapIter) {
-        .iter = { 
+        .parent = { 
             .func = &map_iter_next,
             .free = free_captures ? &free_func_next_and_captures : &free_func_next,
         },
-        .next = iter,
+        .iter = iter,
         .map_func = func,
         .closure_captures = captures,
     };
@@ -258,10 +258,10 @@ typedef bool (*FilterFunc)(Json, void *);
 /// An iterator that filters elements of `iter` by skipping values if `filter_func`
 /// returns false
 typedef struct {
-    struct JsonIterator iter;
+    struct JsonIterator parent;
 
     /// The iterator we're mapping over
-    JsonIterator next;
+    JsonIterator iter;
 
     /// Extra state to be passed into `filter_func` when it's called
     void *closure_captures;
@@ -270,13 +270,13 @@ typedef struct {
     FilterFunc filter_func;
 } FilterIter;
 
-static IterOption filter_iter_next(JsonIterator i) {
-    FilterIter *filter_iter = (FilterIter *)i;
+static IterOption filter_iter_next(JsonIterator _i) {
+    FilterIter *i = (FilterIter *)_i;
 
     for (;;) {
-        Json j = NEXT(filter_iter->next);
+        Json j = NEXT(i->iter);
         // if the filter function returns true, return it
-        if (filter_iter->filter_func(j, filter_iter->closure_captures)) {
+        if (i->filter_func(j, i->closure_captures)) {
             return iter_some(j);
         }
     }
@@ -293,11 +293,11 @@ JsonIterator iter_filter(JsonIterator iter, FilterFunc func, void *captures, boo
     FilterIter *i = jrq_malloc(sizeof(*i));
 
     *i = (FilterIter) {
-        .iter = { 
+        .parent = { 
             .func = &filter_iter_next,
             .free = free_captures ? &free_func_next_and_captures : &free_func_next,
         },
-        .next = iter,
+        .iter = iter,
         .filter_func = func,
         .closure_captures = captures,
     };
@@ -312,19 +312,19 @@ JsonIterator iter_filter(JsonIterator iter, FilterFunc func, void *captures, boo
 /// An iterator that creates a pair of [value, index] for each value yielded by
 /// the iterator
 typedef struct {
-    struct JsonIterator iter;
+    struct JsonIterator parent;
 
-    JsonIterator next;
+    JsonIterator iter;
     size_t index;
 
 } EnumerateIter;
 
-static IterOption enumerate_iter_next(JsonIterator i) {
-    EnumerateIter *iter = (EnumerateIter *)i;
+static IterOption enumerate_iter_next(JsonIterator _i) {
+    EnumerateIter *i = (EnumerateIter *)_i;
 
-    Json j = NEXT(iter->next);
+    Json j = NEXT(i->iter);
 
-    return iter_some(JSON_LIST(j, json_number(iter->index++)));
+    return iter_some(JSON_LIST(j, json_number(i->index++)));
 }
 
 /// An iterator that yields the current iteration index along with the next
@@ -335,17 +335,18 @@ JsonIterator iter_enumerate(JsonIterator iter) {
     EnumerateIter *i = jrq_malloc(sizeof(EnumerateIter));
 
     *i = (EnumerateIter) {
-        .iter = { 
+        .parent = { 
             .func = &enumerate_iter_next,
             .free = &free_func_next,
         },
-        .next = iter,
+        .iter = iter,
         .index = 0,
     };
 
     return (JsonIterator)i;
 }
 
+/// Collect the iterator into a list
 Json iter_collect(JsonIterator i) {
     if (i == NULL) {
         return json_null();
