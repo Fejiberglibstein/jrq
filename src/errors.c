@@ -50,16 +50,27 @@ struct error_msg_data jrq_get_error_data(JrqError err, char *start) {
 
     int highest_width = 0;
     int current_width = 0;
+    int width = 0;
+
     for (end = start; *end != '\0'; end++) {
         if (lines > err.range.end.line) {
             break;
         }
-        current_width += 1;
 
         // Increment start line until we get to the \n that matches the number
         // of lines of start.line
         if (lines < err.range.start.line) {
             start_line++;
+        }
+
+        width++;
+        if (!(lines == err.range.start.line && width < err.range.start.col)
+            && !(lines == err.range.end.line && width > err.range.end.col)) {
+            printf("    %d , %d\n", current_width, highest_width);
+            current_width += 1;
+            if (current_width >= highest_width) {
+                highest_width = current_width;
+            }
         }
 
         // Same thing here
@@ -68,10 +79,8 @@ struct error_msg_data jrq_get_error_data(JrqError err, char *start) {
         }
 
         if (*end == '\n') {
-            if (current_width > highest_width) {
-                highest_width = current_width;
-            }
             current_width = 0;
+            width = 0;
             lines++;
         }
     }
@@ -107,19 +116,21 @@ char *jrq_error_format(JrqError err, char *text) {
 
     struct error_msg_data data = jrq_get_error_data(err, text);
 
-    size_t err_len = data.err_end - data.err_start;
-    char *arrow_txt = malloc(err_len + 1);
-    memset(arrow_txt, '~', err_len);
+    char *arrow_txt = malloc(data.width + 1);
+    memset(arrow_txt, '~', data.width);
+
     arrow_txt[0] = '^';
-    arrow_txt[err_len] = '\0';
+    arrow_txt[data.width] = '\0';
 
     uint margin_len = data.margin_end - data.margin_start;
+
+    printf("%u!!\n", data.width);
 
 #define ERROR                                                                                      \
     "%.*s\n" /* printing the code that has the error */                                            \
     "%*s\n"  /* printing the arrows pointing to what caused the error */                           \
     "%s\n",  /* printing the error message */                                                      \
-        margin_len, data.margin_start, (int)(data.err_start - data.margin_start + err_len - 1),    \
+        margin_len, data.margin_start, (int)(data.err_start - data.margin_start + data.width - 1), \
         arrow_txt, err.err
 
     int length = snprintf(NULL, 0, ERROR);
