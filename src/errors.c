@@ -41,20 +41,65 @@ struct error_msg_data jrq_get_error_data(JrqError err, char *start) {
     char *err_start = start;
     char *err_end = start;
 
+    // First character of the line for the range start's line
     char *start_line = start;
+    // First character of the line for the range end's line
     char *end_line = start;
 
     int lines = 1;
+
+    // Last character of the line of the range's end line
     char *end;
+
+    int highest_width = 0;
+    int current_width = 0;
     for (end = start; *end != '\0'; end++) {
         if (lines > err.range.end.line) {
             break;
         }
+        current_width += 1;
+
+        // Increment start line until we get to the \n that matches the number
+        // of lines of start.line
+        if (lines < err.range.start.line) {
+            start_line++;
+        }
+
+        // Same thing here
+        if (lines < err.range.end.line) {
+            end_line++;
+        }
+
+        if (*end == '\n') {
+            if (current_width > highest_width) {
+                highest_width = current_width;
+            }
+            current_width = 0;
+            lines++;
+        }
     }
+
+    if (*start_line == '\n') {
+        start_line++;
+    }
+    if (*end_line == '\n') {
+        end_line++;
+    }
+
+    // Move back past the newline
+    end--;
+
+    const int MARGIN = 5;
 
     return (struct error_msg_data) {
         .err_end = err_end,
         .err_start = err_start,
+        .height = err.range.end.line - err.range.start.line + 1,
+        .width = highest_width,
+
+        .margin_start = MAX(start - MARGIN - 1, start_line),
+        .margin_end = MIN(end_line + MARGIN - 1, end),
+
     };
 }
 
