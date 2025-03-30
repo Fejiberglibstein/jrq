@@ -65,8 +65,7 @@ struct error_msg_data jrq_get_error_data(JrqError err, char *start) {
 
         width++;
         if (!(lines == err.range.start.line && width < err.range.start.col)
-            && !(lines == err.range.end.line && width > err.range.end.col)) {
-            printf("    %d , %d\n", current_width, highest_width);
+            && !(lines == err.range.end.line && width < err.range.end.col)) {
             current_width += 1;
             if (current_width >= highest_width) {
                 highest_width = current_width;
@@ -98,13 +97,15 @@ struct error_msg_data jrq_get_error_data(JrqError err, char *start) {
     const int MARGIN = 5;
 
     char *err_end = end_line + err.range.end.col;
+    // printf("\x1b[33m`%s`\x1b[0m\n", end_line);
+    printf("%d\n", err.range.end.col);
     char *err_start = start_line + err.range.start.col;
 
     return (struct error_msg_data) {
         .err_end = err_end,
         .err_start = err_start,
         .height = err.range.end.line - err.range.start.line + 1,
-        .width = highest_width,
+        .width = highest_width - 1,
 
         .margin_start = MAX(err_start - MARGIN - 1, start_line),
         .margin_end = MIN(err_end + MARGIN - 1, end),
@@ -122,16 +123,20 @@ char *jrq_error_format(JrqError err, char *text) {
     arrow_txt[0] = '^';
     arrow_txt[data.width] = '\0';
 
-    uint margin_len = data.margin_end - data.margin_start;
+    uint lmargin_len = data.err_start - data.margin_start - 1;
+    uint rmargin_len = data.err_end - data.margin_end;
+    uint err_len = data.err_end - data.err_start + 1;
 
-    printf("%u!!\n", data.width);
+    uint offset = (data.height > 1) ? 0 : data.err_start - data.margin_start;
 
 #define ERROR                                                                                      \
-    "%.*s\n" /* printing the code that has the error */                                            \
-    "%*s\n"  /* printing the arrows pointing to what caused the error */                           \
-    "%s\n",  /* printing the error message */                                                      \
-        margin_len, data.margin_start, (int)(data.err_start - data.margin_start + data.width - 1), \
-        arrow_txt, err.err
+    "%s\n"                            /* printing the error message */                             \
+    "%.*s\x1b[4;31m%.*s\x1b[0m%.*s\n" /* printing the code that has the error */                   \
+    "%*s\n",                          /* printing the arrows pointing to what caused the error */  \
+        err.err,                      /* */                                                        \
+        lmargin_len, data.margin_start, err_len, data.err_start - 1, rmargin_len,                  \
+        data.err_end,                             /* */                                            \
+        (int)(offset + data.width - 1), arrow_txt /* */
 
     int length = snprintf(NULL, 0, ERROR);
     char *v = malloc(length);
