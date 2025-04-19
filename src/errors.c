@@ -8,6 +8,8 @@
 #define MIN(a, b) (a) < (b) ? (a) : (b)
 #define MAX(a, b) (a) > (b) ? (a) : (b)
 
+static const int MARGIN = 10;
+
 JrqError jrq_error(Range r, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -93,8 +95,6 @@ struct error_msg_data jrq_get_error_data(JrqError err, char *start) {
 
     // Move back past the newline
     end--;
-
-    const int MARGIN = 5;
 
     char *err_end = end_line + err.range.end.col;
     // printf("\x1b[33m`%s`\x1b[0m\n", end_line);
