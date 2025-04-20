@@ -366,6 +366,58 @@ static JsonIterator eval_func_zip(Eval *e, ASTNode *node) {
     return iter_zip(a, b);
 }
 
+static struct function_data FUNC_SUM = {
+    .function_name = "sum",
+    .caller_type = JSON_TYPE_ITERATOR,
+
+    .parameter_types = (JsonType[]) {},
+    .parameter_amount = 0,
+};
+static Json eval_func_sum(Eval *e, ASTNode *node) {
+    Json evaled_args[0] = {};
+
+    EvalData j = func_expect_args(e, node, evaled_args, FUNC_SUM);
+    if (eval_has_err(e)) {
+        return json_invalid();
+    }
+
+    JsonIterator i = j.iter;
+
+    double sum = 0;
+    for (IterOption res = iter_next(i); res.type != ITER_DONE; res = iter_next(i)) {
+        if (res.some.type == JSON_TYPE_NUMBER) {
+            sum += res.some.inner.number;
+        }
+    }
+    return json_number(sum);
+}
+
+static struct function_data FUNC_PRODUCT = {
+    .function_name = "product",
+    .caller_type = JSON_TYPE_ITERATOR,
+
+    .parameter_types = (JsonType[]) {},
+    .parameter_amount = 0,
+};
+static Json eval_func_product(Eval *e, ASTNode *node) {
+    Json evaled_args[0] = {};
+
+    EvalData j = func_expect_args(e, node, evaled_args, FUNC_PRODUCT);
+    if (eval_has_err(e)) {
+        return json_invalid();
+    }
+
+    JsonIterator i = j.iter;
+
+    double sum = 0;
+    for (IterOption res = iter_next(i); res.type != ITER_DONE; res = iter_next(i)) {
+        if (res.some.type == JSON_TYPE_NUMBER) {
+            sum *= res.some.inner.number;
+        }
+    }
+    return json_number(sum);
+}
+
 EvalData eval_node_function(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_FUNCTION);
     char *func_name = node->inner.function.function_name.inner.string;
@@ -387,6 +439,10 @@ EvalData eval_node_function(Eval *e, ASTNode *node) {
         return eval_from_iter(eval_func_filter(e, node));
     } else if (strcmp(func_name, "zip") == 0) {
         return eval_from_iter(eval_func_zip(e, node));
+    } else if (strcmp(func_name, "sum") == 0) {
+        return eval_from_json(eval_func_sum(e, node));
+    } else if (strcmp(func_name, "product") == 0) {
+        return eval_from_json(eval_func_product(e, node));
     }
 
     eval_set_err(e, EVAL_ERR_FUNC_NOT_FOUND(func_name));
