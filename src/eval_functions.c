@@ -10,8 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define LIST(v...) (v), (sizeof(v) / sizeof(*v))
-
 #define JSON_TYPE_ANY (-1)
 #define JSON_TYPE_ITERATOR (-2)
 #define JSON_TYPE_CLOSURE (-10)
@@ -407,6 +405,12 @@ void free_eval_data(EvalData *e) {
     }
 }
 
+
+/// Evaluate and error check the caller of a function.
+///
+/// In `"foo".bar()`, `"foo"` is the caller.
+///
+/// This should not really be used ever, instead use `func_expect_args`
 static EvalData func_eval_caller(Eval *e, ASTNode *function_node, struct function_data func) {
     EvalData err = eval_from_json(json_invalid());
 
@@ -444,6 +448,9 @@ static EvalData func_eval_caller(Eval *e, ASTNode *function_node, struct functio
     return caller;
 }
 
+/// Evaluate and error check the parameters of a function call.
+///
+/// This should not really be used ever, instead use `func_expect_args`
 static void func_eval_params(
     Eval *e,
     ASTNode *function_node,
@@ -508,6 +515,17 @@ static void func_eval_params(
     }
 }
 
+/// Ensure that a function call matches the expected arguments
+///
+/// Will return an err if any part of the function call was wrong, e.g. wrong parameter types,
+/// wrong callee type, or wrong number of parameters.
+///
+/// If there was no error, the function will return the evaluated caller:
+/// {"foo": 10}.map( ... ) will return {"foo": 10}
+///
+/// `evaluated_args` should be passed in as an empty list of size `func_data.parameter_amount`.
+/// This method will fill the list with the evaluated parameter types for the function call. In
+/// `foo(10 - 4, 2)`, evaluated args will be become the list [6, 2].
 static EvalData func_expect_args(
     Eval *e,
     ASTNode *function_node,
