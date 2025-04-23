@@ -372,14 +372,26 @@ ParseResult ast_parse(char *input) {
 
     if (p->error != NULL) {
         ast_free(node);
-        return (ParseResult) {.error_message = p->error};
+        return (ParseResult) {
+            .err = (JrqError) {
+                .err = p->error,
+                .range = p->curr.range,
+            },
+            .type = RES_ERR,
+        };
     } else {
         // If we don't already have an error, make sure that the last token is
         // an EOF and then error if it's not
         parser_expect(p, TOKEN_EOF, ERROR_EXPECTED_EOF);
         if (p->error != NULL) {
             ast_free(node);
-            return (ParseResult) {.error_message = p->error};
+            return (ParseResult) {
+                .err = (JrqError) {
+                    .err = p->error,
+                    .range = p->curr.range,
+                },
+                .type = RES_ERR,
+            };
         }
         return (ParseResult) {.node = node};
     }

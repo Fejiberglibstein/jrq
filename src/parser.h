@@ -1,6 +1,7 @@
 #ifndef _PARSER_H
 #define _PARSER_H
 
+#include "src/errors.h"
 #include "src/lexer.h"
 #include "vector.h"
 
@@ -99,8 +100,11 @@ typedef struct ASTNode {
 } ASTNode;
 
 typedef struct {
-    ASTNode *node;
-    char *error_message;
+    union {
+        ASTNode *node;
+        JrqError err;
+    };
+    JrqResult type;
 } ParseResult;
 
 ParseResult ast_parse(char *);

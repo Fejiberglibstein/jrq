@@ -1,6 +1,7 @@
 #ifndef _JSON_SERDE_H
 #define _JSON_SERDE_H
 
+#include "src/errors.h"
 #include "src/json.h"
 
 typedef enum {
@@ -10,8 +11,11 @@ typedef enum {
 } JsonSerializeFlags;
 
 typedef struct {
-    char *error;
-    Json result;
+    union {
+        JrqError err;
+        Json result;
+    };
+    JrqResult type;
 } DeserializeResult;
 
 char *json_serialize(Json *json, JsonSerializeFlags flags);

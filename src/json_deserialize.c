@@ -113,7 +113,13 @@ DeserializeResult json_deserialize(char *str) {
         tok_free(&p.curr);
         tok_free(&p.prev);
         json_free(j);
-        return (DeserializeResult) {.error = p.error};
+        return (DeserializeResult) {
+            .err = (JrqError) {
+                .err = p.error,
+                .range = p.curr.range,
+            },
+            .type = RES_ERR,
+        };
     }
 
     return (DeserializeResult) {.result = j};
