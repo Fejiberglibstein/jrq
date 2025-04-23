@@ -26,7 +26,7 @@ char *read_from_file(int fd) {
         if (bytes < 0) {
             return NULL;
         }
-        if (bytes < length) {
+        if (bytes == 0) {
             break;
         }
 
@@ -34,39 +34,54 @@ char *read_from_file(int fd) {
         length = capacity;
         capacity *= 2;
 
-        char *tmp = jrq_realloc(start, capacity);
-        if (tmp == NULL) {
-            return NULL;
-        }
-        start = tmp;
+        start = jrq_realloc(start, capacity);
         str = start + length;
     }
 
     return start;
 }
 
-int main(int argc, char *argv[]) {
-    EvalResult res = eval(ast_parse(argv[1]).node, json_null());
-
-    printf("%s\n", jrq_error_format(res.err, argv[1]));
-}
-
-int h_main(int argc, char **argv) {
+int main(int argc, char **argv) {
     char *str = read_from_file(STDIN_FILENO);
 
     DeserializeResult res = json_deserialize(str);
-    if (res.error != NULL) {
-        printf("%s", res.error);
+    if (res.type == RES_ERR) {
+        printf("%s\n", jrq_error_format(res.err, str));
+
+        free(str);
         exit(1);
     }
     free(str);
 
-    JsonSerializeFlags flags = JSON_FLAG_TAB;
-    if (isatty(STDOUT_FILENO)) {
-        flags = JSON_FLAG_TAB | JSON_FLAG_COLORS;
+    Json result = res.result;
+
+    if (argc > 1) {
+        char *code = argv[1];
+        ParseResult parse_res = ast_parse(code);
+        if (parse_res.type == RES_ERR) {
+            printf("%s\n", jrq_error_format(parse_res.err, code));
+            exit(1);
+        }
+
+        ASTNode *ast = parse_res.node;
+
+        EvalResult eval_res = eval(ast, result);
+        free(ast);
+
+        if (eval_res.type == RES_ERR) {
+            printf("%s\n", jrq_error_format(eval_res.err, code));
+            exit(1);
+        }
+
+        // Change result to be the result of the evaluation.
+        result = eval_res.json;
     }
 
-    char *out = json_serialize(&res.result, flags);
+    JsonSerializeFlags flags = JSON_FLAG_TAB;
+    if (isatty(STDOUT_FILENO)) {
+        flags = JSON_FLAG_TAB | JSON_FLAG_SPACES | JSON_FLAG_COLORS;
+    }
+    char *out = json_serialize(&result, flags);
     printf("%s\n", out);
 
     free(out);
