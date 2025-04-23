@@ -22,9 +22,11 @@ Json parse_object(Parser *p) {
     if (p->curr.type != TOKEN_RBRACE) {
         do {
             parser_expect(p, TOKEN_STRING, ERROR_EXPECTED_STRING);
+            RETURN_ERR(p, json_invalid())
             Json key = json_string(p->prev.inner.string);
 
             parser_expect(p, TOKEN_COLON, ERROR_EXPECTED_COLON);
+            RETURN_ERR(p, json_invalid())
 
             Json value = parse_json(p);
             obj = json_object_set(obj, key, value);
@@ -32,6 +34,7 @@ Json parse_object(Parser *p) {
     }
 
     parser_expect(p, TOKEN_RBRACE, ERROR_MISSING_RBRACE);
+    RETURN_ERR(p, json_invalid())
 
     return obj;
 }
@@ -46,6 +49,7 @@ Json parse_list(Parser *p) {
     }
 
     parser_expect(p, TOKEN_RBRACKET, ERROR_MISSING_RBRACKET);
+    RETURN_ERR(p, json_invalid())
 
     return (Json) {
         .type = JSON_TYPE_LIST,
@@ -85,6 +89,7 @@ static Json parse_json(Parser *p) {
             return json_number(t.inner.number);
         case TOKEN_MINUS:
             parser_expect(p, TOKEN_NUMBER, "Invalid numerical literal");
+            RETURN_ERR(p, json_invalid())
             t = p->prev;
             return json_number(-t.inner.number);
 
@@ -95,6 +100,7 @@ static Json parse_json(Parser *p) {
     }
 
     parser_expect(p, -1, ERROR_UNEXPECTED_TOKEN);
+    RETURN_ERR(p, json_invalid())
     return (Json) {0};
 }
 

@@ -81,7 +81,7 @@ static LexResult parse_ident(Lexer *l) {
 
     return (LexResult) {
         .token = (Token) {
-            .type = TOKEN_IDENT, 
+            .type = TOKEN_IDENT,
             .inner.ident = ident,
             .range = range,
         },
@@ -120,12 +120,12 @@ static LexResult parse_string(Lexer *l) {
 
     return (LexResult) {
         .token = (Token) {
-            .type = TOKEN_STRING, 
+            .type = TOKEN_STRING,
             .inner.string = string,
             .range = (Range) {
                 .start = start_position,
                 .end = end_position,
-            }
+            },
         },
     };
 }
@@ -164,26 +164,24 @@ static LexResult parse_number(Lexer *l) {
         double res = atof(number);
         free(number);
         return (LexResult) {
-            .token = (Token) {
-                .type = TOKEN_NUMBER, 
-                .inner.number = res,
-                .range = (Range) {
-                    .start = start_position,
-                    .end = end_position,
-                }
-            },
+            .token = (Token) {.type = TOKEN_NUMBER,
+                              .inner.number = res,
+                              .range = (Range) {
+                                  .start = start_position,
+                                  .end = end_position,
+                              }},
         };
     } else {
         int res = atoi(number);
         free(number);
         return (LexResult) {
             .token = (Token) {
-                .type = TOKEN_NUMBER, 
+                .type = TOKEN_NUMBER,
                 .inner.number = res,
                 .range = (Range) {
                     .start = start_position,
                     .end = end_position,
-                }
+                },
             },
         };
     }
@@ -269,7 +267,13 @@ LexResult lex_next_tok(Lexer *l) {
     case '>': return parse_double_char(l, TOKEN_RANGLE, '=', TOKEN_GT_EQUAL);
         // clang-format on
     case '\0':
-        return (LexResult) {.token.type = TOKEN_EOF};
+        return (LexResult) {
+            .token.type = TOKEN_EOF,
+            .token.range = (Range) {
+                .start = l->position,
+                .end = l->position,
+            },
+        };
     default:
         return (LexResult) {.error_message = "Illegal character"};
     }
@@ -320,7 +324,9 @@ void parser_expect(Parser *p, TokenType expected, char *err) {
         parser_next(p);
         return;
     }
-    p->error = err;
+    if (p->error == NULL) {
+        p->error = err;
+    }
 }
 
 void tok_free(Token *tok) {

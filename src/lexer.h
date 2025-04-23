@@ -3,6 +3,12 @@
 
 #include <stdbool.h>
 #include <sys/types.h>
+
+#define RETURN_ERR(P, DEF)                                                                         \
+    if (P->error != NULL) {                                                                        \
+        return DEF;                                                                                \
+    }
+
 typedef enum uint8_t {
     TOKEN_INVALID, // Not a valid token
 
