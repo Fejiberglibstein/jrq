@@ -19,7 +19,12 @@ char *next_char(Lexer *l) {
         l->position.col = 0;
     }
     l->position.col++;
-    return ++l->str;
+
+    if (*l->str == '\0') {
+        return l->str;
+    } else {
+        return ++l->str;
+    }
 }
 
 #define peek_char(l) (l)->str[1]
