@@ -14,7 +14,7 @@ bool test_eval(char *expr, Json input, Json expected) {
         ast_free(node);
     }
 
-    if (result.type == EVAL_ERR) {
+    if (result.type == RES_ERR) {
         json_free(input);
         json_free(expected);
         printf("%s\n", result.err.err);

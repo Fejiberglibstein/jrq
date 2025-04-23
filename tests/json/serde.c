@@ -1,4 +1,5 @@
 #include "../src/json.h"
+#include "src/errors.h"
 #include "src/json_serde.h"
 #include <assert.h>
 #include <stdio.h>
@@ -12,7 +13,7 @@ void test(char *input, char *expected, int str_len) {
     printf("Testing %s\n", input);
     DeserializeResult res = json_deserialize(input);
     if (str_len == 0) {
-        assert(res.error != NULL);
+        assert(res.type == RES_ERR);
         return;
     }
 

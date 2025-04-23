@@ -17,15 +17,15 @@ static void test_parse(char *input, char *expected_err, ASTNode *exp) {
     ParseResult res = ast_parse(input);
 
     if (expected_err != NULL) {
-        if (strcmp(expected_err, res.error_message) != 0) {
-            printf("'%s' should equal '%s'\n", expected_err, res.error_message);
+        if (strcmp(expected_err, res.err.err) != 0) {
+            printf("'%s' should equal '%s'\n", expected_err, res.err.err);
             assert(false);
         }
         return;
     }
 
-    if (res.error_message != NULL) {
-        printf("%s\n", res.error_message);
+    if (res.type == RES_ERR) {
+        printf("%s\n", res.err.err);
         assert(false);
     }
 
