@@ -1,3 +1,4 @@
+#include "src/alloc.h"
 #include "src/errors.h"
 #include "src/eval.h"
 #include "src/json.h"
@@ -10,39 +11,18 @@
 #include <string.h>
 #include <unistd.h>
 
-char *read_from_file(int fd) {
+char *read_from_file(FILE *file) {
+    char *str = NULL;
+    size_t size = 0;
+    size_t bytes_read = getdelim(&str, &size, '\0', file);
 
-    size_t capacity = 4;
-    char *str = jrq_malloc(capacity);
-    char *start = str;
-
-    size_t length = 0;
-
-    for (;;) {
-        // If length is 0, we should read the initial value of capacity bytes,
-        // otherwise read the actual length
-        size_t bytes_to_read = (length) ? length : capacity;
-        size_t bytes = read(fd, str, bytes_to_read);
-        if (bytes < 0) {
-            return NULL;
-        }
-        if (bytes == 0) {
-            break;
-        }
-
-        // Length = next capacity / 4
-        length = capacity;
-        capacity *= 2;
-
-        start = jrq_realloc(start, capacity);
-        str = start + length;
-    }
-
-    return start;
+    str = jrq_realloc(str, bytes_read + 1);
+    str[bytes_read] = '\0';
+    return str;
 }
 
 int main(int argc, char **argv) {
-    char *str = read_from_file(STDIN_FILENO);
+    char *str = read_from_file(stdin);
 
     DeserializeResult res = json_deserialize(str);
     if (res.type == RES_ERR) {
