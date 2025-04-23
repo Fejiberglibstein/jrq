@@ -12,10 +12,7 @@ typedef struct {
         JrqError err;
         Json json;
     };
-    enum {
-        EVAL_OK,
-        EVAL_ERR,
-    } type;
+    JrqResult type;
 } EvalResult;
 
 EvalResult eval(ASTNode *node, Json input);

@@ -45,7 +45,7 @@ EvalResult eval(ASTNode *node, Json input) {
     }
     if (e.err.err != NULL) {
         json_free(eval_to_json(&e, j));
-        return (EvalResult) {.err = e.err, .type = EVAL_ERR};
+        return (EvalResult) {.err = e.err, .type = RES_ERR};
     } else {
         return (EvalResult) {.json = eval_to_json(&e, j)};
     }

@@ -69,6 +69,11 @@ typedef struct {
     Range range;
 } JrqError;
 
+typedef enum {
+    RES_OK,
+    RES_ERR,
+} JrqResult;
+
 JrqError jrq_error(Range r, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 char *jrq_error_format(JrqError err, char *text);
 
