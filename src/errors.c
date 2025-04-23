@@ -1,4 +1,6 @@
 #include "src/errors.h"
+#include "src/alloc.h"
+#include "src/lexer.h"
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -8,7 +10,7 @@
 #define MIN(a, b) (a) < (b) ? (a) : (b)
 #define MAX(a, b) (a) > (b) ? (a) : (b)
 
-static const int MARGIN = 10;
+static const int MARGIN = 30;
 
 JrqError jrq_error(Range r, const char *fmt, ...) {
     va_list args;
@@ -66,8 +68,8 @@ struct error_msg_data jrq_get_error_data(JrqError err, char *start) {
         }
 
         width++;
-        if (!(lines == err.range.start.line && width < err.range.start.col)
-            && !(lines == err.range.end.line && width < err.range.end.col)) {
+        if (!(lines < err.range.start.line || width < err.range.start.col)
+            && !(lines > err.range.end.line || width < err.range.end.col)) {
             current_width += 1;
             if (current_width >= highest_width) {
                 highest_width = current_width;
@@ -98,7 +100,6 @@ struct error_msg_data jrq_get_error_data(JrqError err, char *start) {
 
     char *err_end = end_line + err.range.end.col;
     // printf("\x1b[33m`%s`\x1b[0m\n", end_line);
-    printf("%d\n", err.range.end.col);
     char *err_start = start_line + err.range.start.col;
 
     return (struct error_msg_data) {
@@ -117,7 +118,7 @@ char *jrq_error_format(JrqError err, char *text) {
 
     struct error_msg_data data = jrq_get_error_data(err, text);
 
-    char *arrow_txt = malloc(data.width + 1);
+    char *arrow_txt = jrq_malloc(data.width + 1);
     memset(arrow_txt, '~', data.width);
 
     arrow_txt[0] = '^';
