@@ -32,6 +32,7 @@ Json parse_object(Parser *p) {
             parser_expect(p, TOKEN_COLON, ERROR_EXPECTED_COLON);
             if (p->error != NULL) {
                 json_free(obj);
+                json_free(key);
                 return json_invalid();
             }
 

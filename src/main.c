@@ -50,6 +50,7 @@ int main(int argc, char **argv) {
         ASTNode *ast = parse_res.node;
 
         EvalResult eval_res = eval(ast, result);
+        ast_free(ast);
         json_free(result);
         free(ast);
 
