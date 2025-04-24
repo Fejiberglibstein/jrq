@@ -22,11 +22,18 @@ Json parse_object(Parser *p) {
     if (p->curr.type != TOKEN_RBRACE) {
         do {
             parser_expect(p, TOKEN_STRING, ERROR_EXPECTED_STRING);
-            RETURN_ERR(p, json_invalid())
+            if (p->error != NULL) {
+                json_free(obj);
+                return json_invalid();
+            }
+
             Json key = json_string(p->prev.inner.string);
 
             parser_expect(p, TOKEN_COLON, ERROR_EXPECTED_COLON);
-            RETURN_ERR(p, json_invalid())
+            if (p->error != NULL) {
+                json_free(obj);
+                return json_invalid();
+            }
 
             Json value = parse_json(p);
             obj = json_object_set(obj, key, value);
@@ -34,27 +41,31 @@ Json parse_object(Parser *p) {
     }
 
     parser_expect(p, TOKEN_RBRACE, ERROR_MISSING_RBRACE);
-    RETURN_ERR(p, json_invalid())
+    if (p->error != NULL) {
+        json_free(obj);
+        return json_invalid();
+    }
 
     return obj;
 }
 
 Json parse_list(Parser *p) {
-    JsonList items = {0};
+    Json j = json_list();
 
     if (p->curr.type != TOKEN_RBRACKET) {
         do {
-            vec_append(items, parse_json(p));
+            j = json_list_append(j, parse_json(p));
         } while (parser_matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
     }
 
     parser_expect(p, TOKEN_RBRACKET, ERROR_MISSING_RBRACKET);
-    RETURN_ERR(p, json_invalid())
 
-    return (Json) {
-        .type = JSON_TYPE_LIST,
-        .inner.list = items,
-    };
+    if (p->error != NULL) {
+        json_free(j);
+        return json_invalid();
+    }
+
+    return j;
 }
 
 static Json keyword(Parser *p, JsonType t, bool val) {

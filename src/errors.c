@@ -144,5 +144,7 @@ char *jrq_error_format(JrqError err, char *text) {
     snprintf(v, length, ERROR);
 #undef ERROR
 
+    free(arrow_txt);
+
     return v;
 }
