@@ -132,10 +132,7 @@ DeserializeResult json_deserialize(char *str) {
         tok_free(&p.prev);
         json_free(j);
         return (DeserializeResult) {
-            .err = (JrqError) {
-                .err = p.error,
-                .range = p.curr.range,
-            },
+            .err = jrq_error(p.curr.range, "%s", p.error),
             .type = RES_ERR,
         };
     }

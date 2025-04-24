@@ -43,6 +43,7 @@ int main(int argc, char **argv) {
         if (parse_res.type == RES_ERR) {
             char *err_string = jrq_error_format(parse_res.err, code);
             printf("%s\n", err_string);
+            json_free(result);
             free(err_string);
             exit(1);
         }

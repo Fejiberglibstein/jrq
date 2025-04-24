@@ -1,4 +1,4 @@
-#include "./lexer.h"
+#include "src/lexer.h"
 #include "src/alloc.h"
 #include "utils.h"
 #include <string.h>
@@ -69,6 +69,7 @@ static LexResult parse_ident(Lexer *l) {
 
     uint size = (uint)(l->str - start) + 1;
     char *ident = jrq_strndup(start, size);
+    ident[size] = '\0';
 
     next_char(l);
 

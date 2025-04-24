@@ -40,15 +40,18 @@ EvalResult eval(ASTNode *node, Json input) {
     };
 
     EvalData j = eval_node(&e, node);
+    Json result = eval_to_json(&e, j);
     ast_free(node);
+
     assert(e.vs.length == 0);
     if (e.vs.data != NULL) {
         free(e.vs.data);
     }
+
     if (e.err.err != NULL) {
-        json_free(eval_to_json(&e, j));
+        json_free(result);
         return (EvalResult) {.err = e.err, .type = RES_ERR};
     } else {
-        return (EvalResult) {.json = eval_to_json(&e, j)};
+        return (EvalResult) {.json = result, .type = RES_OK};
     }
 }

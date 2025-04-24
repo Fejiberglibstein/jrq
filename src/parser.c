@@ -373,10 +373,7 @@ ParseResult ast_parse(char *input) {
     if (p->error != NULL) {
         ast_free(node);
         return (ParseResult) {
-            .err = (JrqError) {
-                .err = p->error,
-                .range = p->curr.range,
-            },
+            .err = jrq_error(p->curr.range, "%s", p->error),
             .type = RES_ERR,
         };
     } else {

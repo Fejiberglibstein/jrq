@@ -59,10 +59,10 @@ void vs_pop_variable(VariableStack *vs, char *var_name) {
 }
 
 Json vs_get_variable(Eval *e, char *var_name) {
-    VariableStack vs = e->vs;
-    for (uint i = vs.length - 1; i >= 0; i--) {
-        if (strcmp(vs.data[i].name, var_name) == 0) {
-            return json_copy(vs.data[i].value);
+    VariableStack *vs = &e->vs;
+    for (uint i = vs->length - 1; i >= 0; i--) {
+        if (strcmp(vs->data[i].name, var_name) == 0) {
+            return json_copy(vs->data[i].value);
         }
     }
 
@@ -130,7 +130,7 @@ int vs_pop_closure_variable(Eval *e, ASTNode *var, Json value) {
         }
         for (int i = (int)var->inner.list.length - 1; i >= 0; i--) {
             popped += vs_pop_closure_variable(e, var->inner.list.data[i], json_list_get(value, i));
-            json_list_set(value, i, json_null());
+            value = json_list_set(value, i, json_null());
         }
         json_free(value);
         return popped;
