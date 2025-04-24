@@ -130,7 +130,6 @@ int vs_pop_closure_variable(Eval *e, ASTNode *var, Json value) {
         }
         for (int i = (int)var->inner.list.length - 1; i >= 0; i--) {
             popped += vs_pop_closure_variable(e, var->inner.list.data[i], json_list_get(value, i));
-            value = json_list_set(value, i, json_null());
         }
         json_free(value);
         return popped;
@@ -211,7 +210,7 @@ static bool filter(Json j, void *aux) {
         JSON_TYPE_BOOL,
         EVAL_ERR_CLOSURE_RETURN(json_type(JSON_TYPE_BOOL), json_type(ret.type))
     );
-    if (!eval_has_err(c->e)) {
+    if (eval_has_err(c->e)) {
         return false;
     }
 
@@ -460,7 +459,6 @@ void free_eval_data(EvalData *e) {
         break;
     }
 }
-
 
 /// Evaluate and error check the caller of a function.
 ///
