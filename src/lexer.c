@@ -68,8 +68,7 @@ static LexResult parse_ident(Lexer *l) {
     Position end_position = l->position;
 
     uint size = (uint)(l->str - start) + 1;
-    char *ident = jrq_calloc(1, size + 1);
-    strncpy(ident, start, size);
+    char *ident = jrq_strndup(start, size);
 
     next_char(l);
 

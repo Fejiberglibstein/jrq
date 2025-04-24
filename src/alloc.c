@@ -39,3 +39,11 @@ void *jrq_strdup(char *str) {
     }
     return p;
 }
+
+char *jrq_strndup(char *str, size_t size) {
+    char *p = strndup(str, size);
+    if (!p) {
+        out_of_memory();
+    }
+    return p;
+}
