@@ -2,6 +2,7 @@
 #include "src/eval_private.h"
 #include "src/json.h"
 #include "src/json_iter.h"
+#include "src/parser.h"
 #include <assert.h>
 #include <stdio.h>
 
@@ -39,6 +40,7 @@ EvalResult eval(ASTNode *node, Json input) {
     };
 
     EvalData j = eval_node(&e, node);
+    ast_free(node);
     assert(e.vs.length == 0);
     if (e.vs.data != NULL) {
         free(e.vs.data);

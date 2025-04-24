@@ -50,9 +50,7 @@ int main(int argc, char **argv) {
         ASTNode *ast = parse_res.node;
 
         EvalResult eval_res = eval(ast, result);
-        ast_free(ast);
         json_free(result);
-        free(ast);
 
         if (eval_res.type == RES_ERR) {
             char *err_string = jrq_error_format(eval_res.err, code);

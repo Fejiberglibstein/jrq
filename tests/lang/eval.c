@@ -10,9 +10,6 @@ bool test_eval(char *expr, Json input, Json expected) {
     ASTNode *node = ast_parse(expr).node;
 
     EvalResult result = eval(node, input);
-    if (node != NULL) {
-        ast_free(node);
-    }
 
     if (result.type == RES_ERR) {
         json_free(input);
