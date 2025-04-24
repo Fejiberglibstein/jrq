@@ -26,7 +26,9 @@ int main(int argc, char **argv) {
 
     DeserializeResult res = json_deserialize(str);
     if (res.type == RES_ERR) {
-        printf("%s\n", jrq_error_format(res.err, str));
+        char *err_string = jrq_error_format(res.err, str);
+        printf("%s\n", err_string);
+        free(err_string);
 
         free(str);
         exit(1);
@@ -39,17 +41,22 @@ int main(int argc, char **argv) {
         char *code = argv[1];
         ParseResult parse_res = ast_parse(code);
         if (parse_res.type == RES_ERR) {
-            printf("%s\n", jrq_error_format(parse_res.err, code));
+            char *err_string = jrq_error_format(parse_res.err, code);
+            printf("%s\n", err_string);
+            free(err_string);
             exit(1);
         }
 
         ASTNode *ast = parse_res.node;
 
         EvalResult eval_res = eval(ast, result);
+        json_free(result);
         free(ast);
 
         if (eval_res.type == RES_ERR) {
-            printf("%s\n", jrq_error_format(eval_res.err, code));
+            char *err_string = jrq_error_format(eval_res.err, code);
+            printf("%s\n", err_string);
+            free(err_string);
             exit(1);
         }
 
@@ -62,6 +69,7 @@ int main(int argc, char **argv) {
         flags = JSON_FLAG_TAB | JSON_FLAG_SPACES | JSON_FLAG_COLORS;
     }
     char *out = json_serialize(&result, flags);
+    json_free(result);
     printf("%s\n", out);
 
     free(out);
