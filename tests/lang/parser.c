@@ -366,7 +366,8 @@ static void test_errors() {
     test_parse("foo + ", ERROR_UNEXPECTED_TOKEN, NULL);
     test_parse("foo[10", ERROR_MISSING_RBRACKET, NULL);
     test_parse("(foo (foo + bar)", ERROR_MISSING_RPAREN, NULL);
-    test_parse(".bar(|)", ERROR_MISSING_CLOSURE, NULL);
+    test_parse(".bar(|)", ERROR_EXPECTED_IDENT, NULL);
+    test_parse(".bar(|bar)", ERROR_MISSING_CLOSURE, NULL);
 }
 
 int main() {
