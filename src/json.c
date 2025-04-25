@@ -150,7 +150,6 @@ void json_free(Json j) {
 bool json_is_null(Json j) {
     return j.type == JSON_TYPE_NULL;
 }
-
 bool json_is_invalid(Json j) {
     return j.type == JSON_TYPE_INVALID;
 }
@@ -158,25 +157,43 @@ bool json_is_invalid(Json j) {
 Json json_number(double f) {
     return (Json) {.type = JSON_TYPE_NUMBER, .inner.number = f};
 }
-
 Json json_string(char *str) {
     return (Json) {.type = JSON_TYPE_STRING, .inner.string = jrq_strdup(str)};
 }
 Json json_string_no_alloc(char *str) {
     return (Json) {.type = JSON_TYPE_STRING, .inner.string = str};
 }
-
 Json json_boolean(bool boolean) {
     return (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = boolean};
 }
-
 Json json_null(void) {
     return (Json) {.type = JSON_TYPE_NULL};
 }
-
 Json json_invalid(void) {
     return (Json) {.type = JSON_TYPE_INVALID};
 }
+
+double json_get_number(Json j) {
+    assert(j.type == JSON_TYPE_NUMBER);
+    return j.inner.number;
+}
+double json_get_bool(Json j) {
+    assert(j.type == JSON_TYPE_BOOL);
+    return j.inner.boolean;
+}
+const char *json_get_string(Json j) {
+    assert(j.type == JSON_TYPE_STRING);
+    return j.inner.string;
+}
+JsonList json_get_list(Json j) {
+    assert(j.type == JSON_TYPE_LIST);
+    return j.inner.list;
+}
+JsonObject json_get_object(Json j) {
+    assert(j.type == JSON_TYPE_OBJECT);
+    return j.inner.object;
+}
+
 
 Json json_invalid_msg(char *format, ...) {
     va_list args;
