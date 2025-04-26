@@ -54,7 +54,6 @@ void vs_push_variable(VariableStack *vs, char *var_name, Json value) {
 
 void vs_pop_variable(VariableStack *vs, char *var_name) {
     Variable v = vec_pop(*vs);
-    json_free(v.value);
     assert(strcmp(v.name, var_name) == 0);
 }
 
@@ -104,8 +103,6 @@ int vs_push_closure_variable(Eval *e, ASTNode *var, Json value) {
 
 /// Pop all the variables of a closure onto the stack.
 ///
-/// You should pass in the amount of variables that were pushed into this function through `amt`
-///
 /// Will return the amount popped off the stack
 int vs_pop_closure_variable(Eval *e, ASTNode *var, Json value) {
     VariableStack *vs = &e->vs;
@@ -118,12 +115,10 @@ int vs_pop_closure_variable(Eval *e, ASTNode *var, Json value) {
         return 1;
     case AST_TYPE_LIST:
         if (value.type != JSON_TYPE_LIST) {
-            json_free(value);
             eval_set_err(e, EVAL_ERR_FUNC_CLOSURE_TUPLE);
             return 0;
         }
         if (value.inner.list.length != var->inner.list.length) {
-            json_free(value);
             // change the error message here, it's not accurate
             eval_set_err(e, EVAL_ERR_FUNC_CLOSURE_TUPLE);
             return 0;
@@ -131,7 +126,6 @@ int vs_pop_closure_variable(Eval *e, ASTNode *var, Json value) {
         for (int i = (int)var->inner.list.length - 1; i >= 0; i--) {
             popped += vs_pop_closure_variable(e, var->inner.list.data[i], json_list_get(value, i));
         }
-        json_free(value);
         return popped;
     default:
         unreachable("Closure cannot be anything else");
@@ -158,6 +152,7 @@ static Json mapper(Json j, void *aux) {
     }
     int popped = vs_pop_closure_variable(c->e, c->params.data[0], j);
     assert(pushed == popped);
+    json_free(j);
 
     return ret;
 }
@@ -203,6 +198,7 @@ static bool filter(Json j, void *aux) {
     }
     int popped = vs_pop_closure_variable(c->e, c->params.data[0], j);
     assert(pushed == popped);
+    json_free(j);
 
     EXPECT_TYPE(
         c->e,
