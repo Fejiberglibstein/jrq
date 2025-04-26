@@ -198,7 +198,8 @@ static bool filter(Json j, void *aux) {
     }
     int popped = vs_pop_closure_variable(c->e, c->params.data[0], j);
     assert(pushed == popped);
-    json_free(j);
+    // We should not free j here like we do for mapping, because the json should
+    // still exist after the filter is done.
 
     EXPECT_TYPE(
         c->e,
