@@ -276,6 +276,8 @@ static IterOption filter_iter_next(JsonIterator _i) {
         // if the filter function returns true, return it
         if (i->filter_func(j, i->closure_captures)) {
             return iter_some(j);
+        } else {
+            json_free(j);
         }
     }
 }
