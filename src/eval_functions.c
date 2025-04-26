@@ -2,6 +2,7 @@
 #include "src/eval_private.h"
 #include "src/json.h"
 #include "src/json_iter.h"
+#include "src/json_serde.h"
 #include "src/parser.h"
 #include "src/vector.h"
 #include <assert.h>
@@ -10,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Don't use this with a T of any, instead just use the normal JSON_TYPE_LIST value
 #define JSON_TYPE_LIST_T(v) (JSON_TYPE_LIST + v)
 #define JSON_TYPE_ITERATOR (-1)
 #define JSON_TYPE_CLOSURE (-10)
@@ -365,7 +367,7 @@ static JsonIterator eval_func_zip(Eval *e, ASTNode *node) {
 
 static struct function_data FUNC_SUM = {
     .function_name = "sum",
-    .caller_type = JSON_TYPE_ITERATOR,
+    .caller_type = JSON_TYPE_LIST_T(JSON_TYPE_NUMBER),
 
     .parameter_types = (JsonType[]) {},
     .parameter_amount = 0,
@@ -383,15 +385,17 @@ static Json eval_func_sum(Eval *e, ASTNode *node) {
     double sum = 0;
     for (IterOption res = iter_next(i); res.type != ITER_DONE; res = iter_next(i)) {
         if (res.some.type == JSON_TYPE_NUMBER) {
-            sum += res.some.inner.number;
+            sum += json_get_number(res.some);
         }
+        json_free(res.some);
     }
+    iter_free(i);
     return json_number(sum);
 }
 
 static struct function_data FUNC_PRODUCT = {
     .function_name = "product",
-    .caller_type = JSON_TYPE_ITERATOR,
+    .caller_type = JSON_TYPE_LIST_T(JSON_TYPE_NUMBER),
 
     .parameter_types = (JsonType[]) {},
     .parameter_amount = 0,
@@ -406,13 +410,15 @@ static Json eval_func_product(Eval *e, ASTNode *node) {
 
     JsonIterator i = j.iter;
 
-    double sum = 0;
+    double product = 1;
     for (IterOption res = iter_next(i); res.type != ITER_DONE; res = iter_next(i)) {
         if (res.some.type == JSON_TYPE_NUMBER) {
-            sum *= res.some.inner.number;
+            product *= json_get_number(res.some);
         }
+        json_free(res.some);
     }
-    return json_number(sum);
+    iter_free(i);
+    return json_number(product);
 }
 
 EvalData eval_node_function(Eval *e, ASTNode *node) {
@@ -471,15 +477,35 @@ static EvalData func_eval_caller(Eval *e, ASTNode *function_node, struct functio
     if (func.caller_type != JSON_TYPE_ITERATOR && func.caller_type != JSON_TYPE_ANY) {
         // cast caller into json
         Json jcaller = eval_to_json(e, caller);
-        EXPECT_TYPE(
-            e,
-            jcaller.type,
-            func.caller_type,
-            EVAL_ERR_FUNC_WRONG_CALLER(json_type(func.caller_type), json_type(jcaller.type))
-        );
         if (eval_has_err(e)) {
             json_free(jcaller);
             return err;
+        }
+
+        if (func.caller_type > JSON_TYPE_LIST) {
+            EXPECT_TYPE(
+                e,
+                jcaller.listInnerType,
+                func.caller_type - JSON_TYPE_LIST,
+                EVAL_ERR_FUNC_WRONG_CALLER(
+                    json_type(func.caller_type), json_type(jcaller.type)
+                )
+            );
+            if (eval_has_err(e)) {
+                json_free(jcaller);
+                return err;
+            }
+        } else {
+            EXPECT_TYPE(
+                e,
+                jcaller.type,
+                func.caller_type,
+                EVAL_ERR_FUNC_WRONG_CALLER(json_type(func.caller_type), json_type(jcaller.type))
+            );
+            if (eval_has_err(e)) {
+                json_free(jcaller);
+                return err;
+            }
         }
 
         // Cast back into an EvalData like this because when we casted caller into json we may have

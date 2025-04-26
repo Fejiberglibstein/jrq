@@ -1,5 +1,6 @@
 #include "src/json.h"
 #include "src/alloc.h"
+#include "src/eval_private.h"
 #include "src/vector.h"
 #include <assert.h>
 #include <math.h>
@@ -10,6 +11,27 @@
 
 #define EPSILON 0.00000001
 
+static char *json_list_type(JsonType type) {
+    switch (type) {
+    case JSON_TYPE_INVALID:
+        return "list";
+    case JSON_TYPE_OBJECT:
+        return "list[object]";
+    case JSON_TYPE_LIST:
+        return "list[list]";
+    case JSON_TYPE_NULL:
+        return "list[<null>]";
+    case JSON_TYPE_NUMBER:
+        return "list[number]";
+    case JSON_TYPE_STRING:
+        return "list[string]";
+    case JSON_TYPE_BOOL:
+        return "list[bool]";
+    case JSON_TYPE_ANY:
+        return "list";
+    }
+}
+
 char *json_type(JsonType type) {
     switch (type) {
     case JSON_TYPE_INVALID:
@@ -17,7 +39,7 @@ char *json_type(JsonType type) {
     case JSON_TYPE_OBJECT:
         return "object";
     case JSON_TYPE_LIST:
-        return "list";
+        return json_list_type(type);
     case JSON_TYPE_NULL:
         return "<null>";
     case JSON_TYPE_NUMBER:
@@ -26,6 +48,8 @@ char *json_type(JsonType type) {
         return "string";
     case JSON_TYPE_BOOL:
         return "bool";
+    case JSON_TYPE_ANY:
+        unreachable("Cannot be an any");
     }
 }
 
@@ -214,6 +238,7 @@ Json json_list_sized(size_t i) {
     return (Json) {
         .type = JSON_TYPE_LIST,
         .inner.list = j,
+        .listInnerType = 0,
     };
 }
 
@@ -221,18 +246,18 @@ Json json_list(void) {
     return json_list_sized(16);
 }
 
-static void list_set_inner_type(Json j, JsonType inner) {
-    if (j.listInnerType == JSON_TYPE_INVALID) {
-        j.listInnerType = inner;
-    } else if (j.listInnerType != inner) {
-        j.listInnerType = JSON_TYPE_ANY;
+static void list_set_inner_type(Json *j, JsonType inner) {
+    if (j->listInnerType == JSON_TYPE_INVALID) {
+        j->listInnerType = inner;
+    } else if (j->listInnerType != inner) {
+        j->listInnerType = JSON_TYPE_ANY;
     }
 }
 
 Json json_list_append(Json j, Json el) {
     assert(j.type == JSON_TYPE_LIST);
 
-    list_set_inner_type(j, el.type);
+    list_set_inner_type(&j, el.type);
     vec_append(j.inner.list, el);
     return j;
 }
@@ -261,7 +286,7 @@ JsonType json_list_get_inner_type(Json j) {
 Json json_list_set(Json j, uint index, Json val) {
     assert(j.type == JSON_TYPE_LIST);
 
-    list_set_inner_type(j, val.type);
+    list_set_inner_type(&j, val.type);
     j.inner.list.data[index] = val;
     return j;
 }
