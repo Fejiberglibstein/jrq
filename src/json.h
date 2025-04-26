@@ -5,14 +5,15 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef enum JsonType {
+typedef enum JsonType : uint8_t {
     JSON_TYPE_INVALID,
+    JSON_TYPE_ANY, // Will only ever be used on lists' `innerType`
     JSON_TYPE_OBJECT,
-    JSON_TYPE_LIST,
     JSON_TYPE_NULL,
     JSON_TYPE_NUMBER,
     JSON_TYPE_STRING,
     JSON_TYPE_BOOL,
+    JSON_TYPE_LIST // This should be last in the enum
 } JsonType;
 
 typedef Vec(struct Json) JsonList;
@@ -28,6 +29,8 @@ typedef struct Json {
         JsonList list;
     } inner;
     JsonType type;
+    /// Used only for the `list` type so we have some knowledge about what is stored in the list.
+    JsonType listInnerType;
 } Json;
 
 typedef struct JsonObjectPair {
@@ -64,6 +67,7 @@ Json json_list_append(Json, Json);
 Json json_list_sized(size_t);
 Json json_list_get(Json, uint);
 Json json_list_set(Json j, uint index, Json val);
+JsonType json_list_get_inner_type(Json j);
 
 // clang-format off
 #define JSON_LIST_1(e1) json_list_append(json_list(), e1)

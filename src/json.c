@@ -62,6 +62,9 @@ bool json_equal(Json j1, Json j2) {
         if (j1.inner.list.length != j2.inner.list.length) {
             return false;
         }
+        if (j1.listInnerType != j2.listInnerType) {
+            return false;
+        }
         for (int i = 0; i < j1.inner.list.length; i++) {
             if (json_equal(j1.inner.list.data[i], j2.inner.list.data[i]) == false) {
                 return false;
@@ -194,7 +197,6 @@ JsonObject json_get_object(Json j) {
     return j.inner.object;
 }
 
-
 Json json_invalid_msg(char *format, ...) {
     va_list args;
     va_start(args, format);
@@ -219,17 +221,32 @@ Json json_list(void) {
     return json_list_sized(16);
 }
 
-Json json_list_append(Json list, Json el) {
-    assert(list.type == JSON_TYPE_LIST);
+static void list_set_inner_type(Json j, JsonType inner) {
+    if (j.listInnerType == JSON_TYPE_INVALID) {
+        j.listInnerType = inner;
+    } else if (j.listInnerType != inner) {
+        j.listInnerType = JSON_TYPE_ANY;
+    }
+}
 
-    vec_append(list.inner.list, el);
-    return list;
+Json json_list_append(Json j, Json el) {
+    assert(j.type == JSON_TYPE_LIST);
+
+    list_set_inner_type(j, el.type);
+    vec_append(j.inner.list, el);
+    return j;
 }
 
 Json json_list_get(Json j, uint index) {
     assert(j.type == JSON_TYPE_LIST);
 
     return j.inner.list.data[index];
+}
+
+JsonType json_list_get_inner_type(Json j) {
+    assert(j.type == JSON_TYPE_LIST);
+
+    return j.listInnerType;
 }
 
 // TODO this does not match the behavior of object_set
@@ -244,6 +261,7 @@ Json json_list_get(Json j, uint index) {
 Json json_list_set(Json j, uint index, Json val) {
     assert(j.type == JSON_TYPE_LIST);
 
+    list_set_inner_type(j, val.type);
     j.inner.list.data[index] = val;
     return j;
 }
