@@ -380,13 +380,11 @@ static Json eval_func_sum(Eval *e, ASTNode *node) {
         return json_invalid();
     }
 
-    JsonIterator i = j.iter;
+    JsonIterator i = eval_to_iter(e, j);
 
     double sum = 0;
     for (IterOption res = iter_next(i); res.type != ITER_DONE; res = iter_next(i)) {
-        if (res.some.type == JSON_TYPE_NUMBER) {
-            sum += json_get_number(res.some);
-        }
+        sum += json_get_number(res.some);
         json_free(res.some);
     }
     iter_free(i);
@@ -408,13 +406,11 @@ static Json eval_func_product(Eval *e, ASTNode *node) {
         return json_invalid();
     }
 
-    JsonIterator i = j.iter;
+    JsonIterator i = eval_to_iter(e, j);
 
     double product = 1;
     for (IterOption res = iter_next(i); res.type != ITER_DONE; res = iter_next(i)) {
-        if (res.some.type == JSON_TYPE_NUMBER) {
-            product *= json_get_number(res.some);
-        }
+        product *= json_get_number(res.some);
         json_free(res.some);
     }
     iter_free(i);
@@ -574,9 +570,7 @@ static void func_eval_params(
                     e,
                     j.type,
                     func_data.parameter_types[i],
-                    EVAL_ERR_FUNC_WRONG_ARGS(
-                        JSON_TYPE(func_data.parameter_types[i]), json_type(j)
-                    )
+                    EVAL_ERR_FUNC_WRONG_ARGS(JSON_TYPE(func_data.parameter_types[i]), json_type(j))
                 );
                 goto cleanup;
             }
