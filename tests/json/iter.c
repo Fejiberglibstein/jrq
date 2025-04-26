@@ -74,6 +74,5 @@ int main() {
 }
 
 Json mapper(Json j, void *_) {
-    j.inner.number *= 2;
-    return j;
+    return json_number(json_get_number(j) * 2);
 }

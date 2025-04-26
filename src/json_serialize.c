@@ -40,7 +40,7 @@ static void tab(Serializer *s, int depth) {
 }
 
 static void serialize_list(Serializer *s, Json *json, int depth) {
-    JsonList list = json->inner.list;
+    JsonList list = json_get_list(*json);
     if (list.length == 0) {
         string_append_str(s->inner, "[]");
         return;
@@ -66,7 +66,7 @@ static void serialize_list(Serializer *s, Json *json, int depth) {
 }
 
 static void serialize_object(Serializer *s, Json *json, int depth) {
-    JsonObject fields = json->inner.object;
+    JsonObject fields = json_get_object(*json);
     if (fields.length == 0) {
         string_append_str(s->inner, "{}");
         return;
@@ -80,7 +80,7 @@ static void serialize_object(Serializer *s, Json *json, int depth) {
         // serialize object's key
         APPEND_COLOR(KEY_COLOR);
         string_append_str(s->inner, "\"");
-        string_append_str(s->inner, fields.data[i].key.inner.string);
+        string_append_str(s->inner, json_get_string(fields.data[i].key));
         string_append_str(s->inner, "\"");
         APPEND_COLOR(RESET_COLOR);
 
@@ -120,9 +120,9 @@ void serialize(Serializer *s, Json *json, int depth) {
     case JSON_TYPE_NUMBER:
         APPEND_COLOR(NUM_COLOR);
 
-        int buf_len = snprintf(NULL, 0, "%g", json->inner.number) + 1;
+        int buf_len = snprintf(NULL, 0, "%g", json_get_number(*json)) + 1;
         string_grow(s->inner, buf_len);
-        snprintf(s->inner.data + s->inner.length, buf_len, "%g", json->inner.number);
+        snprintf(s->inner.data + s->inner.length, buf_len, "%g", json_get_number(*json));
 
         s->inner.length += buf_len - 1;
 
@@ -131,13 +131,13 @@ void serialize(Serializer *s, Json *json, int depth) {
     case JSON_TYPE_STRING:
         APPEND_COLOR(STRING_COLOR);
         string_append_str(s->inner, "\"");
-        string_append_str(s->inner, json->inner.string);
+        string_append_str(s->inner, json_get_string(*json));
         string_append_str(s->inner, "\"");
         APPEND_COLOR(RESET_COLOR);
         break;
     case JSON_TYPE_BOOL:
         APPEND_COLOR(BOOL_COLOR);
-        string_append_str(s->inner, json->inner.boolean ? "true" : "false");
+        string_append_str(s->inner, json_get_bool(*json) ? "true" : "false");
         APPEND_COLOR(RESET_COLOR);
         break;
     case JSON_TYPE_NULL:

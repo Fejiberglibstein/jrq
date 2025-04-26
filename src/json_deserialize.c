@@ -69,23 +69,11 @@ Json parse_list(Parser *p) {
     return j;
 }
 
-static Json keyword(Parser *p, JsonType t, bool val) {
-    Json n = (Json) {
-        .type = t,
-    };
-
-    if (t == JSON_TYPE_BOOL) {
-        n.inner.boolean = val;
-    }
-
-    return n;
-}
-
 static Json parse_json(Parser *p) {
     // clang-format off
-    if (parser_matches(p, LIST((TokenType[]) {TOKEN_TRUE}))) return keyword(p, JSON_TYPE_BOOL, true);
-    if (parser_matches(p, LIST((TokenType[]) {TOKEN_FALSE}))) return keyword(p, JSON_TYPE_BOOL, false);
-    if (parser_matches(p, LIST((TokenType[]) {TOKEN_NULL}))) return keyword(p, JSON_TYPE_NULL, -1);
+    if (parser_matches(p, LIST((TokenType[]) {TOKEN_TRUE}))) return json_boolean(true);
+    if (parser_matches(p, LIST((TokenType[]) {TOKEN_FALSE}))) return json_boolean(false);
+    if (parser_matches(p, LIST((TokenType[]) {TOKEN_NULL}))) return json_null();
 
     if (parser_matches(p, LIST((TokenType[]) {TOKEN_LBRACE}))) return parse_object(p);
     if (parser_matches(p, LIST((TokenType[]) {TOKEN_LBRACKET}))) return parse_list(p);

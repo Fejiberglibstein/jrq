@@ -75,7 +75,7 @@ void test_list() {
 }
 
 void test_objects() {
-    test("{}", (Json) {.type = JSON_TYPE_OBJECT, .inner.list = {0}}, DEFAULT_FLAGS);
+    test("{}", json_object(), DEFAULT_FLAGS);
 
     test("{\"foo\": true}", JSON_OBJECT("foo", json_boolean(true)), DEFAULT_FLAGS);
 

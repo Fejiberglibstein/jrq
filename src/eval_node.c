@@ -83,13 +83,13 @@ static EvalData eval_node_access(Eval *e, ASTNode *node) {
         EXPECT_TYPE(e, accessor, JSON_TYPE_NUMBER, EVAL_ERR_LIST_ACCESS(json_type(accessor.type)));
         BUBBLE_ERROR(e, free_list);
 
-        res = json_copy(json_list_get(inner, (uint)accessor.inner.number));
+        res = json_copy(json_list_get(inner, (uint)json_get_number(accessor)));
         break;
     case JSON_TYPE_OBJECT:
         EXPECT_TYPE(e, accessor, JSON_TYPE_STRING, EVAL_ERR_JSON_ACCESS(json_type(accessor.type)));
         BUBBLE_ERROR(e, free_list);
 
-        res = json_copy(json_object_get(&inner, accessor.inner.string));
+        res = json_copy(json_object_get(&inner, json_get_string(accessor)));
         break;
     default:
         EXPECT_TYPE(e, inner, JSON_TYPE_LIST, EVAL_ERR_INNER_ACCESS(json_type(inner.type)));
@@ -178,14 +178,14 @@ static EvalData eval_node_unary(Eval *e, ASTNode *node) {
         EXPECT_TYPE(e, j, JSON_TYPE_NUMBER, EVAL_ERR_UNARY_MINUS(json_type(j.type)));
         BUBBLE_ERROR(e, (Json[]) {j});
 
-        j.inner.number = -j.inner.number;
+        j = json_number(-json_get_number(j));
 
         break;
     case TOKEN_BANG:
         EXPECT_TYPE(e, j, JSON_TYPE_BOOL, EVAL_ERR_UNARY_NOT(json_type(j.type)));
         BUBBLE_ERROR(e, (Json[]) {j});
 
-        j.inner.boolean = !j.inner.boolean;
+        j = json_boolean(!json_get_bool(j));
 
         break;
     default:
@@ -224,17 +224,17 @@ static EvalData eval_node_unary(Eval *e, ASTNode *node) {
     }
 
 // clang-format off
-EVAL_BINARY_OP(eval_binary_or, JSON_TYPE_BOOL, "||", json_boolean(lhs.inner.boolean || rhs.inner.boolean));
-EVAL_BINARY_OP(eval_binary_and, JSON_TYPE_BOOL, "&&", json_boolean(lhs.inner.boolean && rhs.inner.boolean));
-EVAL_BINARY_OP(eval_binary_lt_equal, JSON_TYPE_NUMBER, "<=", json_boolean(lhs.inner.number <= rhs.inner.number));
-EVAL_BINARY_OP(eval_binary_gt_equal, JSON_TYPE_NUMBER, ">=", json_boolean(lhs.inner.number >= rhs.inner.number));
-EVAL_BINARY_OP(eval_binary_gt, JSON_TYPE_NUMBER, ">", json_boolean(lhs.inner.number > rhs.inner.number));
-EVAL_BINARY_OP(eval_binary_lt, JSON_TYPE_NUMBER, "<", json_boolean(lhs.inner.number < rhs.inner.number));
-EVAL_BINARY_OP(eval_binary_add, JSON_TYPE_NUMBER, "+", json_number(lhs.inner.number + rhs.inner.number));
-EVAL_BINARY_OP(eval_binary_sub, JSON_TYPE_NUMBER, "-", json_number(lhs.inner.number - rhs.inner.number));
-EVAL_BINARY_OP(eval_binary_times, JSON_TYPE_NUMBER, "*", json_number(lhs.inner.number * rhs.inner.number));
-EVAL_BINARY_OP(eval_binary_div, JSON_TYPE_NUMBER, "/", json_number(lhs.inner.number / rhs.inner.number));
-EVAL_BINARY_OP(eval_binary_mod, JSON_TYPE_NUMBER, "%%", json_number(fmod(lhs.inner.number, rhs.inner.number)));
+EVAL_BINARY_OP(eval_binary_or, JSON_TYPE_BOOL, "||", json_boolean(json_get_bool(lhs) || json_get_bool(rhs)));
+EVAL_BINARY_OP(eval_binary_and, JSON_TYPE_BOOL, "&&", json_boolean(json_get_bool(lhs) && json_get_bool(rhs)));
+EVAL_BINARY_OP(eval_binary_lt_equal, JSON_TYPE_NUMBER, "<=", json_boolean(json_get_number(lhs) <= json_get_number(rhs)));
+EVAL_BINARY_OP(eval_binary_gt_equal, JSON_TYPE_NUMBER, ">=", json_boolean(json_get_number(lhs) >= json_get_number(rhs)));
+EVAL_BINARY_OP(eval_binary_gt, JSON_TYPE_NUMBER, ">", json_boolean(json_get_number(lhs) > json_get_number(rhs)));
+EVAL_BINARY_OP(eval_binary_lt, JSON_TYPE_NUMBER, "<", json_boolean(json_get_number(lhs) < json_get_number(rhs)));
+EVAL_BINARY_OP(eval_binary_add, JSON_TYPE_NUMBER, "+", json_number(json_get_number(lhs) + json_get_number(rhs)));
+EVAL_BINARY_OP(eval_binary_sub, JSON_TYPE_NUMBER, "-", json_number(json_get_number(lhs) - json_get_number(rhs)));
+EVAL_BINARY_OP(eval_binary_times, JSON_TYPE_NUMBER, "*", json_number(json_get_number(lhs) * json_get_number(rhs)));
+EVAL_BINARY_OP(eval_binary_div, JSON_TYPE_NUMBER, "/", json_number(json_get_number(lhs) / json_get_number(rhs)));
+EVAL_BINARY_OP(eval_binary_mod, JSON_TYPE_NUMBER, "%%", json_number(fmod(json_get_number(lhs), json_get_number(rhs))));
 // clang-format on
 
 static EvalData eval_node_binary(Eval *e, ASTNode *node) {

@@ -136,11 +136,11 @@ JSON_DATA_ITERATOR(ListIter, iter_list, list_iter_next);
 static IterOption list_iter_next(JsonIterator _i) {
     ListIter *i = (ListIter *)_i;
 
-    if (i->index >= i->data.inner.list.length) {
+    if (i->index >= json_get_list(i->data).length) {
         return iter_done();
     }
 
-    return iter_some(json_copy(i->data.inner.list.data[i->index++]));
+    return iter_some(json_copy(json_list_get(i->data, i->index++)));
 }
 
 /// Returns an iterator over the keys of a json object.
@@ -150,11 +150,11 @@ JSON_DATA_ITERATOR(KeyIter, iter_obj_keys, key_iter_next);
 static IterOption key_iter_next(JsonIterator _i) {
     KeyIter *i = (KeyIter *)_i;
 
-    if (i->index >= i->data.inner.object.length) {
+    if (i->index >= json_get_object(i->data).length) {
         return iter_done();
     }
 
-    return iter_some(json_copy(i->data.inner.object.data[i->index++].key));
+    return iter_some(json_copy(json_get_object(i->data).data[i->index++].key));
 }
 
 /// Returns an iterator over the values of a json object.
@@ -164,11 +164,11 @@ JSON_DATA_ITERATOR(ValueIter, iter_obj_values, value_iter_next);
 static IterOption value_iter_next(JsonIterator _i) {
     ValueIter *i = (ValueIter *)_i;
 
-    if (i->index >= i->data.inner.object.length) {
+    if (i->index >= json_get_object(i->data).length) {
         return iter_done();
     }
 
-    return iter_some(json_copy(i->data.inner.object.data[i->index++].value));
+    return iter_some(json_copy(json_get_object(i->data).data[i->index++].value));
 }
 
 /// Returns an iterator over the keys and values of a json object.
@@ -178,11 +178,11 @@ JSON_DATA_ITERATOR(KeyValueIter, iter_obj_key_value, key_value_iter_next);
 static IterOption key_value_iter_next(JsonIterator _i) {
     KeyValueIter *i = (KeyValueIter *)_i;
 
-    if (i->index >= i->data.inner.object.length) {
+    if (i->index >= json_get_object(i->data).length) {
         return iter_done();
     }
 
-    JsonObject obj = i->data.inner.object;
+    JsonObject obj = json_get_object(i->data);
     Json ret = JSON_LIST(json_copy(obj.data[i->index].key), json_copy(obj.data[i->index].value));
     i->index += 1;
 

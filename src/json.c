@@ -280,7 +280,7 @@ Json json_object_set(Json j, Json key, Json value) {
     return j;
 }
 
-Json json_object_get(Json *j, char *key) {
+Json json_object_get(Json *j, const char *key) {
     assert(j->type == JSON_TYPE_OBJECT);
     JsonObject obj = j->inner.object;
 
