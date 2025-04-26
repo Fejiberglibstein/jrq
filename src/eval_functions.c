@@ -204,7 +204,7 @@ static bool filter(Json j, void *aux) {
 
     EXPECT_TYPE(
         c->e,
-        ret,
+        ret.type,
         JSON_TYPE_BOOL,
         EVAL_ERR_CLOSURE_RETURN(json_type(JSON_TYPE_BOOL), json_type(ret.type))
     );
@@ -473,7 +473,7 @@ static EvalData func_eval_caller(Eval *e, ASTNode *function_node, struct functio
         Json jcaller = eval_to_json(e, caller);
         EXPECT_TYPE(
             e,
-            jcaller,
+            jcaller.type,
             func.caller_type,
             EVAL_ERR_FUNC_WRONG_CALLER(json_type(func.caller_type), json_type(jcaller.type))
         );
@@ -544,7 +544,7 @@ static void func_eval_params(
             if (func_data.parameter_types[i] != JSON_TYPE_ANY) {
                 EXPECT_TYPE(
                     e,
-                    j,
+                    j.type,
                     func_data.parameter_types[i],
                     EVAL_ERR_FUNC_WRONG_ARGS(
                         json_type(func_data.parameter_types[i]), json_type(j.type)

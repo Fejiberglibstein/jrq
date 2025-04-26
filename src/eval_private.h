@@ -25,7 +25,7 @@
     }
 
 #define EXPECT_TYPE(e, j, t, ERR...)                                                               \
-    if (j.type != t && e->err.err == NULL) {                                                       \
+    if (j != t && e->err.err == NULL) {                                                            \
         eval_set_err(e, ERR);                                                                      \
     }
 
