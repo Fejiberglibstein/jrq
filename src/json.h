@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef enum JsonType : uint8_t {
+typedef enum JsonType : int8_t {
     JSON_TYPE_INVALID,
     JSON_TYPE_ANY, // Will only ever be used on lists' `innerType`
     JSON_TYPE_OBJECT,

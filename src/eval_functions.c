@@ -10,8 +10,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define JSON_TYPE_ANY (-1)
-#define JSON_TYPE_ITERATOR (-2)
+#define JSON_TYPE_LIST_T(v) (JSON_TYPE_LIST + v)
+#define JSON_TYPE_ITERATOR (-1)
 #define JSON_TYPE_CLOSURE (-10)
 #define JSON_TYPE_CLOSURE_WITH_PARAMS(v) (JSON_TYPE_CLOSURE - (v))
 
@@ -29,6 +29,7 @@
 /// In addition to all the normal json types, there is also the following json types you can use:
 /// - JSON_TYPE_ANY
 /// - JSON_TYPE_ITERATOR
+/// - JSON_TYPE_LIST_T                   (list that must be a specific type)
 /// - JSON_TYPE_CLOSURE                  (closure with no parameters) -> ||
 /// - JSON_TYPE_CLOSURE_WITH_PARAMS(N)   (closure with N parameters)  -> |p1, p2, ..., pN|
 struct function_data {
