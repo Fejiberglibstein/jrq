@@ -80,19 +80,19 @@ static EvalData eval_node_access(Eval *e, ASTNode *node) {
     Json free_list[] = {inner, accessor};
     switch (inner.type) {
     case JSON_TYPE_LIST:
-        EXPECT_TYPE(e, accessor.type, JSON_TYPE_NUMBER, EVAL_ERR_LIST_ACCESS(json_type(accessor.type)));
+        EXPECT_TYPE(e, accessor.type, JSON_TYPE_NUMBER, EVAL_ERR_LIST_ACCESS(json_type(accessor)));
         BUBBLE_ERROR(e, free_list);
 
         res = json_copy(json_list_get(inner, (uint)json_get_number(accessor)));
         break;
     case JSON_TYPE_OBJECT:
-        EXPECT_TYPE(e, accessor.type, JSON_TYPE_STRING, EVAL_ERR_JSON_ACCESS(json_type(accessor.type)));
+        EXPECT_TYPE(e, accessor.type, JSON_TYPE_STRING, EVAL_ERR_JSON_ACCESS(json_type(accessor)));
         BUBBLE_ERROR(e, free_list);
 
         res = json_copy(json_object_get(&inner, json_get_string(accessor)));
         break;
     default:
-        EXPECT_TYPE(e, inner.type, JSON_TYPE_LIST, EVAL_ERR_INNER_ACCESS(json_type(inner.type)));
+        EXPECT_TYPE(e, inner.type, JSON_TYPE_LIST, EVAL_ERR_INNER_ACCESS(json_type(inner)));
         BUBBLE_ERROR(e, free_list);
     }
 
@@ -115,7 +115,7 @@ static EvalData eval_node_json(Eval *e, ASTNode *node) {
 
         Json key = eval_to_json(e, eval_node(e, field->inner.json_field.key));
         Json value = eval_to_json(e, eval_node(e, field->inner.json_field.value));
-        EXPECT_TYPE(e, key.type, JSON_TYPE_STRING, EVAL_ERR_JSON_KEY_STRING(json_type(key.type)));
+        EXPECT_TYPE(e, key.type, JSON_TYPE_STRING, EVAL_ERR_JSON_KEY_STRING(json_type(key)));
         BUBBLE_ERROR(e, (Json[]) {obj, key, value});
 
         obj = json_object_set(obj, key, value);
@@ -175,14 +175,14 @@ static EvalData eval_node_unary(Eval *e, ASTNode *node) {
 
     switch (node->inner.unary.operator) {
     case TOKEN_MINUS:
-        EXPECT_TYPE(e, j.type, JSON_TYPE_NUMBER, EVAL_ERR_UNARY_MINUS(json_type(j.type)));
+        EXPECT_TYPE(e, j.type, JSON_TYPE_NUMBER, EVAL_ERR_UNARY_MINUS(json_type(j)));
         BUBBLE_ERROR(e, (Json[]) {j});
 
         j = json_number(-json_get_number(j));
 
         break;
     case TOKEN_BANG:
-        EXPECT_TYPE(e, j.type, JSON_TYPE_BOOL, EVAL_ERR_UNARY_NOT(json_type(j.type)));
+        EXPECT_TYPE(e, j.type, JSON_TYPE_BOOL, EVAL_ERR_UNARY_NOT(json_type(j)));
         BUBBLE_ERROR(e, (Json[]) {j});
 
         j = json_boolean(!json_get_bool(j));
@@ -204,15 +204,15 @@ static EvalData eval_node_unary(Eval *e, ASTNode *node) {
         Json rhs = eval_to_json(e, eval_node(e, node->inner.binary.rhs));                          \
         EXPECT_TYPE(                                                                               \
             e,                                                                                     \
-            lhs.type,                                                                                   \
+            lhs.type,                                                                              \
             _EXPECTED_TYPE,                                                                        \
-            EVAL_ERR_BINARY_OP(_OP_NAME, json_type(_EXPECTED_TYPE), json_type(lhs.type))           \
+            EVAL_ERR_BINARY_OP(_OP_NAME, JSON_TYPE(_EXPECTED_TYPE), json_type(lhs))                \
         );                                                                                         \
         EXPECT_TYPE(                                                                               \
             e,                                                                                     \
-            rhs.type,                                                                                   \
+            rhs.type,                                                                              \
             _EXPECTED_TYPE,                                                                        \
-            EVAL_ERR_BINARY_OP(_OP_NAME, json_type(_EXPECTED_TYPE), json_type(rhs.type))           \
+            EVAL_ERR_BINARY_OP(_OP_NAME, JSON_TYPE(_EXPECTED_TYPE), json_type(rhs))                \
         );                                                                                         \
         BUBBLE_ERROR(e, (Json[]) {lhs, rhs});                                                      \
                                                                                                    \

@@ -32,14 +32,14 @@ static char *json_list_type(JsonType type) {
     }
 }
 
-char *json_type(JsonType type) {
-    switch (type) {
+char *json_type(Json j) {
+    switch (j.type) {
     case JSON_TYPE_INVALID:
         return "<invalid>";
     case JSON_TYPE_OBJECT:
         return "object";
     case JSON_TYPE_LIST:
-        return json_list_type(type);
+        return json_list_type(j.list_inner_type);
     case JSON_TYPE_NULL:
         return "<null>";
     case JSON_TYPE_NUMBER:
@@ -86,7 +86,7 @@ bool json_equal(Json j1, Json j2) {
         if (j1.inner.list.length != j2.inner.list.length) {
             return false;
         }
-        if (j1.listInnerType != j2.listInnerType) {
+        if (j1.list_inner_type != j2.list_inner_type) {
             return false;
         }
         for (int i = 0; i < j1.inner.list.length; i++) {
@@ -238,7 +238,7 @@ Json json_list_sized(size_t i) {
     return (Json) {
         .type = JSON_TYPE_LIST,
         .inner.list = j,
-        .listInnerType = 0,
+        .list_inner_type = 0,
     };
 }
 
@@ -247,10 +247,10 @@ Json json_list(void) {
 }
 
 static void list_set_inner_type(Json *j, JsonType inner) {
-    if (j->listInnerType == JSON_TYPE_INVALID) {
-        j->listInnerType = inner;
-    } else if (j->listInnerType != inner) {
-        j->listInnerType = JSON_TYPE_ANY;
+    if (j->list_inner_type == JSON_TYPE_INVALID) {
+        j->list_inner_type = inner;
+    } else if (j->list_inner_type != inner) {
+        j->list_inner_type = JSON_TYPE_ANY;
     }
 }
 
@@ -271,7 +271,7 @@ Json json_list_get(Json j, uint index) {
 JsonType json_list_get_inner_type(Json j) {
     assert(j.type == JSON_TYPE_LIST);
 
-    return j.listInnerType;
+    return j.list_inner_type;
 }
 
 // TODO this does not match the behavior of object_set

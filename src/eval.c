@@ -28,7 +28,7 @@ JsonIterator eval_to_iter(Eval *e, EvalData d) {
     case JSON_TYPE_OBJECT:
         return iter_obj_key_value(d.json);
     default:
-        eval_set_err(e, "Expected Iterator, got %s", json_type(d.json.type));
+        eval_set_err(e, "Expected Iterator, got %s", json_type(d.json));
         return NULL;
     }
 }

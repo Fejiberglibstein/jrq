@@ -30,7 +30,7 @@ typedef struct Json {
     } inner;
     JsonType type;
     /// Used only for the `list` type so we have some knowledge about what is stored in the list.
-    JsonType listInnerType;
+    JsonType list_inner_type;
 } Json;
 
 typedef struct JsonObjectPair {
@@ -45,7 +45,7 @@ void json_free(Json);
 bool json_is_null(Json);
 bool json_is_invalid(Json);
 
-char *json_type(JsonType);
+char *json_type(Json);
 
 Json json_number(double f);
 Json json_string(char *);

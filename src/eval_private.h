@@ -10,6 +10,8 @@
         json_free(FREE[_i]);                                                                       \
     }
 
+#define JSON_TYPE(J) json_type((Json) {.type = J})
+
 #define unreachable(str) assert(false && "unreachable: " str)
 
 // will clean up everything in the free list and return from the function.

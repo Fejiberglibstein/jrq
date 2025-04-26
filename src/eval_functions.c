@@ -208,7 +208,7 @@ static bool filter(Json j, void *aux) {
         c->e,
         ret.type,
         JSON_TYPE_BOOL,
-        EVAL_ERR_CLOSURE_RETURN(json_type(JSON_TYPE_BOOL), json_type(ret.type))
+        EVAL_ERR_CLOSURE_RETURN(JSON_TYPE(JSON_TYPE_BOOL), json_type(ret))
     );
     if (eval_has_err(c->e)) {
         return false;
@@ -483,12 +483,14 @@ static EvalData func_eval_caller(Eval *e, ASTNode *function_node, struct functio
         }
 
         if (func.caller_type > JSON_TYPE_LIST) {
+            int list_inner_type = func.caller_type - JSON_TYPE_LIST;
             EXPECT_TYPE(
                 e,
-                jcaller.listInnerType,
-                func.caller_type - JSON_TYPE_LIST,
+                jcaller.list_inner_type,
+                list_inner_type,
                 EVAL_ERR_FUNC_WRONG_CALLER(
-                    json_type(func.caller_type), json_type(jcaller.type)
+                    json_type((Json) {.type = JSON_TYPE_LIST, .list_inner_type = list_inner_type}),
+                    json_type(jcaller)
                 )
             );
             if (eval_has_err(e)) {
@@ -500,7 +502,7 @@ static EvalData func_eval_caller(Eval *e, ASTNode *function_node, struct functio
                 e,
                 jcaller.type,
                 func.caller_type,
-                EVAL_ERR_FUNC_WRONG_CALLER(json_type(func.caller_type), json_type(jcaller.type))
+                EVAL_ERR_FUNC_WRONG_CALLER(JSON_TYPE(func.caller_type), json_type(jcaller))
             );
             if (eval_has_err(e)) {
                 json_free(jcaller);
@@ -573,7 +575,7 @@ static void func_eval_params(
                     j.type,
                     func_data.parameter_types[i],
                     EVAL_ERR_FUNC_WRONG_ARGS(
-                        json_type(func_data.parameter_types[i]), json_type(j.type)
+                        JSON_TYPE(func_data.parameter_types[i]), json_type(j)
                     )
                 );
                 goto cleanup;
