@@ -1,5 +1,4 @@
 #include "src/json.h"
-#include "src/alloc.h"
 #include "src/eval_private.h"
 #include "src/utils.h"
 #include "src/vector.h"
@@ -379,6 +378,8 @@ Json json_list_set(Json j, uint index, Json val) {
 
     list_set_inner_type(&j, val.type);
     json_ptr_list(j)->d.data[index] = val;
+
+    return j;
 }
 
 Json json_object_sized(size_t i) {
