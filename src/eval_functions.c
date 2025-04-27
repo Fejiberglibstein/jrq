@@ -88,13 +88,13 @@ int vs_push_closure_variable(Eval *e, ASTNode *var, Json value) {
             eval_set_err(e, EVAL_ERR_FUNC_CLOSURE_TUPLE);
             return 0;
         }
-        if (value.inner.list.length != var->inner.list.length) {
+        if (json_get_list(value)->length != var->inner.list.length) {
             // change the error message here, it's not accurate
             eval_set_err(e, EVAL_ERR_FUNC_CLOSURE_TUPLE);
             return 0;
         }
         int pushed = 0;
-        for (int i = 0; i < value.inner.list.length; i++) {
+        for (int i = 0; i < json_get_list(value)->length; i++) {
             pushed += vs_push_closure_variable(e, var->inner.list.data[i], json_list_get(value, i));
         }
         return pushed;
@@ -121,7 +121,7 @@ int vs_pop_closure_variable(Eval *e, ASTNode *var, Json value) {
             eval_set_err(e, EVAL_ERR_FUNC_CLOSURE_TUPLE);
             return 0;
         }
-        if (value.inner.list.length != var->inner.list.length) {
+        if (json_get_list(value)->length != var->inner.list.length) {
             // change the error message here, it's not accurate
             eval_set_err(e, EVAL_ERR_FUNC_CLOSURE_TUPLE);
             return 0;
@@ -458,7 +458,7 @@ static Json eval_func_flatten(Eval *e, ASTNode *node) {
             IterOption _pair;
             for (_pair = iter_next(keyset); _pair.type != ITER_DONE; _pair = iter_next(keyset)) {
                 Json pair = _pair.some;
-                object = json_object_set(
+                json_object_set(
                     object, json_copy(json_list_get(pair, 0)), json_copy(json_list_get(pair, 1))
                 );
                 json_free(pair);

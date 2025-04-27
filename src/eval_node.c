@@ -89,7 +89,7 @@ static EvalData eval_node_access(Eval *e, ASTNode *node) {
         EXPECT_TYPE(e, accessor.type, JSON_TYPE_STRING, EVAL_ERR_JSON_ACCESS(json_type(accessor)));
         BUBBLE_ERROR(e, free_list);
 
-        res = json_copy(json_object_get(&inner, json_get_string(accessor)));
+        res = json_copy(json_object_get(inner, json_get_string(accessor)));
         break;
     default:
         EXPECT_TYPE(e, inner.type, JSON_TYPE_LIST, EVAL_ERR_INNER_ACCESS(json_type(inner)));
@@ -118,7 +118,7 @@ static EvalData eval_node_json(Eval *e, ASTNode *node) {
         EXPECT_TYPE(e, key.type, JSON_TYPE_STRING, EVAL_ERR_JSON_KEY_STRING(json_type(key)));
         BUBBLE_ERROR(e, (Json[]) {obj, key, value});
 
-        obj = json_object_set(obj, key, value);
+        json_object_set(obj, key, value);
     }
 
     e->range = node->range;

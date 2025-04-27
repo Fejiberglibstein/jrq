@@ -14,10 +14,7 @@ static Json parse_list(Parser *p);
 static Json parse_object(Parser *p);
 
 Json parse_object(Parser *p) {
-    Json obj = {
-        .type = JSON_TYPE_OBJECT,
-        .inner.object = {0},
-    };
+    Json obj = json_object();
 
     if (p->curr.type != TOKEN_RBRACE) {
         do {

@@ -1,6 +1,8 @@
+#include "src/eval_private.h"
 #include "src/json.h"
 #include "src/json_serde.h"
 #include "src/utils.h"
+#include <assert.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -40,20 +42,20 @@ static void tab(Serializer *s, int depth) {
 }
 
 static void serialize_list(Serializer *s, Json *json, int depth) {
-    JsonList list = json_get_list(*json);
-    if (list.length == 0) {
+    JsonList *list = json_get_list(*json);
+    if (list->length == 0) {
         string_append_str(s->inner, "[]");
         return;
     }
     string_append_str(s->inner, has_flag(s, JSON_FLAG_TAB) ? "[\n" : "[");
 
-    for (int i = 0; i < list.length; i++) {
+    for (int i = 0; i < list->length; i++) {
 
         tab(s, depth);
 
-        serialize(s, &list.data[i], depth);
+        serialize(s, &list->data[i], depth);
 
-        if (i + 1 != list.length) {
+        if (i + 1 != list->length) {
             string_append_str(s->inner, has_flag(s, JSON_FLAG_SPACES) ? ", " : ",");
         }
         if (has_flag(s, JSON_FLAG_TAB)) {
@@ -66,29 +68,29 @@ static void serialize_list(Serializer *s, Json *json, int depth) {
 }
 
 static void serialize_object(Serializer *s, Json *json, int depth) {
-    JsonObject fields = json_get_object(*json);
-    if (fields.length == 0) {
+    JsonObject *fields = json_get_object(*json);
+    if (fields->length == 0) {
         string_append_str(s->inner, "{}");
         return;
     }
     string_append_str(s->inner, has_flag(s, JSON_FLAG_TAB) ? "{\n" : "{");
 
-    for (int i = 0; i < fields.length; i++) {
+    for (int i = 0; i < fields->length; i++) {
 
         tab(s, depth);
 
         // serialize object's key
         APPEND_COLOR(KEY_COLOR);
         string_append_str(s->inner, "\"");
-        string_append_str(s->inner, json_get_string(fields.data[i].key));
+        string_append_str(s->inner, json_get_string(fields->data[i].key));
         string_append_str(s->inner, "\"");
         APPEND_COLOR(RESET_COLOR);
 
         string_append_str(s->inner, has_flag(s, JSON_FLAG_SPACES) ? ": " : ":");
 
-        serialize(s, &fields.data[i].value, depth);
+        serialize(s, &fields->data[i].value, depth);
 
-        if (i + 1 != fields.length) {
+        if (i + 1 != fields->length) {
             string_append_str(s->inner, has_flag(s, JSON_FLAG_SPACES) ? ", " : ",");
         }
         if (has_flag(s, JSON_FLAG_TAB)) {
@@ -103,13 +105,13 @@ static void serialize_object(Serializer *s, Json *json, int depth) {
 void serialize(Serializer *s, Json *json, int depth) {
     switch (json->type) {
     case JSON_TYPE_INVALID:
-        if (json->inner.invalid != NULL) {
-            string_append_str(s->inner, "<invalid: ");
-            string_append_str(s->inner, json->inner.invalid);
-            string_append_str(s->inner, ">");
-        } else {
-            string_append_str(s->inner, "<invalid>");
-        }
+        // if (json->inner.invalid != NULL) {
+        //     string_append_str(s->inner, "<invalid: ");
+        //     string_append_str(s->inner, json->inner.invalid);
+        //     string_append_str(s->inner, ">");
+        // } else {
+        string_append_str(s->inner, "<invalid>");
+        // }
         break;
     case JSON_TYPE_LIST:
         serialize_list(s, json, depth + 1);
@@ -144,6 +146,9 @@ void serialize(Serializer *s, Json *json, int depth) {
         APPEND_COLOR(NULL_COLOR);
         string_append_str(s->inner, "null");
         APPEND_COLOR(RESET_COLOR);
+        break;
+    case JSON_TYPE_ANY:
+        unreachable("should not be any here");
         break;
     }
 }

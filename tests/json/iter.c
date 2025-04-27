@@ -8,40 +8,32 @@ Json mapper(Json, void *);
 
 #define LIST(s...) s, (sizeof(s) / sizeof(*(s)))
 
-void test_iter(JsonIterator iter, Json *results, int length) {
-    Json j = (Json) {
-        .type = JSON_TYPE_LIST,
-        .inner.list = (JsonList) {
-            .length = length,
-            .data = results,
-        },
-    };
-
-    char *str = json_serialize(&j, 0);
+void test_iter(JsonIterator iter, Json results) {
+    char *str = json_serialize(&results, 0);
     printf("Testing `%s`\n", str);
     free(str);
 
-    for (int i = 0; i < length; i++) {
+    for (int i = 0; i < json_list_length(results); i++) {
         IterOption res = iter_next(iter);
-        assert(json_equal(res.some, results[i]));
+        assert(json_equal(res.some, json_list_get(results, i)));
         json_free(res.some);
-        json_free(results[i]);
     }
     assert(iter_next(iter).type == ITER_DONE);
     assert(iter_next(iter).type == ITER_DONE);
     iter_free(iter);
+    json_free(results);
 }
 
 void basic_iter() {
     test_iter(
         iter_list(JSON_LIST(json_number(0), json_number(1), json_number(2))),
-        LIST((Json[]) {json_number(0), json_number(1), json_number(2)})
+        JSON_LIST(json_number(0), json_number(1), json_number(2))
     );
     test_iter(
         iter_obj_keys(
             JSON_OBJECT("foo", json_number(0), "bar", json_number(1), "baz", json_number(2))
         ),
-        LIST((Json[]) {json_string("foo"), json_string("bar"), json_string("baz")})
+        JSON_LIST(json_string("foo"), json_string("bar"), json_string("baz"))
     );
 }
 
@@ -50,7 +42,7 @@ void map_iter() {
     JsonIterator iter = iter_obj_values(obj);
     iter = iter_map(iter, &mapper, NULL, false);
 
-    test_iter(iter, LIST((Json[]) {json_number(0), json_number(2), json_number(4)}));
+    test_iter(iter, JSON_LIST(json_number(0), json_number(2), json_number(4)));
 }
 
 void enumerate_iter() {
@@ -59,11 +51,11 @@ void enumerate_iter() {
     ));
     test_iter(
         iter,
-        LIST((Json[]) {
+        JSON_LIST(
             JSON_LIST(JSON_LIST(json_string("blhe"), json_null()), json_number(0)),
             JSON_LIST(JSON_LIST(json_string("grhas"), json_boolean(false)), json_number(1)),
-            JSON_LIST(JSON_LIST(json_string("fhytr"), json_number(6)), json_number(2)),
-        })
+            JSON_LIST(JSON_LIST(json_string("fhytr"), json_number(6)), json_number(2))
+        )
     );
 }
 
