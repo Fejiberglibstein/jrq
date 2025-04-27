@@ -375,19 +375,20 @@ static struct function_data FUNC_SUM = {
 static Json eval_func_sum(Eval *e, ASTNode *node) {
     Json evaled_args[0] = {};
 
-    EvalData j = func_expect_args(e, node, evaled_args, FUNC_SUM);
+    EvalData d = func_expect_args(e, node, evaled_args, FUNC_SUM);
     if (eval_has_err(e)) {
         return json_invalid();
     }
 
-    JsonIterator i = eval_to_iter(e, j);
+    Json j = d.json;
 
     double sum = 0;
-    for (IterOption res = iter_next(i); res.type != ITER_DONE; res = iter_next(i)) {
-        sum += json_get_number(res.some);
-        json_free(res.some);
+    for (size_t i = 0; i < json_list_length(j); i++) {
+        Json el = json_list_get(j, i);
+        sum += json_get_number(el);
+        json_free(el);
     }
-    iter_free(i);
+
     return json_number(sum);
 }
 
@@ -401,19 +402,20 @@ static struct function_data FUNC_PRODUCT = {
 static Json eval_func_product(Eval *e, ASTNode *node) {
     Json evaled_args[0] = {};
 
-    EvalData j = func_expect_args(e, node, evaled_args, FUNC_PRODUCT);
+    EvalData d = func_expect_args(e, node, evaled_args, FUNC_PRODUCT);
     if (eval_has_err(e)) {
         return json_invalid();
     }
 
-    JsonIterator i = eval_to_iter(e, j);
+    Json j = d.json;
 
     double product = 1;
-    for (IterOption res = iter_next(i); res.type != ITER_DONE; res = iter_next(i)) {
-        product *= json_get_number(res.some);
-        json_free(res.some);
+    for (size_t i = 0; i < json_list_length(j); i++) {
+        Json el = json_list_get(j, i);
+        product *= json_get_number(el);
+        json_free(el);
     }
-    iter_free(i);
+
     return json_number(product);
 }
 
@@ -442,6 +444,8 @@ EvalData eval_node_function(Eval *e, ASTNode *node) {
         return eval_from_json(eval_func_sum(e, node));
     } else if (strcmp(func_name, "product") == 0) {
         return eval_from_json(eval_func_product(e, node));
+    } else if (strcmp(func_name, "flatten") == 0) {
+        return eval_from_json(eval_func_flatten(e, node));
     }
 
     eval_set_err(e, EVAL_ERR_FUNC_NOT_FOUND(func_name));
