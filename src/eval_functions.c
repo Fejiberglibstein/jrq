@@ -419,6 +419,68 @@ static Json eval_func_product(Eval *e, ASTNode *node) {
     return json_number(product);
 }
 
+static struct function_data FUNC_FLATTEN = {
+    .function_name = "product",
+    .caller_type = JSON_TYPE_LIST,
+
+    .parameter_types = (JsonType[]) {},
+    .parameter_amount = 0,
+};
+static Json eval_func_flatten(Eval *e, ASTNode *node) {
+    Json evaled_args[0] = {};
+
+    EvalData d = func_expect_args(e, node, evaled_args, FUNC_FLATTEN);
+    if (eval_has_err(e)) {
+        return json_invalid();
+    }
+    assert(d.type == SOME_JSON);
+    Json json = d.json;
+    assert(json.type == JSON_TYPE_LIST);
+
+    switch (json.list_inner_type) {
+    case JSON_TYPE_LIST:
+        Json list = json_list();
+        for (size_t i = 0; i < json_list_length(json); i++) {
+            Json el = json_list_get(json, i);
+            for (size_t j = 0; j < json_list_length(el); j++) {
+                list = json_list_append(list, json_copy(json_list_get(el, j)));
+            }
+        }
+        json_free(json);
+        return list;
+        break;
+    case JSON_TYPE_OBJECT:
+        Json object = json_object();
+        for (size_t i = 0; i < json_list_length(json); i++) {
+            Json el = json_copy(json_list_get(json, i));
+            JsonIterator keyset = iter_obj_key_value(el);
+
+            IterOption _pair;
+            for (_pair = iter_next(keyset); _pair.type != ITER_DONE; _pair = iter_next(keyset)) {
+                Json pair = _pair.some;
+                object = json_object_set(
+                    object, json_copy(json_list_get(pair, 0)), json_copy(json_list_get(pair, 1))
+                );
+                json_free(pair);
+            }
+            iter_free(keyset);
+        }
+        json_free(json);
+        return object;
+        break;
+    default:
+        EXPECT_TYPE(
+            e,
+            json.list_inner_type,
+            -1,
+            EVAL_ERR_FUNC_WRONG_CALLER("object or list", JSON_TYPE(json.list_inner_type))
+        );
+        json_free(json);
+        return json_null();
+        break;
+    }
+}
+
 EvalData eval_node_function(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_FUNCTION);
     char *func_name = node->inner.function.function_name.inner.string;
