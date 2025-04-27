@@ -1,15 +1,52 @@
 #include "src/json.h"
 #include "src/alloc.h"
 #include "src/eval_private.h"
+#include "src/utils.h"
 #include "src/vector.h"
 #include <assert.h>
 #include <math.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #define EPSILON 0.00000001
+
+typedef struct RefCnt {
+    uint count;
+} RefCnt;
+
+#define refcnt_inc(v) ++(v).ptr.ref
+#define refcnt_dec(v) --(v).ptr.ref == 0
+
+#define json_ptr_list(J) ((JsonListRef *)(J).inner.ptr)
+#define json_ptr_object(J) ((JsonObjectRef *)(J).inner.ptr)
+#define json_ptr_string(J) ((JsonStringRef *)(J).inner.ptr)
+
+RefCnt *refcnt_init(size_t size) {
+    RefCnt *r = malloc(size);
+    r->count = 1;
+    return r;
+}
+
+typedef struct {
+    RefCnt ref;
+
+    JsonList d;
+} JsonListRef;
+
+typedef struct {
+    RefCnt ref;
+
+    JsonObject d;
+} JsonObjectRef;
+
+typedef struct {
+    RefCnt ref;
+
+    String d;
+} JsonStringRef;
 
 static char *json_list_type(JsonType type) {
     switch (type) {
@@ -62,43 +99,47 @@ bool json_equal(Json j1, Json j2) {
     case JSON_TYPE_NUMBER:
         return fabs(j1.inner.number - j2.inner.number) <= EPSILON;
     case JSON_TYPE_STRING:
-        return strcmp(j1.inner.string, j2.inner.string) == 0;
+        return strcmp(json_get_string(j1), json_get_string(j2)) == 0;
     case JSON_TYPE_BOOL:
         return j1.inner.boolean == j2.inner.boolean;
     case JSON_TYPE_NULL:
         return true;
     case JSON_TYPE_OBJECT:
-        if (j1.inner.object.length != j2.inner.object.length) {
+        if (json_get_object(j1)->length != json_get_object(j2)->length) {
             return false;
         }
-        JsonObject j1obj = j1.inner.object;
-        JsonObject j2obj = j2.inner.object;
-        for (int i = 0; i < j1obj.length; i++) {
-            if (json_equal(j1obj.data[i].key, j2obj.data[i].key) == false) {
+        JsonObject *j1obj = json_get_object(j1);
+        JsonObject *j2obj = json_get_object(j2);
+        for (int i = 0; i < j1obj->length; i++) {
+            if (json_equal(j1obj->data[i].key, j2obj->data[i].key) == false) {
                 return false;
             }
-            if (json_equal(j1obj.data[i].value, j2obj.data[i].value) == false) {
+            if (json_equal(j1obj->data[i].value, j2obj->data[i].value) == false) {
                 return false;
             }
         }
         return true;
     case JSON_TYPE_LIST:
-        if (j1.inner.list.length != j2.inner.list.length) {
+        if (json_get_list(j1)->length != json_get_list(j1)->length) {
             return false;
         }
         if (j1.list_inner_type != j2.list_inner_type) {
             return false;
         }
-        for (int i = 0; i < j1.inner.list.length; i++) {
-            if (json_equal(j1.inner.list.data[i], j2.inner.list.data[i]) == false) {
+        for (int i = 0; i < json_get_list(j1)->length; i++) {
+            if (json_equal(json_get_list(j1)->data[i], json_get_list(j1)->data[i]) == false) {
                 return false;
             }
         }
         return true;
     case JSON_TYPE_INVALID:
+    case JSON_TYPE_ANY:
         return true;
         break;
     }
+
+    json_free(j1);
+    json_free(j2);
 
     // unreachable
     return true;
@@ -108,29 +149,26 @@ Json json_copy(Json j) {
     Json new;
     switch (j.type) {
     case JSON_TYPE_INVALID:
+    case JSON_TYPE_ANY:
     case JSON_TYPE_NUMBER:
     case JSON_TYPE_BOOL:
     case JSON_TYPE_NULL:
         return j;
     case JSON_TYPE_STRING:
-        return json_string(j.inner.string);
+        return json_string(json_get_string(j));
     case JSON_TYPE_OBJECT:
-        new = json_object_sized(j.inner.object.length);
-        for (int i = 0; i < j.inner.object.length; i++) {
-            JsonObjectPair pair = j.inner.object.data[i];
-
-            Json key = json_copy(pair.key);
-
-            Json value = json_copy(pair.value);
-            new = json_object_set(new, key, value);
+        new = json_object_sized(json_get_object(j)->length);
+        for (int i = 0; i < json_get_object(j)->length; i++) {
+            JsonObjectPair pair = json_get_object(j)->data[i];
+            json_object_set(new, json_copy(pair.key), json_copy(pair.value));
         }
         return new;
         break;
     case JSON_TYPE_LIST:
-        new = json_list_sized(j.inner.list.length);
-        for (int i = 0; i < j.inner.list.length; i++) {
-            Json el = json_copy(j.inner.list.data[i]);
-            new = json_list_append(new, el);
+        new = json_list_sized(json_get_list(j)->length);
+        for (int i = 0; i < json_get_list(j)->length; i++) {
+            Json el = json_get_list(j)->data[i];
+            json_list_append(new, json_copy(el));
         }
         return new;
         break;
@@ -141,35 +179,32 @@ Json json_copy(Json j) {
 }
 
 void json_free(Json j) {
-    JsonObject obj;
-    JsonList list;
+    JsonObject *obj;
+    JsonList *list;
     switch (j.type) {
     case JSON_TYPE_OBJECT:
-        obj = j.inner.object;
-        for (int i = 0; i < obj.length; i++) {
-            json_free(obj.data[i].value);
-            json_free(obj.data[i].key);
+        obj = json_get_object(j);
+        for (int i = 0; i < obj->length; i++) {
+            json_free(obj->data[i].value);
+            json_free(obj->data[i].key);
         }
-        free(obj.data);
+        free(obj);
         break;
     case JSON_TYPE_LIST:
-        list = j.inner.list;
-        for (int i = 0; i < list.length; i++) {
-            json_free(list.data[i]);
+        list = json_get_list(j);
+        for (int i = 0; i < list->length; i++) {
+            json_free(list->data[i]);
         }
-        free(list.data);
+        free(list);
+        break;
+    case JSON_TYPE_STRING:
+        free(json_ptr_string(j));
         break;
     case JSON_TYPE_NULL:
     case JSON_TYPE_NUMBER:
     case JSON_TYPE_BOOL:
-        break;
     case JSON_TYPE_INVALID:
-        if (j.inner.invalid != NULL) {
-            free(j.inner.invalid);
-        }
-        break;
-    case JSON_TYPE_STRING:
-        free(j.inner.string);
+    case JSON_TYPE_ANY:
         break;
     }
 }
@@ -184,11 +219,12 @@ bool json_is_invalid(Json j) {
 Json json_number(double f) {
     return (Json) {.type = JSON_TYPE_NUMBER, .inner.number = f};
 }
-Json json_string(char *str) {
-    return (Json) {.type = JSON_TYPE_STRING, .inner.string = jrq_strdup(str)};
-}
-Json json_string_no_alloc(char *str) {
-    return (Json) {.type = JSON_TYPE_STRING, .inner.string = str};
+Json json_string(const char *str) {
+    JsonStringRef *s = (JsonStringRef *)refcnt_init(sizeof(*s));
+
+    string_append_str(s->d, str);
+
+    return (Json) {.type = JSON_TYPE_STRING, .inner.ptr = (RefCnt *)s};
 }
 Json json_boolean(bool boolean) {
     return (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = boolean};
@@ -210,34 +246,39 @@ double json_get_bool(Json j) {
 }
 const char *json_get_string(Json j) {
     assert(j.type == JSON_TYPE_STRING);
-    return j.inner.string;
+    return json_ptr_string(j)->d.data;
 }
-JsonList json_get_list(Json j) {
+JsonList *json_get_list(Json j) {
     assert(j.type == JSON_TYPE_LIST);
-    return j.inner.list;
+    return &json_ptr_list(j)->d;
 }
-JsonObject json_get_object(Json j) {
+JsonObject *json_get_object(Json j) {
     assert(j.type == JSON_TYPE_OBJECT);
-    return j.inner.object;
+    return &json_ptr_object(j)->d;
 }
 
-Json json_invalid_msg(char *format, ...) {
-    va_list args;
-    va_start(args, format);
-
-    char *msg;
-    vasprintf(&msg, format, args);
-    va_end(args);
-
-    return (Json) {.type = JSON_TYPE_INVALID, .inner.invalid = msg};
-}
+// Json json_invalid_msg(char *format, ...) {
+//     va_list args;
+//     va_start(args, format);
+//
+//     char *msg;
+//     vasprintf(&msg, format, args);
+//
+//     va_end(args);
+//
+//     return (Json) {.type = JSON_TYPE_INVALID, .inner.invalid = msg};
+// }
 
 Json json_list_sized(size_t i) {
-    JsonList j = {0};
-    vec_grow(j, i);
+    JsonList d = {0};
+    vec_grow(d, i);
+
+    JsonListRef *ref = (JsonListRef *)refcnt_init(sizeof(*ref));
+    ref->d = d;
+
     return (Json) {
         .type = JSON_TYPE_LIST,
-        .inner.list = j,
+        .inner.ptr = (RefCnt *)ref,
         .list_inner_type = 0,
     };
 }
@@ -258,14 +299,14 @@ Json json_list_append(Json j, Json el) {
     assert(j.type == JSON_TYPE_LIST);
 
     list_set_inner_type(&j, el.type);
-    vec_append(j.inner.list, el);
+    vec_append(json_ptr_list(j)->d, el);
     return j;
 }
 
 Json json_list_get(Json j, uint index) {
     assert(j.type == JSON_TYPE_LIST);
 
-    return j.inner.list.data[index];
+    return json_ptr_list(j)->d.data[index];
 }
 
 JsonType json_list_get_inner_type(Json j) {
@@ -277,7 +318,7 @@ JsonType json_list_get_inner_type(Json j) {
 size_t json_list_length(Json j) {
     assert(j.type == JSON_TYPE_LIST);
 
-    return j.inner.list.length;
+    return json_ptr_list(j)->d.length;
 }
 
 // TODO this does not match the behavior of object_set
@@ -293,16 +334,19 @@ Json json_list_set(Json j, uint index, Json val) {
     assert(j.type == JSON_TYPE_LIST);
 
     list_set_inner_type(&j, val.type);
-    j.inner.list.data[index] = val;
-    return j;
+    json_ptr_list(j)->d.data[index] = val;
 }
 
 Json json_object_sized(size_t i) {
-    JsonObject j = {0};
-    vec_grow(j, i);
+    JsonObject d = {0};
+    vec_grow(d, i);
+
+    JsonObjectRef *ref = (JsonObjectRef *)refcnt_init(sizeof(*ref));
+    ref->d = d;
+
     return (Json) {
         .type = JSON_TYPE_OBJECT,
-        .inner.object = j,
+        .inner.ptr = (RefCnt *)ref,
     };
 }
 
@@ -314,28 +358,28 @@ Json json_object_set(Json j, Json key, Json value) {
     assert(j.type == JSON_TYPE_OBJECT);
     assert(key.type == JSON_TYPE_STRING);
 
-    JsonObject obj = j.inner.object;
-    for (int i = 0; i < obj.length; i++) {
-        if (json_equal(obj.data[i].key, key)) {
+    JsonObject *obj = json_get_object(j);
+    for (int i = 0; i < obj->length; i++) {
+        if (json_equal(obj->data[i].key, key)) {
 
-            json_free(obj.data[i].value);
+            json_free(obj->data[i].value);
             json_free(key);
 
-            obj.data[i].value = value;
+            obj->data[i].value = value;
             return j;
         }
     }
-    vec_append(j.inner.object, (JsonObjectPair) {.key = key, .value = value});
+    vec_append(*json_get_object(j), (JsonObjectPair) {.key = key, .value = value});
     return j;
 }
 
-Json json_object_get(Json *j, const char *key) {
-    assert(j->type == JSON_TYPE_OBJECT);
-    JsonObject obj = j->inner.object;
+Json json_object_get(Json j, const char *key) {
+    assert(j.type == JSON_TYPE_OBJECT);
+    JsonObject *obj = json_get_object(j);
 
-    for (int i = 0; i < obj.length; i++) {
-        if (strcmp(key, obj.data[i].key.inner.string) == 0) {
-            return obj.data[i].value;
+    for (int i = 0; i < obj->length; i++) {
+        if (strcmp(key, json_get_string(obj->data[i].key)) == 0) {
+            return obj->data[i].value;
         }
     }
 

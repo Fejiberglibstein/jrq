@@ -4,6 +4,7 @@
 #include "src/vector.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include <sys/types.h>
 
 typedef enum JsonType : int8_t {
     JSON_TYPE_INVALID,
@@ -18,18 +19,15 @@ typedef enum JsonType : int8_t {
 
 typedef Vec(struct Json) JsonList;
 typedef Vec(struct JsonObjectPair) JsonObject;
+struct RefCnt;
 
 typedef struct Json {
     union {
         double number;
         bool boolean;
-        char *string;
-        char *invalid;
-        JsonObject object;
-        JsonList list;
+        struct RefCnt *ptr;
     } inner;
     JsonType type;
-    /// Used only for the `list` type so we have some knowledge about what is stored in the list.
     JsonType list_inner_type;
 } Json;
 
@@ -48,20 +46,19 @@ bool json_is_invalid(Json);
 char *json_type(Json);
 
 Json json_number(double f);
-Json json_string(char *);
-Json json_string_no_alloc(char *);
+Json json_string(const char *);
 Json json_boolean(bool);
 Json json_null(void);
 Json json_list(void);
 Json json_object(void);
 Json json_invalid(void);
-Json json_invalid_msg(char *, ...);
+// Json json_invalid_msg(char *, ...);
 
 double json_get_number(Json j);
 double json_get_bool(Json j);
 const char *json_get_string(Json j);
-JsonList json_get_list(Json j);
-JsonObject json_get_object(Json j);
+JsonList *json_get_list(Json j);
+JsonObject *json_get_object(Json j);
 
 Json json_list_append(Json, Json);
 Json json_list_sized(size_t);
@@ -90,7 +87,7 @@ size_t json_list_length(Json j);
 
 Json json_object_sized(size_t);
 Json json_object_set(Json j, Json key, Json value);
-Json json_object_get(Json *j, const char *key);
+Json json_object_get(Json j, const char *key);
 
 // clang-format off
 #define JSON_OBJECT_1(k1, v1) json_object_set(json_object(), json_string(k1), v1)
