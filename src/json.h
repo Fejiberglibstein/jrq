@@ -68,6 +68,7 @@ Json json_list_sized(size_t);
 Json json_list_get(Json, uint);
 Json json_list_set(Json j, uint index, Json val);
 JsonType json_list_get_inner_type(Json j);
+size_t json_list_length(Json j);
 
 // clang-format off
 #define JSON_LIST_1(e1) json_list_append(json_list(), e1)

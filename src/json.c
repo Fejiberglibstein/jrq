@@ -274,6 +274,12 @@ JsonType json_list_get_inner_type(Json j) {
     return j.list_inner_type;
 }
 
+size_t json_list_length(Json j) {
+    assert(j.type == JSON_TYPE_LIST);
+
+    return j.inner.list.length;
+}
+
 // TODO this does not match the behavior of object_set
 //
 // object_set will free the value that was previously there.
