@@ -350,7 +350,7 @@ Json json_list_append(Json j, Json el) {
 Json json_list_get(Json j, uint index) {
     assert(j.type == JSON_TYPE_LIST);
 
-    return json_ptr_list(j)->d.data[index];
+    return json_copy(json_ptr_list(j)->d.data[index]);
 }
 
 JsonType json_list_get_inner_type(Json j) {
@@ -423,7 +423,7 @@ Json json_object_get(Json j, const char *key) {
 
     for (int i = 0; i < obj->length; i++) {
         if (strcmp(key, json_get_string(obj->data[i].key)) == 0) {
-            return obj->data[i].value;
+            return json_copy(obj->data[i].value);
         }
     }
 
