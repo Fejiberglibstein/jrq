@@ -17,8 +17,30 @@ typedef struct RefCnt {
     uint count;
 } RefCnt;
 
-#define refcnt_inc(v) ++(v).ptr.ref
-#define refcnt_dec(v) --(v).ptr.ref == 0
+void refcnt_inc(Json v) {
+    switch (v.type) {
+    case JSON_TYPE_OBJECT:
+    case JSON_TYPE_LIST:
+    case JSON_TYPE_STRING:
+        v.inner.ptr->count++;
+        break;
+    default:
+        break;
+    }
+}
+
+// Returns true if there are no more references and it should be freed.
+bool refcnt_dec(Json v) {
+    switch (v.type) {
+    case JSON_TYPE_OBJECT:
+    case JSON_TYPE_LIST:
+    case JSON_TYPE_STRING:
+        return --v.inner.ptr->count == 0;
+
+    default:
+        return false;
+    }
+}
 
 #define json_ptr_list(J) ((JsonListRef *)(J).inner.ptr)
 #define json_ptr_object(J) ((JsonObjectRef *)(J).inner.ptr)
@@ -95,57 +117,76 @@ bool json_equal(Json j1, Json j2) {
         return false;
     }
 
+    bool result = true;
+
     switch (j1.type) {
     case JSON_TYPE_NUMBER:
-        return fabs(j1.inner.number - j2.inner.number) <= EPSILON;
+        result = fabs(j1.inner.number - j2.inner.number) <= EPSILON;
+        break;
     case JSON_TYPE_STRING:
-        return strcmp(json_get_string(j1), json_get_string(j2)) == 0;
+        result = strcmp(json_get_string(j1), json_get_string(j2)) == 0;
+        break;
     case JSON_TYPE_BOOL:
-        return j1.inner.boolean == j2.inner.boolean;
+        result = j1.inner.boolean == j2.inner.boolean;
+        break;
     case JSON_TYPE_NULL:
-        return true;
+        result = true;
+        break;
     case JSON_TYPE_OBJECT:
         if (json_get_object(j1)->length != json_get_object(j2)->length) {
-            return false;
+            result = false;
+            break;
         }
         JsonObject *j1obj = json_get_object(j1);
         JsonObject *j2obj = json_get_object(j2);
         for (int i = 0; i < j1obj->length; i++) {
             if (json_equal(j1obj->data[i].key, j2obj->data[i].key) == false) {
-                return false;
+                result = false;
+                break;
             }
             if (json_equal(j1obj->data[i].value, j2obj->data[i].value) == false) {
-                return false;
+                result = false;
+                break;
             }
         }
-        return true;
+        break;
     case JSON_TYPE_LIST:
-        if (json_get_list(j1)->length != json_get_list(j1)->length) {
-            return false;
+        if (json_get_list(j1)->length != json_get_list(j2)->length) {
+            result = false;
+            break;
         }
         if (j1.list_inner_type != j2.list_inner_type) {
-            return false;
+            result = false;
+            break;
         }
         for (int i = 0; i < json_get_list(j1)->length; i++) {
-            if (json_equal(json_get_list(j1)->data[i], json_get_list(j1)->data[i]) == false) {
-                return false;
+            Json j1el = json_copy(json_list_get(j1, i));
+            Json j2el = json_copy(json_list_get(j2, i));
+            if (json_equal(j1el, j2el) == false) {
+                result = false;
+                break;
             }
         }
-        return true;
-    case JSON_TYPE_INVALID:
-    case JSON_TYPE_ANY:
-        return true;
         break;
+    case JSON_TYPE_INVALID:
+        result = true;
+        break;
+    case JSON_TYPE_ANY:
+        unreachable("Json should not be an any");
     }
 
     json_free(j1);
     json_free(j2);
 
-    // unreachable
-    return true;
+    return result;
 }
 
 Json json_copy(Json j) {
+    refcnt_inc(j);
+    return j;
+}
+
+Json json_clone(Json j) {
     Json new;
     switch (j.type) {
     case JSON_TYPE_INVALID:
@@ -160,7 +201,7 @@ Json json_copy(Json j) {
         new = json_object_sized(json_get_object(j)->length);
         for (int i = 0; i < json_get_object(j)->length; i++) {
             JsonObjectPair pair = json_get_object(j)->data[i];
-            json_object_set(new, json_copy(pair.key), json_copy(pair.value));
+            json_object_set(new, json_clone(pair.key), json_clone(pair.value));
         }
         return new;
         break;
@@ -168,7 +209,7 @@ Json json_copy(Json j) {
         new = json_list_sized(json_get_list(j)->length);
         for (int i = 0; i < json_get_list(j)->length; i++) {
             Json el = json_get_list(j)->data[i];
-            json_list_append(new, json_copy(el));
+            json_list_append(new, json_clone(el));
         }
         return new;
         break;
@@ -188,16 +229,19 @@ void json_free(Json j) {
             json_free(obj->data[i].value);
             json_free(obj->data[i].key);
         }
-        free(obj);
+        free(obj->data);
+        free(json_ptr_object(j));
         break;
     case JSON_TYPE_LIST:
         list = json_get_list(j);
         for (int i = 0; i < list->length; i++) {
             json_free(list->data[i]);
         }
-        free(list);
+        free(list->data);
+        free(json_ptr_list(j));
         break;
     case JSON_TYPE_STRING:
+        free(json_ptr_string(j)->d.data);
         free(json_ptr_string(j));
         break;
     case JSON_TYPE_NULL:
