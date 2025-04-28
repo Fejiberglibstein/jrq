@@ -677,7 +677,7 @@ static void func_eval_params(
         // We need to free all of what we've evaluated up to this point since we got an error
         //
         // Since i is the json we are adding this iteration, we want to include that, hence <=
-        for (int j = 0; j <= i; j++) {
+        for (int j = 0; j < i; j++) {
             json_free(evaluated_args[j]);
         }
         return;
