@@ -1,5 +1,6 @@
 #include "src/json.h"
 #include "src/eval_private.h"
+#include "src/json_serde.h"
 #include "src/utils.h"
 #include "src/vector.h"
 #include <assert.h>
@@ -15,6 +16,17 @@
 typedef struct RefCnt {
     uint count;
 } RefCnt;
+
+uint refcnt_get(Json v) {
+    switch (v.type) {
+    case JSON_TYPE_OBJECT:
+    case JSON_TYPE_LIST:
+    case JSON_TYPE_STRING:
+        return v.inner.ptr->count;
+    default:
+        return 1;
+    }
+}
 
 void refcnt_inc(Json v) {
     switch (v.type) {
@@ -160,9 +172,7 @@ bool json_equal(Json j1, Json j2) {
             break;
         }
         for (int i = 0; i < json_get_list(j1)->length; i++) {
-            Json j1el = json_copy(json_list_get(j1, i));
-            Json j2el = json_copy(json_list_get(j2, i));
-            if (json_equal(j1el, j2el) == false) {
+            if (json_equal(json_list_get(j1, i), json_list_get(j2, i)) == false) {
                 result = false;
                 break;
             }
@@ -222,6 +232,11 @@ Json json_clone(Json j) {
 void json_free(Json j) {
     JsonObject *obj;
     JsonList *list;
+
+    if (!refcnt_dec(j)) {
+        return;
+    }
+
     switch (j.type) {
     case JSON_TYPE_OBJECT:
         obj = json_get_object(j);
@@ -350,7 +365,7 @@ Json json_list_append(Json j, Json el) {
 Json json_list_get(Json j, uint index) {
     assert(j.type == JSON_TYPE_LIST);
 
-    return json_copy(json_ptr_list(j)->d.data[index]);
+    return json_ptr_list(j)->d.data[index];
 }
 
 JsonType json_list_get_inner_type(Json j) {
@@ -425,7 +440,7 @@ Json json_object_get(Json j, const char *key) {
 
     for (int i = 0; i < obj->length; i++) {
         if (strcmp(key, json_get_string(obj->data[i].key)) == 0) {
-            return json_copy(obj->data[i].value);
+            return obj->data[i].value;
         }
     }
 

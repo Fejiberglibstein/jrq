@@ -20,6 +20,7 @@ void test_iter(JsonIterator iter, Json results) {
     }
     assert(iter_next(iter).type == ITER_DONE);
     assert(iter_next(iter).type == ITER_DONE);
+
     iter_free(iter);
     json_free(results);
 }
