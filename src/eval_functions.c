@@ -421,7 +421,7 @@ static Json eval_func_join(Eval *e, ASTNode *node) {
     Json string = json_string("");
 
     for (size_t i = 0; i < json_list_length(str_list); i++) {
-        if (i != json_list_length(str_list) - 1) {
+        if (i != 0) {
             json_string_concat(string, evaled_args[0]);
         }
         json_string_concat(string, json_list_get(str_list, i));
