@@ -14,6 +14,7 @@ void test(char *input, char *expected, int str_len) {
     DeserializeResult res = json_deserialize(input);
     if (str_len == 0) {
         assert(res.type == RES_ERR);
+        free(res.err.err);
         return;
     }
 
@@ -62,8 +63,10 @@ void test_struct() {
     test("{   \" hhhi\"  :  10  }", string("{\" hhhi\": 10}"));
     test("{   \" hhhi\"  :  10 ,\"10\" :null}", string("{\" hhhi\": 10, \"10\": null}"));
     test(all("{\"foo\": 10, \"fooo\": {}}"));
-    test(all("{\"foo\": 10, \"bleh\": {\"in\": null, \"out\": {\"sh\": false}, \"hi\": null, "
-             "\"hi2\": {}, \"j\": 3}, \"h\": -1}"));
+    test(
+        all("{\"foo\": 10, \"bleh\": {\"in\": null, \"out\": {\"sh\": false}, \"hi\": null, "
+            "\"hi2\": {}, \"j\": 3}, \"h\": -1}")
+    );
 }
 
 void test_list_and_struct() {

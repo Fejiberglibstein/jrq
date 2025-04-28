@@ -197,7 +197,7 @@ static ASTNode *access(Parser *p) {
             if (!parser_matches(p, LIST((TokenType[]) {TOKEN_NUMBER, TOKEN_IDENT}))) {
                 // Expect -1 because this bit should never be happening
                 parser_expect(p, -1, ERROR_EXPECTED_IDENT);
-                return NULL;
+                return expr;
             }
             Token ident = p->prev;
 
@@ -383,10 +383,7 @@ ParseResult ast_parse(char *input) {
         if (p->error != NULL) {
             ast_free(node);
             return (ParseResult) {
-                .err = (JrqError) {
-                    .err = p->error,
-                    .range = p->curr.range,
-                },
+                .err = jrq_error(p->curr.range, "%s", p->error),
                 .type = RES_ERR,
             };
         }

@@ -21,6 +21,7 @@ static void test_parse(char *input, char *expected_err, ASTNode *exp) {
             printf("'%s' should equal '%s'\n", expected_err, res.err.err);
             assert(false);
         }
+        free(res.err.err);
         return;
     }
 

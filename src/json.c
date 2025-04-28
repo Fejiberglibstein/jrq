@@ -47,6 +47,7 @@ bool refcnt_dec(Json v) {
 
 RefCnt *refcnt_init(size_t size) {
     RefCnt *r = malloc(size);
+    memset(r, 0, size);
     r->count = 1;
     return r;
 }
@@ -174,8 +175,8 @@ bool json_equal(Json j1, Json j2) {
         unreachable("Json should not be an any");
     }
 
-    json_free(j1);
-    json_free(j2);
+    // json_free(j1);
+    // json_free(j2);
 
     return result;
 }
