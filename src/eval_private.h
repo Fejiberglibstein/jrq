@@ -99,6 +99,7 @@ JsonIterator eval_to_iter(Eval *e, EvalData d);
 EvalData eval_from_json(Json j);
 /// Create an EvalData from i
 EvalData eval_from_iter(JsonIterator i);
+void free_eval_data(EvalData *e);
 
 EvalData eval_node(Eval *e, ASTNode *node);
 EvalData eval_node_function(Eval *e, ASTNode *node);

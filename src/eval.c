@@ -33,6 +33,17 @@ JsonIterator eval_to_iter(Eval *e, EvalData d) {
     }
 }
 
+void free_eval_data(EvalData *e) {
+    switch (e->type) {
+    case SOME_ITER:
+        iter_free(e->iter);
+        break;
+    case SOME_JSON:
+        json_free(e->json);
+        break;
+    }
+}
+
 EvalResult eval(ASTNode *node, Json input) {
     Eval e = (Eval) {
         .input = input,
