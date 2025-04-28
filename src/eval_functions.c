@@ -338,7 +338,7 @@ static Json eval_func_product(Eval *e, ASTNode *node) {
 }
 
 static struct function_data FUNC_FLATTEN = {
-    .function_name = "product",
+    .function_name = "flatten",
     .caller_type = JSON_TYPE_LIST,
 
     .parameter_types = (JsonType[]) {},
@@ -399,6 +399,40 @@ static Json eval_func_flatten(Eval *e, ASTNode *node) {
     }
 }
 
+static struct function_data FUNC_JOIN = {
+    .function_name = "join",
+    .caller_type = JSON_TYPE_LIST_T(JSON_TYPE_STRING),
+
+    .parameter_types = (JsonType[]) {JSON_TYPE_STRING},
+    .parameter_amount = 1,
+};
+static Json eval_func_join(Eval *e, ASTNode *node) {
+    Json evaled_args[1] = {};
+
+    EvalData d = func_expect_args(e, node, evaled_args, FUNC_JOIN);
+    if (eval_has_err(e)) {
+        return json_invalid();
+    }
+    assert(d.type == SOME_JSON);
+    Json str_list = d.json;
+    assert(str_list.type == JSON_TYPE_LIST);
+    assert(evaled_args[0].type == JSON_TYPE_STRING);
+
+    Json string = json_string("");
+
+    for (size_t i = 0; i < json_list_length(str_list); i++) {
+        if (i != json_list_length(str_list) - 1) {
+            json_string_concat(string, evaled_args[0]);
+        }
+        json_string_concat(string, json_list_get(str_list, i));
+    }
+
+    json_free(evaled_args[0]);
+    json_free(str_list);
+
+    return string;
+}
+
 EvalData eval_node_function(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_FUNCTION);
     char *func_name = node->inner.function.function_name.inner.string;
@@ -426,6 +460,8 @@ EvalData eval_node_function(Eval *e, ASTNode *node) {
         return eval_from_json(eval_func_product(e, node));
     } else if (strcmp(func_name, "flatten") == 0) {
         return eval_from_json(eval_func_flatten(e, node));
+    } else if (strcmp(func_name, "join") == 0) {
+        return eval_from_json(eval_func_join(e, node));
     }
 
     eval_set_err(e, EVAL_ERR_FUNC_NOT_FOUND(func_name));
@@ -629,7 +665,9 @@ static void func_eval_params(
                     func_data.parameter_types[i],
                     EVAL_ERR_FUNC_WRONG_ARGS(JSON_TYPE(func_data.parameter_types[i]), json_type(j))
                 );
-                goto cleanup;
+                if (eval_has_err(e)) {
+                    goto cleanup;
+                }
             }
             evaluated_args[i] = j;
         }
