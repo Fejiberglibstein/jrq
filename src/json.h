@@ -60,6 +60,8 @@ const char *json_get_string(Json j);
 JsonList *json_get_list(Json j);
 JsonObject *json_get_object(Json j);
 
+Json json_string_concat(Json j, Json str);
+
 Json json_list_append(Json, Json);
 Json json_list_sized(size_t);
 Json json_list_get(Json, uint);

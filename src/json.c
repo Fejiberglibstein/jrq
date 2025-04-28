@@ -256,7 +256,11 @@ void json_free(Json j) {
         free(json_ptr_list(j));
         break;
     case JSON_TYPE_STRING:
-        free(json_ptr_string(j)->d.data);
+        // optimization where we set the string to null so we can move the
+        // string inside the json rather than copying it.
+        if (json_ptr_string(j)->d.data != NULL) {
+            free(json_ptr_string(j)->d.data);
+        }
         free(json_ptr_string(j));
         break;
     case JSON_TYPE_NULL:
@@ -277,13 +281,6 @@ bool json_is_invalid(Json j) {
 
 Json json_number(double f) {
     return (Json) {.type = JSON_TYPE_NUMBER, .inner.number = f};
-}
-Json json_string(const char *str) {
-    JsonStringRef *s = (JsonStringRef *)refcnt_init(sizeof(*s));
-
-    string_append_str(s->d, str);
-
-    return (Json) {.type = JSON_TYPE_STRING, .inner.ptr = (RefCnt *)s};
 }
 Json json_boolean(bool boolean) {
     return (Json) {.type = JSON_TYPE_BOOL, .inner.boolean = boolean};
@@ -380,23 +377,15 @@ size_t json_list_length(Json j) {
     return json_ptr_list(j)->d.length;
 }
 
-// TODO this does not match the behavior of object_set
+// Don't use this, it's not implemented well
+// Json json_list_set(Json j, uint index, Json val) {
+//     assert(j.type == JSON_TYPE_LIST);
 //
-// object_set will free the value that was previously there.
+//     list_set_inner_type(&j, val.type);
+//     json_ptr_list(j)->d.data[index] = val;
 //
-// I don't like this behavior, it should be up to the caller to what happens with the old value.
-// ideally these two functions should return the previous value, but with the way this is setup it
-// doesn't work out too well
-
-///
-Json json_list_set(Json j, uint index, Json val) {
-    assert(j.type == JSON_TYPE_LIST);
-
-    list_set_inner_type(&j, val.type);
-    json_ptr_list(j)->d.data[index] = val;
-
-    return j;
-}
+//     return j;
+// }
 
 Json json_object_sized(size_t i) {
     JsonObject d = {0};
@@ -445,4 +434,20 @@ Json json_object_get(Json j, const char *key) {
     }
 
     return json_null();
+}
+
+Json json_string(const char *str) {
+    JsonStringRef *s = (JsonStringRef *)refcnt_init(sizeof(*s));
+
+    string_append_str(s->d, str);
+
+    return (Json) {.type = JSON_TYPE_STRING, .inner.ptr = (RefCnt *)s};
+}
+
+Json json_string_concat(Json j, Json str) {
+    assert(j.type == JSON_TYPE_STRING);
+    assert(str.type == JSON_TYPE_STRING);
+
+    string_append_str(json_ptr_string(j)->d, json_get_string(str));
+    return j;
 }
