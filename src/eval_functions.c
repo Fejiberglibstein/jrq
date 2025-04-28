@@ -433,6 +433,48 @@ static Json eval_func_join(Eval *e, ASTNode *node) {
     return string;
 }
 
+static struct function_data FUNC_LENGTH = {
+    .function_name = "length",
+    .caller_type = JSON_TYPE_ANY,
+
+    .parameter_types = (JsonType[]) {},
+    .parameter_amount = 0,
+};
+static Json eval_func_length(Eval *e, ASTNode *node) {
+    Json evaled_args[0] = {};
+
+    EvalData d = func_expect_args(e, node, evaled_args, FUNC_LENGTH);
+    if (eval_has_err(e)) {
+        return json_invalid();
+    }
+    assert(d.type == SOME_JSON);
+    Json j = d.json;
+
+    size_t length;
+    switch (j.type) {
+    case JSON_TYPE_LIST:
+        length = json_list_length(j);
+        json_free(j);
+        break;
+    case JSON_TYPE_STRING:
+        length = json_string_length(j);
+        json_free(j);
+        break;
+    default: 
+        EXPECT_TYPE(
+            e,
+            j.list_inner_type,
+            -1,
+            EVAL_ERR_FUNC_WRONG_CALLER("string or list", json_type(j))
+        );
+        json_free(j);
+        return json_null();
+        break;
+    }
+
+    return json_number((float)length);
+}
+
 EvalData eval_node_function(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_FUNCTION);
     char *func_name = node->inner.function.function_name.inner.string;
@@ -462,6 +504,8 @@ EvalData eval_node_function(Eval *e, ASTNode *node) {
         return eval_from_json(eval_func_flatten(e, node));
     } else if (strcmp(func_name, "join") == 0) {
         return eval_from_json(eval_func_join(e, node));
+    } else if (strcmp(func_name, "length") == 0) {
+        return eval_from_json(eval_func_length(e, node));
     }
 
     eval_set_err(e, EVAL_ERR_FUNC_NOT_FOUND(func_name));
