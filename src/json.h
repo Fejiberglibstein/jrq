@@ -61,6 +61,7 @@ JsonList *json_get_list(Json j);
 JsonObject *json_get_object(Json j);
 
 Json json_string_concat(Json j, Json str);
+size_t json_string_length(Json j);
 
 Json json_list_append(Json, Json);
 Json json_list_sized(size_t);

@@ -448,6 +448,12 @@ Json json_string_concat(Json j, Json str) {
     assert(j.type == JSON_TYPE_STRING);
     assert(str.type == JSON_TYPE_STRING);
 
-    string_append_str(json_ptr_string(j)->d, json_get_string(str));
+    string_append(json_ptr_string(j)->d, json_get_string(str), json_string_length(str) + 1);
     return j;
+}
+
+size_t json_string_length(Json j) {
+    assert(j.type == JSON_TYPE_STRING);
+
+    return json_ptr_string(j)->d.length;
 }

@@ -21,7 +21,7 @@ typedef Vec(char) String;
 
 #define string_append(str, buf, len)                                                               \
     string_grow(str, len);                                                                         \
-    strcpy(((str).data + (str).length), buf);                                                      \
-    (str).length += buf_len - 1;
+    strncpy(((str).data + (str).length), buf, len);                                                \
+    (str).length += (len) - 1;
 
 #endif // _UTILS_H
