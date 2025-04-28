@@ -2,10 +2,8 @@
 #include "src/json.h"
 #include "src/json_serde.h"
 #include "src/lexer.h"
-#include "src/vector.h"
 #include <memory.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 #define LIST(v...) (v), (sizeof(v) / sizeof(*v))
 

@@ -105,8 +105,6 @@ static void free_func_next_and_captures(JsonIterator _i) {
 }
 
 #define JSON_DATA_ITERATOR(STRUCT_NAME, CREATE_FUNC_NAME, NEXT_FUNC_NAME)                          \
-    JsonIterator create_func_name(Json);                                                           \
-                                                                                                   \
     typedef struct {                                                                               \
         struct JsonIterator parent;                                                                \
         /* the json data being iterating over */                                                   \

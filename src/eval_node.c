@@ -55,6 +55,7 @@ EvalData eval_node(Eval *e, ASTNode *node) {
     case AST_TYPE_CLOSURE:
         unreachable("We shouldn't be evaluating closures");
     }
+    unreachable("No other case should be covered");
 }
 
 static EvalData eval_node_access(Eval *e, ASTNode *node) {
@@ -62,16 +63,6 @@ static EvalData eval_node_access(Eval *e, ASTNode *node) {
 
     ASTNode *inner_node = node->inner.access.inner;
     Json inner = eval_to_json(e, eval_node(e, inner_node));
-
-    bool used_input = inner_node == NULL;
-
-    // // TODO
-    // if (!used_input && inner_node->type == AST_TYPE_PRIMARY
-    //     && inner_node->inner.primary.type == TOKEN_IDENT) {
-    //     char *var_name = inner_node->inner.primary.inner.ident;
-    //     json_free(inner);
-    //     inner = vs_get_variable(e, var_name);
-    // }
 
     Json accessor = eval_to_json(e, eval_node(e, node->inner.access.accessor));
 
