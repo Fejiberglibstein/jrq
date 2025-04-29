@@ -53,9 +53,9 @@ void enumerate_iter() {
     test_iter(
         iter,
         JSON_LIST(
-            JSON_LIST(JSON_LIST(json_string("blhe"), json_null()), json_number(0)),
-            JSON_LIST(JSON_LIST(json_string("grhas"), json_boolean(false)), json_number(1)),
-            JSON_LIST(JSON_LIST(json_string("fhytr"), json_number(6)), json_number(2))
+            JSON_LIST(json_number(0), JSON_LIST(json_string("blhe"), json_null())),
+            JSON_LIST(json_number(1), JSON_LIST(json_string("grhas"), json_boolean(false))),
+            JSON_LIST(json_number(2), JSON_LIST(json_string("fhytr"), json_number(6)))
         )
     );
 }

@@ -322,7 +322,7 @@ static IterOption enumerate_iter_next(JsonIterator _i) {
 
     Json j = NEXT(i->iter);
 
-    return iter_some(JSON_LIST(j, json_number(i->index++)));
+    return iter_some(JSON_LIST(json_number(i->index++), j));
 }
 
 /// An iterator that yields the current iteration index along with the next
