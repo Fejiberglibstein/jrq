@@ -32,4 +32,17 @@ JsonIterator iter_enumerate(JsonIterator iter);
 JsonIterator iter_zip(JsonIterator a, JsonIterator b);
 Json iter_collect(JsonIterator iter);
 
+JsonIterator iter_skip_while(
+    JsonIterator iter,
+    bool (*filter_func)(Json, void *),
+    void *captures,
+    bool free_captures
+);
+JsonIterator iter_take_while(
+    JsonIterator iter,
+    bool (*filter_func)(Json, void *),
+    void *captures,
+    bool free_captures
+);
+
 #endif // _JSON_ITER_H
