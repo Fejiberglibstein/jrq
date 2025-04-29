@@ -56,14 +56,13 @@ Json vs_get_variable(Eval *e, char *var_name);
 int vs_push_closure_variable(Eval *e, ASTNode *var, Json value);
 int vs_pop_closure_variable(Eval *e, ASTNode *var, Json value);
 
-
 struct simple_closure {
     Eval *e;
     ASTNode *node;
     Vec_ASTNode params;
 };
 
-static Json mapper(Json j, void *aux) {
+static Json closure_map(Json j, void *aux) {
     struct simple_closure *c = aux;
 
     int pushed = vs_push_closure_variable(c->e, c->params.data[0], j);
@@ -106,10 +105,10 @@ static JsonIterator eval_func_map(Eval *e, ASTNode *node) {
         .params = args.data[0]->inner.closure.args,
     };
 
-    return iter_map(iter, &mapper, c, true);
+    return iter_map(iter, &closure_map, c, true);
 }
 
-static bool filter(Json j, void *aux) {
+static bool closure_filter(Json j, void *aux) {
     struct simple_closure *c = aux;
 
     int pushed = vs_push_closure_variable(c->e, c->params.data[0], j);
@@ -162,7 +161,7 @@ static JsonIterator eval_func_filter(Eval *e, ASTNode *node) {
         .params = args.data[0]->inner.closure.args,
     };
 
-    return iter_filter(iter, &filter, c, true);
+    return iter_filter(iter, &closure_filter, c, true);
 }
 
 static struct function_data FUNC_COLLECT = {
@@ -460,12 +459,9 @@ static Json eval_func_length(Eval *e, ASTNode *node) {
         length = json_string_length(j);
         json_free(j);
         break;
-    default: 
+    default:
         EXPECT_TYPE(
-            e,
-            j.list_inner_type,
-            -1,
-            EVAL_ERR_FUNC_WRONG_CALLER("string or list", json_type(j))
+            e, j.list_inner_type, -1, EVAL_ERR_FUNC_WRONG_CALLER("string or list", json_type(j))
         );
         json_free(j);
         return json_null();
@@ -473,6 +469,86 @@ static Json eval_func_length(Eval *e, ASTNode *node) {
     }
 
     return json_number((float)length);
+}
+
+// TODO:
+//
+// skip_while, take_while, and filter are all identical functions, besides the last line when they
+// return an iterator. Maybe make some macro or smth that does everything for you, so there is less
+// code.
+//
+// Maybe not a macro because that will be hard to read, but at least some form of function
+
+static struct function_data FUNC_SKIP_WHILE = {
+    .function_name = "skip_while",
+    .caller_type = JSON_TYPE_ITERATOR,
+
+    .parameter_types = (JsonType[]) {JSON_TYPE_CLOSURE_WITH_PARAMS(1)},
+    .parameter_amount = 1,
+};
+static JsonIterator eval_func_skip_while(Eval *e, ASTNode *node) {
+    Json evaled_args[1] = {0};
+
+    Vec_ASTNode args = node->inner.function.args;
+    EvalData i = func_expect_args(e, node, evaled_args, FUNC_SKIP_WHILE);
+    if (eval_has_err(e)) {
+        return NULL;
+    }
+    assert(args.data[0]->type == AST_TYPE_CLOSURE);
+
+    // Safe to get iter here because we already made sure there were no errors
+    JsonIterator iter = i.iter;
+
+    struct simple_closure *c = malloc(sizeof(*c));
+
+    *c = (struct simple_closure) {
+        .e = e,
+        .node = args.data[0]->inner.closure.body,
+        .params = args.data[0]->inner.closure.args,
+    };
+
+    // We can use a closure filter because it does the same thing
+    //
+    // TODO: maybe rename closure_filter and FilterFunc to be more generic and
+    // describe what they return, rather than what function they do.. Maybe name
+    // them something like closure_bool ?? idk
+    return iter_skip_while(iter, &closure_filter, c, true);
+}
+
+static struct function_data FUNC_TAKE_WHILE = {
+    .function_name = "take_while",
+    .caller_type = JSON_TYPE_ITERATOR,
+
+    .parameter_types = (JsonType[]) {JSON_TYPE_CLOSURE_WITH_PARAMS(1)},
+    .parameter_amount = 1,
+};
+static JsonIterator eval_func_take_while(Eval *e, ASTNode *node) {
+    Json evaled_args[1] = {0};
+
+    Vec_ASTNode args = node->inner.function.args;
+    EvalData i = func_expect_args(e, node, evaled_args, FUNC_TAKE_WHILE);
+    if (eval_has_err(e)) {
+        return NULL;
+    }
+    assert(args.data[0]->type == AST_TYPE_CLOSURE);
+
+    // Safe to get iter here because we already made sure there were no errors
+    JsonIterator iter = i.iter;
+
+    struct simple_closure *c = malloc(sizeof(*c));
+
+    *c = (struct simple_closure) {
+        .e = e,
+        .node = args.data[0]->inner.closure.body,
+        .params = args.data[0]->inner.closure.args,
+    };
+
+    // We can use a closure filter because it does the same thing
+    //
+    // TODO: maybe rename closure_filter and FilterFunc to be more generic and
+    // describe what they return, rather than what function they do.. Maybe name
+    // them something like closure_bool ?? idk
+    return iter_take_while(iter, &closure_filter, c, true);
 }
 
 EvalData eval_node_function(Eval *e, ASTNode *node) {
@@ -506,6 +582,10 @@ EvalData eval_node_function(Eval *e, ASTNode *node) {
         return eval_from_json(eval_func_join(e, node));
     } else if (strcmp(func_name, "length") == 0) {
         return eval_from_json(eval_func_length(e, node));
+    } else if (strcmp(func_name, "skip_while") == 0) {
+        return eval_from_iter(eval_func_skip_while(e, node));
+    } else if (strcmp(func_name, "take_while") == 0) {
+        return eval_from_iter(eval_func_take_while(e, node));
     }
 
     eval_set_err(e, EVAL_ERR_FUNC_NOT_FOUND(func_name));
