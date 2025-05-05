@@ -295,7 +295,7 @@ double json_get_number(Json j) {
     assert(j.type == JSON_TYPE_NUMBER);
     return j.inner.number;
 }
-double json_get_bool(Json j) {
+bool json_get_bool(Json j) {
     assert(j.type == JSON_TYPE_BOOL);
     return j.inner.boolean;
 }

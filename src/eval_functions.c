@@ -99,7 +99,7 @@ static bool closure_returns_bool(Json j, void *aux) {
         return false;
     }
 
-    return ret.inner.boolean;
+    return json_get_bool(ret);
 }
 
 static struct function_data FUNC_MAP = {

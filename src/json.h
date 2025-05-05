@@ -55,7 +55,7 @@ Json json_invalid(void);
 // Json json_invalid_msg(char *, ...);
 
 double json_get_number(Json j);
-double json_get_bool(Json j);
+bool json_get_bool(Json j);
 const char *json_get_string(Json j);
 JsonList *json_get_list(Json j);
 JsonObject *json_get_object(Json j);
