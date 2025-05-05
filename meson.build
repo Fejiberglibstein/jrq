@@ -3,19 +3,19 @@ project('jrq', 'c')
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required: false)
 
-# vi[:!find src/ -name "*.c" | grep -v "main.c" | xargs -I{} echo "'{}',"=i[
 files = [
+  'src/alloc.c',
+  'src/errors.c',
+  'src/eval/eval.c',
+  'src/eval/function_declarations.c',
+  'src/eval/functions.c',
+  'src/eval/node.c',
+  'src/json.c',
+  'src/json_deserialize.c',
+  'src/json_iter.c',
   'src/json_serialize.c',
   'src/lexer.c',
-  'src/alloc.c',
-  'src/json.c',
-  'src/eval/eval.c',
-  'src/eval/node.c',
-  'src/eval/functions.c',
-  'src/json_deserialize.c',
   'src/parser.c',
-  'src/errors.c',
-  'src/json_iter.c',
 ]
 
 executable('jrq', files + './src/main.c', dependencies: m_dep)

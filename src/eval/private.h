@@ -80,10 +80,6 @@ typedef struct {
     VariableStack vs;
 } Eval;
 
-void vs_push_variable(VariableStack *vs, char *var_name, Json value);
-void vs_pop_variable(VariableStack *vs, char *var_name);
-Json vs_get_variable(Eval *e, char *var_name);
-
 /// If `d` is already json, do nothing.
 /// Otherwise, implictly convert the iterator into json
 Json eval_to_json(Eval *e, EvalData d);

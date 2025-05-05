@@ -1,4 +1,5 @@
 #include "src/errors.h"
+#include "src/eval/functions.h"
 #include "src/eval/private.h"
 #include "src/json.h"
 #include "src/parser.h"
