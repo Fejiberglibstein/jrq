@@ -102,25 +102,27 @@ static bool closure_returns_bool(Json j, void *aux) {
     return json_get_bool(ret);
 }
 
-static struct function_data FUNC_MAP = {
-    .function_name = "map",
-    .caller_type = JSON_TYPE_ITERATOR,
-
-    .parameter_types = (JsonType[]) {JSON_TYPE_CLOSURE_WITH_PARAMS(1)},
-    .parameter_amount = 1,
-};
-static JsonIterator eval_func_map(Eval *e, ASTNode *node) {
-    Json evaled_args[1] = {0};
-
+// Helper function to eliminate much of the boilerplate in making eval functions
+// from iterators
+//
+// Returns true if everything was sucessful, and false if there was an error.
+bool iter_eval_func(
+    Eval *e,
+    ASTNode *node,
+    struct function_data function,
+    Json *evaled_args,
+    JsonIterator *iter,
+    struct simple_closure **closure
+) {
     Vec_ASTNode args = node->inner.function.args;
-    EvalData i = func_expect_args(e, node, evaled_args, FUNC_MAP);
+    EvalData i = func_expect_args(e, node, evaled_args, function);
     if (eval_has_err(e)) {
-        return NULL;
+        return false;
     }
     assert(args.data[0]->type == AST_TYPE_CLOSURE);
 
     // Safe to get iter here because we already made sure there were no errors
-    JsonIterator iter = i.iter;
+    *iter = i.iter;
 
     struct simple_closure *c = malloc(sizeof(*c));
 
@@ -130,6 +132,26 @@ static JsonIterator eval_func_map(Eval *e, ASTNode *node) {
         .params = args.data[0]->inner.closure.args,
     };
 
+    *closure = c;
+
+    return true;
+}
+
+static struct function_data FUNC_MAP = {
+    .function_name = "map",
+    .caller_type = JSON_TYPE_ITERATOR,
+
+    .parameter_types = (JsonType[]) {JSON_TYPE_CLOSURE_WITH_PARAMS(1)},
+    .parameter_amount = 1,
+};
+static JsonIterator eval_func_map(Eval *e, ASTNode *node) {
+    Json evaled_args[1] = {0};
+    JsonIterator iter;
+    struct simple_closure *c;
+
+    if (!iter_eval_func(e, node, FUNC_MAP, evaled_args, &iter, &c)) {
+        return NULL;
+    }
     return iter_map(iter, &closure_returns_json, c, true);
 }
 
@@ -142,25 +164,12 @@ static struct function_data FUNC_FILTER = {
 };
 static JsonIterator eval_func_filter(Eval *e, ASTNode *node) {
     Json evaled_args[1] = {0};
+    JsonIterator iter;
+    struct simple_closure *c;
 
-    Vec_ASTNode args = node->inner.function.args;
-    EvalData i = func_expect_args(e, node, evaled_args, FUNC_FILTER);
-    if (eval_has_err(e)) {
+    if (!iter_eval_func(e, node, FUNC_FILTER, evaled_args, &iter, &c)) {
         return NULL;
     }
-    assert(args.data[0]->type == AST_TYPE_CLOSURE);
-
-    // Safe to get iter here because we already made sure there were no errors
-    JsonIterator iter = i.iter;
-
-    struct simple_closure *c = malloc(sizeof(*c));
-
-    *c = (struct simple_closure) {
-        .e = e,
-        .node = args.data[0]->inner.closure.body,
-        .params = args.data[0]->inner.closure.args,
-    };
-
     return iter_filter(iter, &closure_returns_bool, c, true);
 }
 
@@ -488,30 +497,12 @@ static struct function_data FUNC_SKIP_WHILE = {
 };
 static JsonIterator eval_func_skip_while(Eval *e, ASTNode *node) {
     Json evaled_args[1] = {0};
+    JsonIterator iter;
+    struct simple_closure *c;
 
-    Vec_ASTNode args = node->inner.function.args;
-    EvalData i = func_expect_args(e, node, evaled_args, FUNC_SKIP_WHILE);
-    if (eval_has_err(e)) {
+    if (!iter_eval_func(e, node, FUNC_SKIP_WHILE, evaled_args, &iter, &c)) {
         return NULL;
     }
-    assert(args.data[0]->type == AST_TYPE_CLOSURE);
-
-    // Safe to get iter here because we already made sure there were no errors
-    JsonIterator iter = i.iter;
-
-    struct simple_closure *c = malloc(sizeof(*c));
-
-    *c = (struct simple_closure) {
-        .e = e,
-        .node = args.data[0]->inner.closure.body,
-        .params = args.data[0]->inner.closure.args,
-    };
-
-    // We can use a closure filter because it does the same thing
-    //
-    // TODO: maybe rename closure_filter and FilterFunc to be more generic and
-    // describe what they return, rather than what function they do.. Maybe name
-    // them something like closure_bool ?? idk
     return iter_skip_while(iter, &closure_returns_bool, c, true);
 }
 
@@ -524,30 +515,12 @@ static struct function_data FUNC_TAKE_WHILE = {
 };
 static JsonIterator eval_func_take_while(Eval *e, ASTNode *node) {
     Json evaled_args[1] = {0};
+    JsonIterator iter;
+    struct simple_closure *c;
 
-    Vec_ASTNode args = node->inner.function.args;
-    EvalData i = func_expect_args(e, node, evaled_args, FUNC_TAKE_WHILE);
-    if (eval_has_err(e)) {
+    if (!iter_eval_func(e, node, FUNC_TAKE_WHILE, evaled_args, &iter, &c)) {
         return NULL;
     }
-    assert(args.data[0]->type == AST_TYPE_CLOSURE);
-
-    // Safe to get iter here because we already made sure there were no errors
-    JsonIterator iter = i.iter;
-
-    struct simple_closure *c = malloc(sizeof(*c));
-
-    *c = (struct simple_closure) {
-        .e = e,
-        .node = args.data[0]->inner.closure.body,
-        .params = args.data[0]->inner.closure.args,
-    };
-
-    // We can use a closure filter because it does the same thing
-    //
-    // TODO: maybe rename closure_filter and FilterFunc to be more generic and
-    // describe what they return, rather than what function they do.. Maybe name
-    // them something like closure_bool ?? idk
     return iter_take_while(iter, &closure_returns_bool, c, true);
 }
 
