@@ -62,7 +62,7 @@ struct simple_closure {
     Vec_ASTNode params;
 };
 
-static Json closure_map(Json j, void *aux) {
+static Json closure_returns_json(Json j, void *aux) {
     struct simple_closure *c = aux;
 
     int pushed = vs_push_closure_variable(c->e, c->params.data[0], j);
@@ -75,6 +75,31 @@ static Json closure_map(Json j, void *aux) {
     json_free(j);
 
     return ret;
+}
+static bool closure_returns_bool(Json j, void *aux) {
+    struct simple_closure *c = aux;
+
+    int pushed = vs_push_closure_variable(c->e, c->params.data[0], j);
+    Json ret = json_invalid();
+    if (!eval_has_err(c->e)) {
+        ret = eval_to_json(c->e, eval_node(c->e, c->node));
+    }
+    int popped = vs_pop_closure_variable(c->e, c->params.data[0], j);
+    assert(pushed == popped);
+    // We should not free j here like we do for mapping, because the json should
+    // still exist after the filter is done.
+
+    EXPECT_TYPE(
+        c->e,
+        ret.type,
+        JSON_TYPE_BOOL,
+        EVAL_ERR_CLOSURE_RETURN(JSON_TYPE(JSON_TYPE_BOOL), json_type(ret))
+    );
+    if (eval_has_err(c->e)) {
+        return false;
+    }
+
+    return ret.inner.boolean;
 }
 
 static struct function_data FUNC_MAP = {
@@ -105,34 +130,9 @@ static JsonIterator eval_func_map(Eval *e, ASTNode *node) {
         .params = args.data[0]->inner.closure.args,
     };
 
-    return iter_map(iter, &closure_map, c, true);
+    return iter_map(iter, &closure_returns_json, c, true);
 }
 
-static bool closure_filter(Json j, void *aux) {
-    struct simple_closure *c = aux;
-
-    int pushed = vs_push_closure_variable(c->e, c->params.data[0], j);
-    Json ret = json_invalid();
-    if (!eval_has_err(c->e)) {
-        ret = eval_to_json(c->e, eval_node(c->e, c->node));
-    }
-    int popped = vs_pop_closure_variable(c->e, c->params.data[0], j);
-    assert(pushed == popped);
-    // We should not free j here like we do for mapping, because the json should
-    // still exist after the filter is done.
-
-    EXPECT_TYPE(
-        c->e,
-        ret.type,
-        JSON_TYPE_BOOL,
-        EVAL_ERR_CLOSURE_RETURN(JSON_TYPE(JSON_TYPE_BOOL), json_type(ret))
-    );
-    if (eval_has_err(c->e)) {
-        return false;
-    }
-
-    return ret.inner.boolean;
-}
 static struct function_data FUNC_FILTER = {
     .function_name = "filter",
     .caller_type = JSON_TYPE_ITERATOR,
@@ -161,7 +161,7 @@ static JsonIterator eval_func_filter(Eval *e, ASTNode *node) {
         .params = args.data[0]->inner.closure.args,
     };
 
-    return iter_filter(iter, &closure_filter, c, true);
+    return iter_filter(iter, &closure_returns_bool, c, true);
 }
 
 static struct function_data FUNC_COLLECT = {
@@ -512,7 +512,7 @@ static JsonIterator eval_func_skip_while(Eval *e, ASTNode *node) {
     // TODO: maybe rename closure_filter and FilterFunc to be more generic and
     // describe what they return, rather than what function they do.. Maybe name
     // them something like closure_bool ?? idk
-    return iter_skip_while(iter, &closure_filter, c, true);
+    return iter_skip_while(iter, &closure_returns_bool, c, true);
 }
 
 static struct function_data FUNC_TAKE_WHILE = {
@@ -548,7 +548,7 @@ static JsonIterator eval_func_take_while(Eval *e, ASTNode *node) {
     // TODO: maybe rename closure_filter and FilterFunc to be more generic and
     // describe what they return, rather than what function they do.. Maybe name
     // them something like closure_bool ?? idk
-    return iter_take_while(iter, &closure_filter, c, true);
+    return iter_take_while(iter, &closure_returns_bool, c, true);
 }
 
 EvalData eval_node_function(Eval *e, ASTNode *node) {
