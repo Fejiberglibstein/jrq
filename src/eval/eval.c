@@ -1,5 +1,5 @@
 #include "src/eval.h"
-#include "src/eval_private.h"
+#include "src/eval/private.h"
 #include "src/json.h"
 #include "src/json_iter.h"
 #include "src/parser.h"
