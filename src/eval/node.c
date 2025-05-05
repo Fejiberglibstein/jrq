@@ -1,14 +1,11 @@
 #include "src/errors.h"
-#include "src/eval.h"
 #include "src/eval/private.h"
 #include "src/json.h"
-#include "src/json_iter.h"
-#include "src/json_serde.h"
 #include "src/parser.h"
+#include "src/utils.h"
 #include <assert.h>
 #include <math.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
 
 static EvalData eval_node_primary(Eval *e, ASTNode *node);

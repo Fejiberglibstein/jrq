@@ -1,5 +1,4 @@
 #include "src/json.h"
-#include "src/eval/private.h"
 #include "src/utils.h"
 #include "src/vector.h"
 #include <assert.h>
