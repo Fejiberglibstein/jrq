@@ -523,3 +523,66 @@ JsonIterator iter_zip(JsonIterator a, JsonIterator b) {
 
     return (JsonIterator)i;
 }
+
+/****************
+ * SkipTakeIter *
+ ****************/
+
+/// An iterator that will yield/skip elements N times
+///
+/// This iterator struct is meant to be generic so it can be used for both the Skip and Take
+/// iterators.
+typedef struct {
+    struct JsonIterator parent;
+
+    /// Inner iterator
+    JsonIterator iter;
+
+    // Number to skip/take
+    size_t N;
+
+} SkipTakeIter;
+
+static IterOption take_iter_next(JsonIterator _i) {
+    SkipTakeIter *i = (SkipTakeIter *)_i;
+
+    if (i->N-- > 0) {
+        return iter_some(NEXT(i->iter));
+    } else {
+        return iter_done();
+    }
+}
+
+static IterOption skip_iter_next(JsonIterator _i) {
+    SkipTakeIter *i = (SkipTakeIter *)_i;
+
+    while (i->N > 0) {
+        json_free(NEXT(i->iter));
+    }
+
+    return iter_some(NEXT(i->iter));
+}
+
+JsonIterator iter_take(JsonIterator _i, int N) {
+    SkipTakeIter *i = jrq_malloc(sizeof(*i));
+
+    *i = (SkipTakeIter) {
+        .parent = {.func = &take_iter_next, .free = &free_func_next},
+        .iter = _i,
+        .N = N,
+    };
+
+    return (JsonIterator)i;
+}
+
+JsonIterator iter_skip(JsonIterator _i, int N) {
+    SkipTakeIter *i = jrq_malloc(sizeof(*i));
+
+    *i = (SkipTakeIter) {
+        .parent = {.func = &skip_iter_next, .free = &free_func_next},
+        .iter = _i,
+        .N = N,
+    };
+
+    return (JsonIterator)i;
+}

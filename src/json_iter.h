@@ -45,4 +45,7 @@ JsonIterator iter_take_while(
     bool free_captures
 );
 
+JsonIterator iter_skip(JsonIterator, int);
+JsonIterator iter_take(JsonIterator, int);
+
 #endif // _JSON_ITER_H
