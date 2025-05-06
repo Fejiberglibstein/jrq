@@ -503,13 +503,19 @@ IterOption zip_iter_next(JsonIterator _i) {
     return iter_some(JSON_LIST(a, b));
 }
 
+static void free_func_zip(JsonIterator _i) {
+    ZipIter *i = (typeof(i))_i;
+    iter_free(i->a);
+    iter_free(i->b);
+}
+
 JsonIterator iter_zip(JsonIterator a, JsonIterator b) {
     ZipIter *i = jrq_malloc(sizeof(*i));
 
     *i = (ZipIter) {
         .parent = { 
             .func = &zip_iter_next,
-            .free = &free_func_next,
+            .free = &free_func_zip,
         },
         .a = a,
         .b = b,

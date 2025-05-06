@@ -1,7 +1,9 @@
 #include "src/eval/functions.h"
 #include "src/eval/function_declarations.h"
+#include "src/json.h"
 #include "src/utils.h"
 #include <assert.h>
+#include <stdio.h>
 #include <string.h>
 
 EvalData eval_node_function(Eval *e, ASTNode *node) {
@@ -57,11 +59,16 @@ void vs_pop_variable(VariableStack *vs, char *var_name) {
 
 Json vs_get_variable(Eval *e, char *var_name) {
     VariableStack *vs = &e->vs;
-    for (uint i = vs->length - 1; i >= 0; i--) {
+    if (vs->data == NULL) {
+        return json_null();
+    }
+
+    uint i = vs->length - 1;
+    do {
         if (strcmp(vs->data[i].name, var_name) == 0) {
             return json_copy(vs->data[i].value);
         }
-    }
+    } while (i-- > 0);
 
     eval_set_err(e, EVAL_ERR_VAR_NOT_FOUND(var_name));
     return json_null();
@@ -150,18 +157,21 @@ static EvalData func_eval_caller(Eval *e, ASTNode *function_node, struct functio
 
         if (func.caller_type > JSON_TYPE_LIST) {
             int list_inner_type = func.caller_type - JSON_TYPE_LIST;
-            EXPECT_TYPE(
-                e,
-                jcaller.list_inner_type,
-                list_inner_type,
-                EVAL_ERR_FUNC_WRONG_CALLER(
-                    json_type((Json) {.type = JSON_TYPE_LIST, .list_inner_type = list_inner_type}),
-                    json_type(jcaller)
-                )
-            );
-            if (eval_has_err(e)) {
-                json_free(jcaller);
-                return err;
+            if (json_list_length(jcaller) != 0) {
+                EXPECT_TYPE(
+                    e,
+                    jcaller.list_inner_type,
+                    list_inner_type,
+                    EVAL_ERR_FUNC_WRONG_CALLER(
+                        json_type((Json) {.type = JSON_TYPE_LIST,
+                                          .list_inner_type = list_inner_type}),
+                        json_type(jcaller)
+                    )
+                );
+                if (eval_has_err(e)) {
+                    json_free(jcaller);
+                    return err;
+                }
             }
         } else {
             EXPECT_TYPE(
