@@ -39,8 +39,10 @@ EvalData eval_node_function(Eval *e, ASTNode *node) {
         return eval_from_json(eval_func_length(e, node));
     } else if (strcmp(func_name, "skip_while") == 0) {
         return eval_from_iter(eval_func_skip_while(e, node));
-    } else if (strcmp(func_name, "take_while") == 0) {
-        return eval_from_iter(eval_func_take_while(e, node));
+    } else if (strcmp(func_name, "take") == 0) {
+        return eval_from_iter(eval_func_take(e, node));
+    } else if (strcmp(func_name, "skip") == 0) {
+        return eval_from_iter(eval_func_skip(e, node));
     }
 
     eval_set_err(e, EVAL_ERR_FUNC_NOT_FOUND(func_name));
@@ -59,7 +61,7 @@ void vs_pop_variable(VariableStack *vs, char *var_name) {
 
 Json vs_get_variable(Eval *e, char *var_name) {
     VariableStack *vs = &e->vs;
-    if (vs->data == NULL) {
+    if (vs->length == 0) {
         return json_null();
     }
 

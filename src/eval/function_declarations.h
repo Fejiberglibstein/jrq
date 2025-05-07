@@ -17,3 +17,6 @@ Json eval_func_product(Eval *e, ASTNode *node);
 Json eval_func_flatten(Eval *e, ASTNode *node);
 Json eval_func_join(Eval *e, ASTNode *node);
 Json eval_func_length(Eval *e, ASTNode *node);
+
+JsonIterator eval_func_take(Eval *e, ASTNode *node);
+JsonIterator eval_func_skip(Eval *e, ASTNode *node);

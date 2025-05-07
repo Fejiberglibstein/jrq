@@ -1,10 +1,10 @@
 #include "src/errors.h"
-#include "src/eval/private.h"
 #include "src/eval/functions.h"
+#include "src/eval/private.h"
 #include "src/json.h"
 #include "src/json_iter.h"
-#include "src/utils.h"
 #include "src/parser.h"
+#include "src/utils.h"
 #include "src/vector.h"
 #include <assert.h>
 #include <stdint.h>
@@ -472,3 +472,34 @@ JsonIterator eval_func_take_while(Eval *e, ASTNode *node) {
     return iter_take_while(iter, &closure_returns_bool, c, true);
 }
 
+static struct function_data FUNC_SKIP = {
+    .function_name = "skip",
+    .caller_type = JSON_TYPE_ITERATOR,
+
+    .parameter_types = (JsonType[]) {JSON_TYPE_NUMBER},
+    .parameter_amount = 1,
+};
+JsonIterator eval_func_skip(Eval *e, ASTNode *node) {
+    Json evaled_args[1] = {0};
+
+    EvalData d = func_expect_args(e, node, evaled_args, FUNC_SKIP);
+    JsonIterator iter = d.iter;
+
+    return iter_skip(iter, (int)json_get_number(evaled_args[0]));
+}
+
+static struct function_data FUNC_TAKE = {
+    .function_name = "take",
+    .caller_type = JSON_TYPE_ITERATOR,
+
+    .parameter_types = (JsonType[]) {JSON_TYPE_NUMBER},
+    .parameter_amount = 1,
+};
+JsonIterator eval_func_take(Eval *e, ASTNode *node) {
+    Json evaled_args[1] = {0};
+
+    EvalData d = func_expect_args(e, node, evaled_args, FUNC_TAKE);
+    JsonIterator iter = d.iter;
+
+    return iter_take(iter, (int)json_get_number(evaled_args[0]));
+}
