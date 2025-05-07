@@ -539,7 +539,7 @@ typedef struct {
     JsonIterator iter;
 
     // Number to skip/take
-    size_t N;
+    int N;
 
 } SkipTakeIter;
 
@@ -556,7 +556,7 @@ static IterOption take_iter_next(JsonIterator _i) {
 static IterOption skip_iter_next(JsonIterator _i) {
     SkipTakeIter *i = (SkipTakeIter *)_i;
 
-    while (i->N > 0) {
+    while (i->N-- > 0) {
         json_free(NEXT(i->iter));
     }
 

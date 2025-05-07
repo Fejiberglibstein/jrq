@@ -408,11 +408,10 @@ Json eval_func_length(Eval *e, ASTNode *node) {
     Json evaled_args[0] = {};
 
     EvalData d = func_expect_args(e, node, evaled_args, FUNC_LENGTH);
+    Json j = eval_to_json(e, d);
     if (eval_has_err(e)) {
         return json_invalid();
     }
-    assert(d.type == SOME_JSON);
-    Json j = d.json;
 
     size_t length;
     switch (j.type) {
