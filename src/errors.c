@@ -52,7 +52,7 @@ struct error_msg_data jrq_get_error_data(JrqError err, char *start) {
     // Last character of the line of the range's end line
     char *end;
 
-    int highest_width = 0;
+    int highest_width = 1;
     int current_width = 0;
     int width = 0;
 
@@ -68,8 +68,8 @@ struct error_msg_data jrq_get_error_data(JrqError err, char *start) {
         }
 
         width++;
-        if (!(lines < err.range.start.line || width < err.range.start.col)
-            && !(lines > err.range.end.line || width < err.range.end.col)) {
+        if ((lines >= err.range.start.line && width >= err.range.start.col)
+            && (lines <= err.range.end.line && width <= err.range.end.col)) {
             current_width += 1;
             if (current_width >= highest_width) {
                 highest_width = current_width;
@@ -96,8 +96,11 @@ struct error_msg_data jrq_get_error_data(JrqError err, char *start) {
     }
 
     // Move back past the newline
-    end--;
 
+    if (*end != '\0') {
+        end--;
+        end_line -= 2;
+    }
     char *err_end = end_line + err.range.end.col;
     // printf("\x1b[33m`%s`\x1b[0m\n", end_line);
     char *err_start = start_line + err.range.start.col;
@@ -106,7 +109,7 @@ struct error_msg_data jrq_get_error_data(JrqError err, char *start) {
         .err_end = err_end,
         .err_start = err_start,
         .height = err.range.end.line - err.range.start.line + 1,
-        .width = highest_width - 1,
+        .width = highest_width,
 
         .margin_start = MAX(err_start - MARGIN - 1, start_line),
         .margin_end = MIN(err_end + MARGIN - 1, end),
@@ -129,6 +132,7 @@ char *jrq_error_format(JrqError err, char *text) {
     uint err_len = data.err_end - data.err_start + 1;
 
     uint offset = (data.height > 1) ? 0 : data.err_start - data.margin_start;
+    range_print(err.range);
 
 #define ERROR                                                                                      \
     "%s\n"                            /* printing the error message */                             \
