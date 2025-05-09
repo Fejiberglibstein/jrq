@@ -190,13 +190,16 @@ static EvalData eval_node_unary(Eval *e, ASTNode *node) {
         assert(node->type == AST_TYPE_BINARY);                                                     \
                                                                                                    \
         Json lhs = eval_to_json(e, eval_node(e, node->inner.binary.lhs));                          \
-        Json rhs = eval_to_json(e, eval_node(e, node->inner.binary.rhs));                          \
+        e->range = node->inner.binary.lhs->range;                                                  \
         EXPECT_TYPE(                                                                               \
             e,                                                                                     \
             lhs.type,                                                                              \
             _EXPECTED_TYPE,                                                                        \
             EVAL_ERR_BINARY_OP(_OP_NAME, JSON_TYPE(_EXPECTED_TYPE), json_type(lhs))                \
         );                                                                                         \
+        BUBBLE_ERROR(e, (Json[]) {lhs});                                                           \
+        Json rhs = eval_to_json(e, eval_node(e, node->inner.binary.rhs));                          \
+        e->range = node->inner.binary.rhs->range;                                                  \
         EXPECT_TYPE(                                                                               \
             e,                                                                                     \
             rhs.type,                                                                              \
