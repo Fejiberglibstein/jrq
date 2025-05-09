@@ -101,8 +101,7 @@ struct error_msg_data jrq_get_error_data(JrqError err, char *start) {
         end--;
         end_line -= 2;
     }
-    char *err_end = end_line + err.range.end.col;
-    // printf("\x1b[33m`%s`\x1b[0m\n", end_line);
+    char *err_end = end_line + err.range.end.col + 2;
     char *err_start = start_line + err.range.start.col;
 
     return (struct error_msg_data) {
@@ -128,10 +127,10 @@ char *jrq_error_format(JrqError err, char *text) {
     arrow_txt[data.width] = '\0';
 
     uint lmargin_len = data.err_start - data.margin_start - 1;
-    uint rmargin_len = data.err_end - data.margin_end;
+    uint rmargin_len = data.margin_end - data.err_end;
     uint err_len = data.err_end - data.err_start + 1;
 
-    uint offset = (data.height > 1) ? 0 : data.err_start - data.margin_start;
+    uint offset = data.err_start - data.margin_start;
     range_print(err.range);
 
 #define ERROR                                                                                      \
