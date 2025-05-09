@@ -36,7 +36,7 @@ static bool has_flag(Serializer *s, JsonSerializeFlags flag) {
 static void tab(Serializer *s, int depth) {
     if (has_flag(s, JSON_FLAG_TAB)) {
         for (int d = 0; d < depth; d++) {
-            string_append_str(s->inner, "    ");
+            string_append_str(s->inner, "  ");
         }
     }
 }
