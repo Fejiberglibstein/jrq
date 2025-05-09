@@ -16,6 +16,7 @@ files = [
   'src/json_serialize.c',
   'src/lexer.c',
   'src/parser.c',
+  'src/strings.c',
 ]
 
 executable('jrq', files + './src/main.c', dependencies: m_dep)
