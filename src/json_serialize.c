@@ -6,7 +6,6 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <string.h>
 
 #define STRING_COLOR string_from_chars("\x1b[32m")
 #define NUM_COLOR string_from_chars("\x1b[36m")
@@ -95,7 +94,7 @@ static void serialize_object(Serializer *s, Json *json, int depth) {
         // serialize object's key
         APPEND_COLOR(KEY_COLOR);
         string_append(&s->inner, string_from_chars("\""));
-        string_append(&s->inner, string_from_chars(json_get_string(fields->data[i].key)));
+        string_append(&s->inner, *json_get_string(fields->data[i].key));
         string_append(&s->inner, string_from_chars("\""));
         APPEND_COLOR(RESET_COLOR);
 
@@ -143,7 +142,7 @@ void serialize(Serializer *s, Json *json, int depth) {
 
         int buf_len = snprintf(NULL, 0, "%g", json_get_number(*json)) + 1;
         string_grow(&s->inner, buf_len);
-        snprintf(s->inner.data + s->inner.length, buf_len, "%g", json_get_number(*json));
+        snprintf(s->inner.data + s->inner.length - 1, buf_len, "%g", json_get_number(*json));
 
         s->inner.length += buf_len - 1;
 
@@ -152,7 +151,7 @@ void serialize(Serializer *s, Json *json, int depth) {
     case JSON_TYPE_STRING:
         APPEND_COLOR(STRING_COLOR);
         string_append(&s->inner, string_from_chars("\""));
-        string_append(&s->inner, string_from_chars(json_get_string(*json)));
+        string_append(&s->inner, *json_get_string(*json));
         string_append(&s->inner, string_from_chars("\""));
         APPEND_COLOR(RESET_COLOR);
         break;
@@ -174,7 +173,7 @@ void serialize(Serializer *s, Json *json, int depth) {
 
 char *json_serialize(Json *json, JsonSerializeFlags flags) {
     Serializer *s = &(Serializer) {
-        .inner = (String) {0},
+        .inner = string_from_chars_alloc(""),
         .flags = flags,
     };
 

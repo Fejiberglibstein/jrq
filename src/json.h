@@ -1,6 +1,7 @@
 #ifndef _JSON_H
 #define _JSON_H
 
+#include "src/strings.h"
 #include "src/vector.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -56,7 +57,7 @@ Json json_invalid(void);
 
 double json_get_number(Json j);
 bool json_get_bool(Json j);
-const char *json_get_string(Json j);
+String *json_get_string(Json j);
 JsonList *json_get_list(Json j);
 JsonObject *json_get_object(Json j);
 
@@ -90,7 +91,7 @@ size_t json_list_length(Json j);
 
 Json json_object_sized(size_t);
 Json json_object_set(Json j, Json key, Json value);
-Json json_object_get(Json j, const char *key);
+Json json_object_get(Json j, Json key);
 
 // clang-format off
 #define JSON_OBJECT_1(k1, v1) json_object_set(json_object(), json_string(k1), v1)

@@ -135,7 +135,12 @@ bool json_equal(Json j1, Json j2) {
         result = fabs(j1.inner.number - j2.inner.number) <= EPSILON;
         break;
     case JSON_TYPE_STRING:
-        result = strcmp(json_get_string(j1), json_get_string(j2)) == 0;
+        result = strncmp(
+                     string_get(json_get_string(j1)),
+                     string_get(json_get_string(j2)),
+                     json_get_string(j1)->length
+                 )
+                 == 0;
         break;
     case JSON_TYPE_BOOL:
         result = j1.inner.boolean == j2.inner.boolean;
@@ -205,7 +210,9 @@ Json json_clone(Json j) {
     case JSON_TYPE_NULL:
         return j;
     case JSON_TYPE_STRING:
-        return json_string(json_get_string(j));
+        // TODO fix
+        // TODO really important !!!!!!
+        return json_string(string_get(json_get_string(j)));
     case JSON_TYPE_OBJECT:
         new = json_object_sized(json_get_object(j)->length);
         for (int i = 0; i < json_get_object(j)->length; i++) {
@@ -299,9 +306,9 @@ bool json_get_bool(Json j) {
     assert(j.type == JSON_TYPE_BOOL);
     return j.inner.boolean;
 }
-const char *json_get_string(Json j) {
+String *json_get_string(Json j) {
     assert(j.type == JSON_TYPE_STRING);
-    return json_ptr_string(j)->d.data;
+    return &json_ptr_string(j)->d;
 }
 JsonList *json_get_list(Json j) {
     assert(j.type == JSON_TYPE_LIST);
@@ -422,12 +429,14 @@ Json json_object_set(Json j, Json key, Json value) {
     return j;
 }
 
-Json json_object_get(Json j, const char *key) {
+Json json_object_get(Json j, Json key) {
     assert(j.type == JSON_TYPE_OBJECT);
+    assert(key.type == JSON_TYPE_STRING);
+
     JsonObject *obj = json_get_object(j);
 
     for (int i = 0; i < obj->length; i++) {
-        if (strcmp(key, json_get_string(obj->data[i].key)) == 0) {
+        if (json_equal(obj->data[i].key, key)) {
             return obj->data[i].value;
         }
     }
@@ -438,7 +447,7 @@ Json json_object_get(Json j, const char *key) {
 Json json_string(const char *str) {
     JsonStringRef *s = (JsonStringRef *)refcnt_init(sizeof(*s));
 
-    string_append(&s->d, string_from_chars(str));
+    s->d = string_from_chars_alloc((char *)str);
 
     return (Json) {.type = JSON_TYPE_STRING, .inner.ptr = (RefCnt *)s};
 }
@@ -447,9 +456,7 @@ Json json_string_concat(Json j, Json str) {
     assert(j.type == JSON_TYPE_STRING);
     assert(str.type == JSON_TYPE_STRING);
 
-    string_append(
-        &json_ptr_string(j)->d, string_from_str(json_get_string(str), json_string_length(str) + 1)
-    );
+    string_append(json_get_string(j), *json_get_string(str));
     return j;
 }
 
