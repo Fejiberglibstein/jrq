@@ -502,3 +502,22 @@ JsonIterator eval_func_take(Eval *e, ASTNode *node) {
 
     return iter_take(iter, (int)json_get_number(evaled_args[0]));
 }
+
+static struct function_data FUNC_SPLIT = {
+    .function_name = "split",
+    .caller_type = JSON_TYPE_STRING,
+
+    .parameter_types = (JsonType[]) {JSON_TYPE_STRING},
+    .parameter_amount = 1,
+};
+JsonIterator eval_func_split(Eval *e, ASTNode *node) {
+    Json evaled_args[1] = {0};
+
+    EvalData i = func_expect_args(e, node, evaled_args, FUNC_SPLIT);
+    if (eval_has_err(e)) {
+        return NULL;
+    }
+    Json str = i.json;
+
+    return iter_split(str, evaled_args[0]);
+}
