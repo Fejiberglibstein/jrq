@@ -48,4 +48,6 @@ JsonIterator iter_take_while(
 JsonIterator iter_skip(JsonIterator, int);
 JsonIterator iter_take(JsonIterator, int);
 
+JsonIterator iter_split(Json, Json);
+
 #endif // _JSON_ITER_H

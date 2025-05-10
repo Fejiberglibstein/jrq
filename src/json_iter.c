@@ -1,7 +1,11 @@
 #include "json_iter.h"
 #include "src/alloc.h"
 #include "src/json.h"
+#include "src/strings.h"
+#include "src/utils.h"
+#include <assert.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #define NEXT(iter)                                                                                 \
     ({                                                                                             \
@@ -586,3 +590,62 @@ JsonIterator iter_skip(JsonIterator _i, int N) {
 
     return (JsonIterator)i;
 }
+
+/*************
+ * SplitIter *
+ *************/
+
+typedef struct {
+    struct JsonIterator parent;
+    Json string;
+    Json splitter;
+    size_t offset;
+} SplitIter;
+
+static void free_func_split(JsonIterator _i) {
+    SplitIter *i = (typeof(i))_i;
+    json_free(i->string);
+    json_free(i->splitter);
+}
+static IterOption split_iter_next(JsonIterator _i) {
+    SplitIter *iter = (SplitIter *)_i;
+
+    String *str = json_get_string(iter->string);
+    String *splitter = json_get_string(iter->splitter);
+
+    uint start = iter->offset;
+    if (start >= str->length) {
+        return iter_done();
+    }
+
+    uint splitter_i = 0;
+    while (iter->offset < str->length) {
+        if (string_get(splitter)[splitter_i] == string_get(str)[iter->offset]) {
+            splitter_i += 1;
+        } else {
+            splitter_i = 0;
+        }
+
+        if (splitter_i == splitter->length) {
+            return iter_some(
+                json_substring(iter->string, start, iter->offset++ - start - splitter_i)
+            );
+        }
+
+        iter->offset++;
+    }
+
+    return iter_some(json_substring(iter->string, start, iter->offset++ - start - splitter_i - 1));
+}
+
+/// Splits a string and yields each substring
+JsonIterator iter_split(Json string, Json splitter) {
+    SplitIter *i = jrq_malloc(sizeof(*i));
+    *i = (SplitIter) {
+        .parent = {.func = &split_iter_next, .free = &free_func_split},
+        .offset = 0,
+        .string = string,
+        .splitter = splitter,
+    };
+    return (JsonIterator)i;
+};

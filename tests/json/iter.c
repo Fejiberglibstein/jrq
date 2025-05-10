@@ -9,9 +9,6 @@ Json mapper(Json, void *);
 #define LIST(s...) s, (sizeof(s) / sizeof(*(s)))
 
 void test_iter(JsonIterator iter, Json results) {
-    char *str = json_serialize(&results, 0);
-    printf("Testing `%s`\n", str);
-    free(str);
 
     for (int i = 0; i < json_list_length(results); i++) {
         IterOption res = iter_next(iter);
@@ -60,10 +57,24 @@ void enumerate_iter() {
     );
 }
 
+void split_iter() {
+    test_iter(
+        iter_split(json_string("i am going to cry"), json_string(" ")),
+        JSON_LIST(
+            json_string("i"),
+            json_string("am"),
+            json_string("going"),
+            json_string("to"),
+            json_string("cry")
+        )
+    );
+}
+
 int main() {
     basic_iter();
     map_iter();
     enumerate_iter();
+    split_iter();
 }
 
 Json mapper(Json j, void *_) {
