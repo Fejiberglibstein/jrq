@@ -75,9 +75,14 @@ typedef struct {
     JsonObject d;
 } JsonObjectRef;
 
-typedef struct {
+typedef struct JsonStringRef {
     RefCnt ref;
 
+    /// If the string is not a substring, this will be json_null
+    ///
+    /// When the string is a substring, this will point to the original string that this string is a
+    /// substring of.
+    Json borrowed_string;
     String d;
 } JsonStringRef;
 
@@ -207,6 +212,7 @@ Json json_clone(Json j) {
     case JSON_TYPE_STRING:
         // TODO fix
         // TODO really important !!!!!!
+        // TODO this should ensure that the proper substring is obtained from the original j.
         return json_string(string_get(json_get_string(j)));
     case JSON_TYPE_OBJECT:
         new = json_object_sized(json_get_object(j)->length);
@@ -257,9 +263,11 @@ void json_free(Json j) {
         free(json_ptr_list(j));
         break;
     case JSON_TYPE_STRING:
-        // optimization where we set the string to null so we can move the
-        // string inside the json rather than copying it.
-        if (json_ptr_string(j)->d.data != NULL) {
+        if (!json_is_null(json_ptr_string(j)->borrowed_string)) {
+            // If the string is a substring, we should free the string we're borrowing from
+            json_free(json_ptr_string(j)->borrowed_string);
+        } else {
+            // if the string is not a substring, we can free the data like normal.
             free(json_ptr_string(j)->d.data);
         }
         free(json_ptr_string(j));
@@ -443,7 +451,27 @@ Json json_string(const char *str) {
     JsonStringRef *s = (JsonStringRef *)refcnt_init(sizeof(*s));
 
     s->d = string_from_chars_alloc((char *)str);
+    s->borrowed_string = json_null();
 
+    return (Json) {.type = JSON_TYPE_STRING, .inner.ptr = (RefCnt *)s};
+}
+
+/// Create a json string out of the substring of another string.
+///
+/// This will NOT allocate a new string, instead it will borrow from the original string.
+///
+/// The original string will have another reference added to it, and when the substring is freed,
+/// the original string will have a reference removed.
+Json json_substring(Json str, size_t offset, size_t length) {
+    assert(str.type == JSON_TYPE_STRING);
+
+    JsonStringRef *s = (JsonStringRef *)refcnt_init(sizeof(*s));
+    s->d = json_ptr_string(str)->d;
+    s->d.offset = s->d.offset + offset;
+    s->d.length = length + 1; 
+    s->borrowed_string = str;
+
+    refcnt_inc(str);
     return (Json) {.type = JSON_TYPE_STRING, .inner.ptr = (RefCnt *)s};
 }
 

@@ -4,6 +4,7 @@
 #include "src/strings.h"
 #include "src/vector.h"
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
 
@@ -48,6 +49,7 @@ char *json_type(Json);
 
 Json json_number(double f);
 Json json_string(const char *);
+Json json_substring(Json, size_t, size_t);
 Json json_boolean(bool);
 Json json_null(void);
 Json json_list(void);
