@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 typedef struct {
     char *data;
@@ -12,6 +13,7 @@ typedef struct {
 } String;
 
 void string_grow(String *, uint);
+bool string_equal(String *, String *);
 char *string_get(String *);
 void string_append(String *, String);
 String string_from_str(char *, uint);

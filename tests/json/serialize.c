@@ -54,14 +54,14 @@ void test_list() {
 
     test(
         "[\n"
-        "    true, \n"
-        "    [], \n"
-        "    10.2, \n"
-        "    [\n"
-        "        10, \n"
-        "        2\n"
-        "    ], \n"
-        "    \"blehg\"\n"
+        "  true, \n"
+        "  [], \n"
+        "  10.2, \n"
+        "  [\n"
+        "    10, \n"
+        "    2\n"
+        "  ], \n"
+        "  \"blehg\"\n"
         "]",
         JSON_LIST(
             json_boolean(true),
@@ -92,14 +92,14 @@ void test_objects() {
 
     test(
         "{\n"
-        "    \"foo\": true, \n"
-        "    \"bar\": [\n"
-        "        \"blehh\", \n"
-        "        {\n"
-        "            \"foo\": 10.2, \n"
-        "            \"bleh\": null\n"
-        "        }\n"
-        "    ]\n"
+        "  \"foo\": true, \n"
+        "  \"bar\": [\n"
+        "    \"blehh\", \n"
+        "    {\n"
+        "      \"foo\": 10.2, \n"
+        "      \"bleh\": null\n"
+        "    }\n"
+        "  ]\n"
         "}",
         JSON_OBJECT(
             "foo",
