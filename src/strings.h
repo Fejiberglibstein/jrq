@@ -2,14 +2,12 @@
 #define _STRINGS_H
 
 #include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
+#include <sys/types.h>
 
 typedef struct {
     char *data;
-    size_t length;
-    size_t capacity;
-    size_t offset;
+    uint length;
+    uint capacity;
 } String;
 
 void string_grow(String *, uint);

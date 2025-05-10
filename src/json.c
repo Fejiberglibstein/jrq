@@ -467,7 +467,7 @@ Json json_substring(Json str, size_t offset, size_t length) {
 
     JsonStringRef *s = (JsonStringRef *)refcnt_init(sizeof(*s));
     s->d = json_ptr_string(str)->d;
-    s->d.offset = s->d.offset + offset;
+    s->d.data += offset;
     s->d.length = length + 1; 
     s->borrowed_string = str;
 

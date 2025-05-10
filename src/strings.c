@@ -17,7 +17,7 @@ bool string_equal(String *a, String *b) {
 }
 
 char *string_get(String *str) {
-    return str->data + str->offset;
+    return str->data;
 }
 
 void string_append(String *a, String b) {
@@ -47,7 +47,6 @@ String string_from_str(char *str, uint len) {
     return (String) {
         .data = str,
         .length = len,
-        .offset = 0,
         .capacity = 0,
     };
 }
@@ -60,7 +59,6 @@ String string_from_str_alloc(char *str, uint len) {
     return (String) {
         .length = len,
         .data = jrq_strndup(str, len),
-        .offset = 0,
         .capacity = len,
     };
 }
