@@ -1,4 +1,5 @@
 #include "src/json.h"
+#include "src/strings.h"
 #include "src/utils.h"
 #include "src/vector.h"
 #include <assert.h>
@@ -437,7 +438,7 @@ Json json_object_get(Json j, const char *key) {
 Json json_string(const char *str) {
     JsonStringRef *s = (JsonStringRef *)refcnt_init(sizeof(*s));
 
-    string_append_str(s->d, str);
+    string_append(&s->d, string_from_chars(str));
 
     return (Json) {.type = JSON_TYPE_STRING, .inner.ptr = (RefCnt *)s};
 }
@@ -446,7 +447,9 @@ Json json_string_concat(Json j, Json str) {
     assert(j.type == JSON_TYPE_STRING);
     assert(str.type == JSON_TYPE_STRING);
 
-    string_append(json_ptr_string(j)->d, json_get_string(str), json_string_length(str) + 1);
+    string_append(
+        &json_ptr_string(j)->d, string_from_str(json_get_string(str), json_string_length(str) + 1)
+    );
     return j;
 }
 
