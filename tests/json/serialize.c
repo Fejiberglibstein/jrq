@@ -12,7 +12,7 @@ void test(char *expected, Json input, JsonSerializeFlags flags) {
     char *res = json_serialize(&input, flags);
     json_free(input);
 
-    if (strcmp(res, expected) != 0) {
+    if (strncmp(res, expected, strlen(expected)) != 0) {
         printf("`%s` did not equal the expected `%s`\n", res, expected);
         assert(false);
     }

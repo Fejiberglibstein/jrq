@@ -140,11 +140,7 @@ void serialize(Serializer *s, Json *json, int depth) {
     case JSON_TYPE_NUMBER:
         APPEND_COLOR(NUM_COLOR);
 
-        int buf_len = snprintf(NULL, 0, "%g", json_get_number(*json)) + 1;
-        string_grow(&s->inner, buf_len);
-        snprintf(s->inner.data + s->inner.length - 1, buf_len, "%g", json_get_number(*json));
-
-        s->inner.length += buf_len - 1;
+        string_printf(&s->inner, "%g", json_get_number(*json));
 
         APPEND_COLOR(RESET_COLOR);
         break;

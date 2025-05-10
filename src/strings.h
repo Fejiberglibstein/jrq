@@ -1,9 +1,9 @@
 #ifndef _STRINGS_H
 #define _STRINGS_H
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 typedef struct {
     char *data;
@@ -16,6 +16,7 @@ void string_grow(String *, uint);
 bool string_equal(String *, String *);
 char *string_get(String *);
 void string_append(String *, String);
+void string_printf(String *, const char *, ...);
 String string_from_str(char *, uint);
 String string_from_chars(char *);
 String string_from_str_alloc(char *, uint);

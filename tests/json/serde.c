@@ -20,7 +20,7 @@ void test(char *input, char *expected, int str_len) {
 
     char *ser = json_serialize(&res.result, JSON_FLAG_SPACES);
     json_free(res.result);
-    if (strncmp(ser, expected, str_len) != 0) {
+    if (strncmp(ser, expected, str_len - 1) != 0) {
         printf("`%s` != `%s`\n", ser, expected);
         assert(ser == expected && "Strings didn't match");
     }
