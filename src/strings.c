@@ -21,9 +21,10 @@ char *string_get(String *str) {
 }
 
 void string_append(String *a, String b) {
-    string_grow(a, b.length);
+    string_grow(a, b.length + 1);
     strncpy((a->data + a->length), string_get(&b), b.length);
     a->length += b.length;
+    string_get(a)[a->length] = '\0';
 }
 
 void string_printf(String *s, const char *fmt, ...) {
@@ -32,9 +33,11 @@ void string_printf(String *s, const char *fmt, ...) {
     va_copy(args2, args1);
 
     int buf_len = vsnprintf(NULL, 0, fmt, args1) + 1;
-    string_grow(s, buf_len);
+    string_grow(s, buf_len + 1);
     vsnprintf(&string_get(s)[s->length], buf_len, fmt, args2);
     s->length += buf_len - 1;
+
+    string_get(s)[s->length] = '\0';
 
     va_end(args1);
     va_end(args2);
