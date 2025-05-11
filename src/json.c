@@ -140,7 +140,7 @@ bool json_equal(Json j1, Json j2) {
         result = fabs(j1.inner.number - j2.inner.number) <= EPSILON;
         break;
     case JSON_TYPE_STRING:
-        result = string_equal(json_get_string(j1), json_get_string(j2));
+        result = string_equal(*json_get_string(j1), *json_get_string(j2));
         break;
     case JSON_TYPE_BOOL:
         result = j1.inner.boolean == j2.inner.boolean;

@@ -11,7 +11,7 @@ typedef struct {
 } String;
 
 void string_grow(String *, uint);
-bool string_equal(String *, String *);
+bool string_equal(String, String);
 char *string_get(String *);
 void string_append(String *, String);
 void string_printf(String *, const char *, ...);

@@ -9,11 +9,11 @@ void string_grow(String *str, uint amt) {
     vec_grow(*str, amt);
 }
 
-bool string_equal(String *a, String *b) {
-    if (a->length != b->length) {
+bool string_equal(String a, String b) {
+    if (a.length != b.length) {
         return false;
     }
-    return strncmp(string_get(a), string_get(b), a->length) == 0;
+    return strncmp(string_get(&a), string_get(&b), a.length) == 0;
 }
 
 char *string_get(String *str) {
