@@ -148,7 +148,7 @@ static EvalData eval_node_primary(Eval *e, ASTNode *node) {
     case TOKEN_IDENT:
         return eval_from_json(vs_get_variable(e, node->inner.primary.inner.ident));
     case TOKEN_STRING:
-        return eval_from_json(json_string(node->inner.primary.inner.string));
+        return eval_from_json(json_string_from(node->inner.primary.inner.string));
     case TOKEN_NUMBER:
         return eval_from_json(json_number(node->inner.primary.inner.number));
     default:

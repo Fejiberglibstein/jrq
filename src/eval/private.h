@@ -48,7 +48,7 @@ typedef struct {
 } EvalData;
 
 typedef struct {
-    char *name;
+    String name;
     Json value;
 } Variable;
 

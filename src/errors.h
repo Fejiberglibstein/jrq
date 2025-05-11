@@ -36,7 +36,7 @@
 #define EVAL_ERR_JSON_ACCESS(t) TYPE_ERROR("Expected string in object access, got %s", t)
 #define EVAL_ERR_INNER_ACCESS(t) TYPE_ERROR("Can not index a %s", t)
 
-#define EVAL_ERR_FUNC_NOT_FOUND(t) TYPE_ERROR("No function named %s", t)
+#define EVAL_ERR_FUNC_NOT_FOUND(t) TYPE_ERROR("No function named %.*s", (int)t.length, t.data)
 #define EVAL_ERR_FUNC_PARAM_NUMBER(exp, act)                                                       \
     TYPE_ERROR(                                                                                    \
         "Too %s arguments to function (expected %d, have %zu)",                                    \
@@ -62,7 +62,8 @@
     TYPE_ERROR("Invalid caller on function (expected %s, got %s)", exp, act)
 #define EVAL_ERR_CLOSURE_RETURN(exp, act)                                                          \
     TYPE_ERROR("Invalid return type from closure (expected, %s, got %s)", exp, act)
-#define EVAL_ERR_VAR_NOT_FOUND(t) RUNTIME_ERROR("Use of undeclared variable %s", t)
+#define EVAL_ERR_VAR_NOT_FOUND(t)                                                                  \
+    RUNTIME_ERROR("Use of undeclared variable %.*s", (int)t.length, t.data)
 
 typedef struct {
     char *err;

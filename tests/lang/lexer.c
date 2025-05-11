@@ -1,5 +1,6 @@
 #include "src/lexer.h"
 #include "../test.h"
+#include "src/strings.h"
 #include <assert.h>
 
 void foo(char *, int, int);
@@ -74,7 +75,7 @@ void test_simple_lex() {
                     .end = (Position) {.col = 1, .line = 1},
                 },
                 .type = TOKEN_IDENT,
-                .inner.ident = "h",
+                .inner.ident = string_from_chars("h"),
             },
             (Token) {
                 .range = (Range) {
@@ -82,7 +83,7 @@ void test_simple_lex() {
                     .end = (Position) {.col = 7, .line = 1},
                 },
                 .type = TOKEN_IDENT,
-                .inner.ident = "hdhd",
+                .inner.ident = string_from_chars("hdhd"),
             },
             (Token) {
                 .range = (Range) {
@@ -90,7 +91,7 @@ void test_simple_lex() {
                     .end = (Position) {.col = 15, .line = 1},
                 },
                 .type = TOKEN_STRING,
-                .inner.ident = "fo\\\"o",
+                .inner.ident = string_from_chars("fo\\\"o"),
             },
             (Token) {
                 .range = (Range) {
@@ -98,7 +99,7 @@ void test_simple_lex() {
                     .end = (Position) {.col = 17, .line = 1},
                 },
                 .type = TOKEN_IDENT,
-                .inner.ident = "j",
+                .inner.ident = string_from_chars("j"),
             },
         }));
 
@@ -135,7 +136,7 @@ void test_simple_lex() {
                 .end = (Position) {.col = 4, .line = 1},
             },
             .type = TOKEN_IDENT,
-            .inner.string = "tghh",
+            .inner.string = string_from_chars("tghh"),
         },
         (Token) {
             .range = (Range) {
@@ -157,7 +158,7 @@ void test_simple_lex() {
                 .end = (Position) {.col = 11, .line = 1},
             },
             .type = TOKEN_IDENT,
-            .inner.ident = "hh",
+            .inner.ident = string_from_chars("hh"),
         },
         (Token) {
             .range = (Range) {
@@ -214,7 +215,7 @@ void test_simple_lex() {
                 .end = (Position) {.col = 8, .line = 1},
             },
             .type = TOKEN_STRING,
-            .inner.string = "foo",
+            .inner.string = string_from_chars("foo"),
         },
         (Token) {
             .range = (Range) {
@@ -222,7 +223,7 @@ void test_simple_lex() {
                 .end = (Position) {.col = 5, .line = 2},
             },
             .type = TOKEN_IDENT,
-            .inner.ident = "foo",
+            .inner.ident = string_from_chars("foo"),
         },
     }));
 }

@@ -21,8 +21,10 @@
 #define __COMPARE_DOUBLE(exp, act, t) (fabs(exp t - act t) < 0.0001)
 #define __PRINT_DOUBLE(exp, act, t) (#t " not equal. Expected '%f' but got '%f'"), exp t, act t
 
-#define __COMPARE_STRING(exp, act, t) strcmp(exp t, act t) == 0
-#define __PRINT_STRING(exp, act, t) (#t " not equal. Expected '%s' but got '%s'"), exp t, act t
+#define __COMPARE_STRING(exp, act, t) string_equal(exp t, act t)
+#define __PRINT_STRING(exp, act, t)                                                                \
+    (#t " not equal. Expected '%.*s' but got '%.*s'"), exp t.length, exp t.data, act t.length,     \
+        act t.data
 
 #define jqr_assert(type, exp, act, t)                                                              \
     __jqr_assert(__COMPARE_##type(exp, act, t), __PRINT_##type(exp, act, t))

@@ -1,6 +1,7 @@
 #include "src/eval/functions.h"
 #include "src/eval/function_declarations.h"
 #include "src/json.h"
+#include "src/strings.h"
 #include "src/utils.h"
 #include <assert.h>
 #include <stdio.h>
@@ -8,42 +9,42 @@
 
 EvalData eval_node_function(Eval *e, ASTNode *node) {
     assert(node->type == AST_TYPE_FUNCTION);
-    char *func_name = node->inner.function.function_name.inner.string;
+    String func_name = node->inner.function.function_name.inner.string;
     e->range = node->range;
 
-    if (strcmp(func_name, "map") == 0) {
+    if (string_equal(func_name, string_from_chars("map"))) {
         return eval_from_iter(eval_func_map(e, node));
-    } else if (strcmp(func_name, "collect") == 0) {
+    } else if (string_equal(func_name, string_from_chars("collect")) == 0) {
         return eval_from_json(eval_func_collect(e, node));
-    } else if (strcmp(func_name, "iter") == 0) {
+    } else if (string_equal(func_name, string_from_chars("iter")) == 0) {
         return eval_from_iter(eval_func_iter(e, node));
-    } else if (strcmp(func_name, "keys") == 0) {
+    } else if (string_equal(func_name, string_from_chars("keys")) == 0) {
         return eval_from_iter(eval_func_keys(e, node));
-    } else if (strcmp(func_name, "values") == 0) {
+    } else if (string_equal(func_name, string_from_chars("values")) == 0) {
         return eval_from_iter(eval_func_values(e, node));
-    } else if (strcmp(func_name, "enumerate") == 0) {
+    } else if (string_equal(func_name, string_from_chars("enumerate")) == 0) {
         return eval_from_iter(eval_func_enumerate(e, node));
-    } else if (strcmp(func_name, "filter") == 0) {
+    } else if (string_equal(func_name, string_from_chars("filter")) == 0) {
         return eval_from_iter(eval_func_filter(e, node));
-    } else if (strcmp(func_name, "zip") == 0) {
+    } else if (string_equal(func_name, string_from_chars("zip")) == 0) {
         return eval_from_iter(eval_func_zip(e, node));
-    } else if (strcmp(func_name, "sum") == 0) {
+    } else if (string_equal(func_name, string_from_chars("sum")) == 0) {
         return eval_from_json(eval_func_sum(e, node));
-    } else if (strcmp(func_name, "product") == 0) {
+    } else if (string_equal(func_name, string_from_chars("product")) == 0) {
         return eval_from_json(eval_func_product(e, node));
-    } else if (strcmp(func_name, "flatten") == 0) {
+    } else if (string_equal(func_name, string_from_chars("flatten")) == 0) {
         return eval_from_json(eval_func_flatten(e, node));
-    } else if (strcmp(func_name, "join") == 0) {
+    } else if (string_equal(func_name, string_from_chars("join")) == 0) {
         return eval_from_json(eval_func_join(e, node));
-    } else if (strcmp(func_name, "length") == 0) {
+    } else if (string_equal(func_name, string_from_chars("length")) == 0) {
         return eval_from_json(eval_func_length(e, node));
-    } else if (strcmp(func_name, "skip_while") == 0) {
+    } else if (string_equal(func_name, string_from_chars("skip_while")) == 0) {
         return eval_from_iter(eval_func_skip_while(e, node));
-    } else if (strcmp(func_name, "take") == 0) {
+    } else if (string_equal(func_name, string_from_chars("take")) == 0) {
         return eval_from_iter(eval_func_take(e, node));
-    } else if (strcmp(func_name, "skip") == 0) {
+    } else if (string_equal(func_name, string_from_chars("skip")) == 0) {
         return eval_from_iter(eval_func_skip(e, node));
-    } else if (strcmp(func_name, "split") == 0) {
+    } else if (string_equal(func_name, string_from_chars("split")) == 0) {
         return eval_from_iter(eval_func_split(e, node));
     }
 
@@ -52,16 +53,16 @@ EvalData eval_node_function(Eval *e, ASTNode *node) {
     unreachable("Bubbling would have returned the error");
 }
 
-void vs_push_variable(VariableStack *vs, char *var_name, Json value) {
+void vs_push_variable(VariableStack *vs, String var_name, Json value) {
     vec_append(*vs, (Variable) {.value = value, .name = var_name});
 }
 
-void vs_pop_variable(VariableStack *vs, char *var_name) {
+void vs_pop_variable(VariableStack *vs, String var_name) {
     Variable v = vec_pop(*vs);
-    assert(strcmp(v.name, var_name) == 0);
+    assert(string_equal(v.name, var_name));
 }
 
-Json vs_get_variable(Eval *e, char *var_name) {
+Json vs_get_variable(Eval *e, String var_name) {
     VariableStack *vs = &e->vs;
     if (vs->length == 0) {
         return json_null();
@@ -69,7 +70,7 @@ Json vs_get_variable(Eval *e, char *var_name) {
 
     uint i = vs->length - 1;
     do {
-        if (strcmp(vs->data[i].name, var_name) == 0) {
+        if (string_equal(vs->data[i].name, var_name)) {
             return json_copy(vs->data[i].value);
         }
     } while (i-- > 0);
@@ -167,8 +168,8 @@ static EvalData func_eval_caller(Eval *e, ASTNode *function_node, struct functio
                     jcaller.list_inner_type,
                     list_inner_type,
                     EVAL_ERR_FUNC_WRONG_CALLER(
-                        json_type((Json) {.type = JSON_TYPE_LIST,
-                                          .list_inner_type = list_inner_type}),
+                        json_type((Json) {.type = JSON_TYPE_LIST, .list_inner_type = list_inner_type
+                        }),
                         json_type(jcaller)
                     )
                 );

@@ -45,8 +45,8 @@ struct function_data {
 EvalData func_expect_args(Eval *, ASTNode *, Json *, struct function_data);
 int vs_push_closure_variable(Eval *e, ASTNode *var, Json value);
 int vs_pop_closure_variable(Eval *e, ASTNode *var, Json value);
-void vs_push_variable(VariableStack *vs, char *var_name, Json value);
-void vs_pop_variable(VariableStack *vs, char *var_name);
-Json vs_get_variable(Eval *e, char *var_name);
+void vs_push_variable(VariableStack *vs, String var_name, Json value);
+void vs_pop_variable(VariableStack *vs, String var_name);
+Json vs_get_variable(Eval *e, String var_name);
 
 #endif // _EVAL_FUNCTIONS_H
