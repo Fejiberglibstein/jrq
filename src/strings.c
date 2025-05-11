@@ -56,10 +56,21 @@ String string_from_chars(char *str) {
 }
 
 String string_from_str_alloc(char *str, uint len) {
+    uint capacity;
+    char *data;
+
+    if (len == 0) {
+        capacity = 32;
+        data = jrq_malloc(capacity);
+    } else {
+        capacity = len;
+        data = jrq_strndup(str, len);
+    }
+
     return (String) {
         .length = len,
-        .data = jrq_strndup(str, len),
-        .capacity = len,
+        .data = data,
+        .capacity = capacity,
     };
 }
 
