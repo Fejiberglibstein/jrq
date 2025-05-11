@@ -22,7 +22,7 @@ Json parse_object(Parser *p) {
                 return json_invalid();
             }
 
-            Json key = json_string(p->prev.inner.string);
+            Json key = json_string_from(p->prev.inner.string);
 
             parser_expect(p, TOKEN_COLON, ERROR_EXPECTED_COLON);
             if (p->error != NULL) {
@@ -79,7 +79,7 @@ static Json parse_json(Parser *p) {
 
         switch (t.type) {
         case TOKEN_STRING:
-            return json_string(t.inner.string);
+            return json_string_from(t.inner.string);
         case TOKEN_NUMBER:
             return json_number(t.inner.number);
         case TOKEN_MINUS:

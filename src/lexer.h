@@ -1,6 +1,7 @@
 #ifndef _LEXER_H
 #define _LEXER_H
 
+#include "src/strings.h"
 #include <stdbool.h>
 #include <sys/types.h>
 
@@ -55,8 +56,8 @@ typedef enum uint8_t {
 } TokenType;
 
 union tok_inner {
-    char *ident;
-    char *string;
+    String ident;
+    String string;
     double number;
 };
 

@@ -1,5 +1,6 @@
 #include "src/lexer.h"
 #include "src/alloc.h"
+#include "src/strings.h"
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>
@@ -7,12 +8,6 @@
 
 #define min(a, b) ((a) < (b)) ? (a) : (b)
 #define max(a, b) ((a) > (b)) ? (a) : (b)
-
-typedef struct {
-    Token *data;
-    uint length;
-    uint capacity;
-} TokenBuf;
 
 char *next_char(Lexer *l) {
     if (*l->str == '\n') {
@@ -45,9 +40,9 @@ static bool is_alpha(char c) {
     return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
 }
 
-static LexResult parse_keyword(char *ident, Range range) {
+static LexResult parse_keyword(String ident, Range range) {
 #define KEYWORD(keyword, tok)                                                                      \
-    if (strncmp(ident, keyword, sizeof(keyword) - 1) == 0)                                         \
+    if (string_equal(ident, string_from_chars(keyword)))                                           \
         return (LexResult) {.token.type = (tok), .token.range = range};
 
     KEYWORD("true", TOKEN_TRUE);
@@ -68,9 +63,8 @@ static LexResult parse_ident(Lexer *l) {
 
     Position end_position = l->position;
 
-    uint size = (uint)(l->str - start) + 1;
-    char *ident = jrq_strndup(start, size);
-    ident[size] = '\0';
+    uint size = (uint)(l->str - start);
+    String ident = string_from_str(start, size);
 
     next_char(l);
 
@@ -81,7 +75,6 @@ static LexResult parse_ident(Lexer *l) {
 
     LexResult keyword = parse_keyword(ident, range);
     if (keyword.error_message == NULL) {
-        free(ident);
         return keyword;
     }
 
@@ -118,8 +111,7 @@ static LexResult parse_string(Lexer *l) {
 
     uint size = (uint)(l->str - 1 - start);
 
-    char *string = jrq_calloc(1, size + 1);
-    strncpy(string, start + 1, size);
+    String string = string_from_str(start, size);
 
     // Skip past the "
     next_char(l);
@@ -336,20 +328,21 @@ void parser_expect(Parser *p, TokenType expected, char *err) {
 }
 
 void tok_free(Token *tok) {
-    switch (tok->type) {
-    case TOKEN_IDENT:
-        if (tok->inner.ident != NULL) {
-            free(tok->inner.ident);
-        }
-        break;
-    case TOKEN_STRING:
-        if (tok->inner.string != NULL) {
-            free(tok->inner.string);
-        }
-        break;
-    default:
-        break;
-    }
+    return;
+    // switch (tok->type) {
+    // case TOKEN_IDENT:
+    //     if (tok->inner.ident != NULL) {
+    //         free(tok->inner.ident);
+    //     }
+    //     break;
+    // case TOKEN_STRING:
+    //     if (tok->inner.string != NULL) {
+    //         free(tok->inner.string);
+    //     }
+    //     break;
+    // default:
+    //     break;
+    // }
 }
 
 Token_norange tok_norange(Token t) {
