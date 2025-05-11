@@ -49,6 +49,7 @@ char *json_type(Json);
 
 Json json_number(double f);
 Json json_string(const char *);
+Json json_string_from(String);
 Json json_substring(Json, size_t, size_t);
 Json json_boolean(bool);
 Json json_null(void);

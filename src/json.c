@@ -263,6 +263,10 @@ void json_free(Json j) {
         free(json_ptr_list(j));
         break;
     case JSON_TYPE_STRING:
+        // If there is no capacity, then the string was not allocated as a json string
+        if (json_ptr_string(j)->d.capacity == 0) {
+            break;
+        }
         if (!json_is_null(json_ptr_string(j)->borrowed_string)) {
             // If the string is a substring, we should free the string we're borrowing from
             json_free(json_ptr_string(j)->borrowed_string);
@@ -456,6 +460,13 @@ Json json_string(const char *str) {
     return (Json) {.type = JSON_TYPE_STRING, .inner.ptr = (RefCnt *)s};
 }
 
+Json json_string_from(String str) {
+    JsonStringRef *s = (JsonStringRef *)refcnt_init(sizeof(*s));
+    s->d = str;
+    s->d.capacity = 0;
+    return (Json) {.type = JSON_TYPE_STRING, .inner.ptr = (RefCnt *)s};
+}
+
 /// Create a json string out of the substring of another string.
 ///
 /// This will NOT allocate a new string, instead it will borrow from the original string.
@@ -468,9 +479,10 @@ Json json_substring(Json str, size_t offset, size_t length) {
     JsonStringRef *s = (JsonStringRef *)refcnt_init(sizeof(*s));
     s->d = json_ptr_string(str)->d;
     s->d.data += offset;
-    s->d.length = length + 1; 
-    s->borrowed_string = str;
+    s->d.length = length + 1;
+    s->d.capacity = 0;
 
+    s->borrowed_string = str;
     refcnt_inc(str);
     return (Json) {.type = JSON_TYPE_STRING, .inner.ptr = (RefCnt *)s};
 }
@@ -478,6 +490,7 @@ Json json_substring(Json str, size_t offset, size_t length) {
 Json json_string_concat(Json j, Json str) {
     assert(j.type == JSON_TYPE_STRING);
     assert(str.type == JSON_TYPE_STRING);
+    assert(json_get_string(j)->capacity != 0);
 
     string_append(json_get_string(j), *json_get_string(str));
     return j;
