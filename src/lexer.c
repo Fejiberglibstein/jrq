@@ -63,7 +63,7 @@ static LexResult parse_ident(Lexer *l) {
 
     Position end_position = l->position;
 
-    uint size = (uint)(l->str - start);
+    uint size = (uint)(l->str - start) + 1;
     String ident = string_from_str(start, size);
 
     next_char(l);
@@ -109,9 +109,9 @@ static LexResult parse_string(Lexer *l) {
 
     Position end_position = l->position;
 
-    uint size = (uint)(l->str - 1 - start);
+    uint size = (uint)(l->str - start - 1);
 
-    String string = string_from_str(start, size);
+    String string = string_from_str(start + 1, size);
 
     // Skip past the "
     next_char(l);

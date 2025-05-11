@@ -2,6 +2,7 @@
 #include "../test.h"
 #include "src/errors.h"
 #include "src/lexer.h"
+#include "src/strings.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -78,7 +79,7 @@ void test_primary_expr() {
             .type = AST_TYPE_PRIMARY,
             .inner.primary = (Token_norange) {
                 .type = TOKEN_IDENT,
-                .inner.ident = "ofoobar",
+                .inner.ident = string_from_chars("ofoobar"),
             },
             .range = range_new(2, 8, 2, 14),
         },
@@ -92,7 +93,7 @@ void test_primary_expr() {
                 .type = AST_TYPE_PRIMARY,
                 .inner.primary = (Token_norange) {
                     .type = TOKEN_STRING,
-                    .inner.string = "foo",
+                    .inner.string = string_from_chars("foo"),
                 },
                 .range = range_new(1, 3, 1, 7),
             },
@@ -113,7 +114,7 @@ static void test_access_function_expr() {
         .type = AST_TYPE_PRIMARY,
         .inner.primary = (Token_norange) {
             .type = TOKEN_IDENT,
-            .inner.ident = "foo",
+            .inner.ident = string_from_chars("foo"),
         },
     };
 
@@ -121,7 +122,7 @@ static void test_access_function_expr() {
         .type = AST_TYPE_PRIMARY,
         .inner.primary = (Token_norange) {
             .type = TOKEN_IDENT,
-            .inner.ident = "bar",
+            .inner.ident = string_from_chars("bar"),
         },
     };
 
@@ -129,7 +130,7 @@ static void test_access_function_expr() {
         .type = AST_TYPE_PRIMARY,
         .inner.primary = (Token_norange) {
             .type = TOKEN_IDENT,
-            .inner.ident = "baz",
+            .inner.ident = string_from_chars("baz"),
         },
     };
 
@@ -241,7 +242,7 @@ static void test_access_function_expr() {
             .type = AST_TYPE_PRIMARY,
             .inner.primary = (Token_norange) {
                 .type = TOKEN_IDENT,
-                .inner.ident = "baz",
+                .inner.ident = string_from_chars("baz"),
             },
         },
         .inner.access.inner = &(ASTNode) {
@@ -267,7 +268,7 @@ static void test_json_literals() {
                         .type = AST_TYPE_PRIMARY,
                         .inner.primary = (Token_norange) {
                             .type = TOKEN_STRING,
-                            .inner.string = "foo"
+                            .inner.string = string_from_chars("foo")
                         },
                     },
                     .inner.json_field.value = &(ASTNode) {
@@ -295,7 +296,7 @@ static void test_json_literals() {
                         .type = AST_TYPE_PRIMARY,
                         .inner.primary = (Token_norange) {
                             .type = TOKEN_STRING,
-                            .inner.string = "bl"
+                            .inner.string = string_from_chars("bl")
                         },
                     },
                     .inner.json_field.value = &(ASTNode) {
@@ -322,7 +323,7 @@ static void test_json_literals() {
                             .type = AST_TYPE_PRIMARY,
                             .inner.primary = (Token_norange) {
                                 .type = TOKEN_STRING,
-                                .inner.string = "foo"
+                                .inner.string = string_from_chars("foo")
                             },
                         },
                         .inner.json_field.value = &(ASTNode) {
@@ -334,7 +335,7 @@ static void test_json_literals() {
                                     .type = AST_TYPE_PRIMARY,
                                     .inner.primary = (Token_norange) {
                                         .type = TOKEN_IDENT,
-                                        .inner.ident = "foo",
+                                        .inner.ident = string_from_chars("foo"),
                                     }
                                 },
                             },
@@ -355,7 +356,7 @@ static void test_json_literals() {
             .type = AST_TYPE_PRIMARY,
             .inner.primary = (Token_norange) {
                 .type = TOKEN_IDENT,
-                .inner.ident = "bleh",
+                .inner.ident = string_from_chars("bleh"),
             }
         },
     });
