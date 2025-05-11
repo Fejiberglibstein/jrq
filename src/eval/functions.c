@@ -14,37 +14,37 @@ EvalData eval_node_function(Eval *e, ASTNode *node) {
 
     if (string_equal(func_name, string_from_chars("map"))) {
         return eval_from_iter(eval_func_map(e, node));
-    } else if (string_equal(func_name, string_from_chars("collect")) == 0) {
+    } else if (string_equal(func_name, string_from_chars("collect"))) {
         return eval_from_json(eval_func_collect(e, node));
-    } else if (string_equal(func_name, string_from_chars("iter")) == 0) {
+    } else if (string_equal(func_name, string_from_chars("iter"))) {
         return eval_from_iter(eval_func_iter(e, node));
-    } else if (string_equal(func_name, string_from_chars("keys")) == 0) {
+    } else if (string_equal(func_name, string_from_chars("keys"))) {
         return eval_from_iter(eval_func_keys(e, node));
-    } else if (string_equal(func_name, string_from_chars("values")) == 0) {
+    } else if (string_equal(func_name, string_from_chars("values"))) {
         return eval_from_iter(eval_func_values(e, node));
-    } else if (string_equal(func_name, string_from_chars("enumerate")) == 0) {
+    } else if (string_equal(func_name, string_from_chars("enumerate"))) {
         return eval_from_iter(eval_func_enumerate(e, node));
-    } else if (string_equal(func_name, string_from_chars("filter")) == 0) {
+    } else if (string_equal(func_name, string_from_chars("filter"))) {
         return eval_from_iter(eval_func_filter(e, node));
-    } else if (string_equal(func_name, string_from_chars("zip")) == 0) {
+    } else if (string_equal(func_name, string_from_chars("zip"))) {
         return eval_from_iter(eval_func_zip(e, node));
-    } else if (string_equal(func_name, string_from_chars("sum")) == 0) {
+    } else if (string_equal(func_name, string_from_chars("sum"))) {
         return eval_from_json(eval_func_sum(e, node));
-    } else if (string_equal(func_name, string_from_chars("product")) == 0) {
+    } else if (string_equal(func_name, string_from_chars("product"))) {
         return eval_from_json(eval_func_product(e, node));
-    } else if (string_equal(func_name, string_from_chars("flatten")) == 0) {
+    } else if (string_equal(func_name, string_from_chars("flatten"))) {
         return eval_from_json(eval_func_flatten(e, node));
-    } else if (string_equal(func_name, string_from_chars("join")) == 0) {
+    } else if (string_equal(func_name, string_from_chars("join"))) {
         return eval_from_json(eval_func_join(e, node));
-    } else if (string_equal(func_name, string_from_chars("length")) == 0) {
+    } else if (string_equal(func_name, string_from_chars("length"))) {
         return eval_from_json(eval_func_length(e, node));
-    } else if (string_equal(func_name, string_from_chars("skip_while")) == 0) {
+    } else if (string_equal(func_name, string_from_chars("skip_while"))) {
         return eval_from_iter(eval_func_skip_while(e, node));
-    } else if (string_equal(func_name, string_from_chars("take")) == 0) {
+    } else if (string_equal(func_name, string_from_chars("take"))) {
         return eval_from_iter(eval_func_take(e, node));
-    } else if (string_equal(func_name, string_from_chars("skip")) == 0) {
+    } else if (string_equal(func_name, string_from_chars("skip"))) {
         return eval_from_iter(eval_func_skip(e, node));
-    } else if (string_equal(func_name, string_from_chars("split")) == 0) {
+    } else if (string_equal(func_name, string_from_chars("split"))) {
         return eval_from_iter(eval_func_split(e, node));
     }
 
@@ -168,8 +168,8 @@ static EvalData func_eval_caller(Eval *e, ASTNode *function_node, struct functio
                     jcaller.list_inner_type,
                     list_inner_type,
                     EVAL_ERR_FUNC_WRONG_CALLER(
-                        json_type((Json) {.type = JSON_TYPE_LIST, .list_inner_type = list_inner_type
-                        }),
+                        json_type((Json) {.type = JSON_TYPE_LIST,
+                                          .list_inner_type = list_inner_type}),
                         json_type(jcaller)
                     )
                 );

@@ -33,7 +33,6 @@ int main(int argc, char **argv) {
         free(str);
         exit(1);
     }
-    free(str);
 
     Json result = res.result;
 
@@ -44,6 +43,7 @@ int main(int argc, char **argv) {
             char *err_string = jrq_error_format(parse_res.err, code);
             printf("%s\n", err_string);
             json_free(result);
+            free(str);
             free(err_string);
             exit(1);
         }
@@ -56,6 +56,7 @@ int main(int argc, char **argv) {
         if (eval_res.type == RES_ERR) {
             char *err_string = jrq_error_format(eval_res.err, code);
             printf("%s\n", err_string);
+            free(str);
             free(err_string);
             exit(1);
         }
@@ -72,6 +73,7 @@ int main(int argc, char **argv) {
     json_free(result);
     printf("%s\n", out);
 
+    free(str);
     free(out);
     return 0;
 }

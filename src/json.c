@@ -265,6 +265,7 @@ void json_free(Json j) {
     case JSON_TYPE_STRING:
         // If there is no capacity, then the string was not allocated as a json string
         if (json_ptr_string(j)->d.capacity == 0) {
+            free(json_ptr_string(j));
             break;
         }
         if (!json_is_null(json_ptr_string(j)->borrowed_string)) {
