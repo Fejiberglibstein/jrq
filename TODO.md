@@ -26,7 +26,7 @@
 
 # functions
 
-- [ ] `(string).split(string) -> Iterator<string>`
+- [x] `(string).split(string) -> Iterator<string>`
 
 - [ ] `(object | list<list | object>).flat_map(|T| -> U) -> (object | list<any>)`
   - shorthand for `.map( ... ).flatten()`

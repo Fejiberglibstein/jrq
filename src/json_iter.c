@@ -2,7 +2,6 @@
 #include "src/alloc.h"
 #include "src/json.h"
 #include "src/strings.h"
-#include "src/utils.h"
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>

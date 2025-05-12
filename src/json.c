@@ -102,7 +102,7 @@ static char *json_list_type(JsonType type) {
         return "list[string]";
     case JSON_TYPE_BOOL:
         return "list[bool]";
-    case JSON_TYPE_ANY:
+    default:
         return "list";
     }
 }
@@ -123,7 +123,7 @@ char *json_type(Json j) {
         return "string";
     case JSON_TYPE_BOOL:
         return "bool";
-    case JSON_TYPE_ANY:
+    default:
         unreachable("Cannot be an any");
     }
 }

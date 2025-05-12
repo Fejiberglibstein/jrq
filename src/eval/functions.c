@@ -4,7 +4,6 @@
 #include "src/strings.h"
 #include "src/utils.h"
 #include <assert.h>
-#include <stdio.h>
 #include <string.h>
 
 EvalData eval_node_function(Eval *e, ASTNode *node) {

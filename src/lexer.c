@@ -1,7 +1,6 @@
 #include "src/lexer.h"
 #include "src/alloc.h"
 #include "src/strings.h"
-#include "utils.h"
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
@@ -25,6 +24,10 @@ char *next_char(Lexer *l) {
 
 #define peek_char(l) (l)->str[1]
 #define char(l) *(l)->str
+
+static bool is_whitespace(char c) {
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+}
 
 static void skip_whitespace(Lexer *l) {
     while (is_whitespace(*l->str)) {

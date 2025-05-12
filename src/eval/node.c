@@ -20,7 +20,6 @@ static EvalData eval_node_access(Eval *e, ASTNode *node);
 
 EvalData eval_node(Eval *e, ASTNode *node) {
     if (node == NULL) {
-        // TODO don't copy this all the time lol. maybe add a flag to json to not free it?
         return eval_from_json(json_copy(e->input));
     }
 
