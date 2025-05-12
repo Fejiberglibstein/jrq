@@ -521,3 +521,40 @@ JsonIterator eval_func_split(Eval *e, ASTNode *node) {
 
     return iter_split(str, evaled_args[0]);
 }
+
+// This function is necessary, it allows what jq has by piping:
+//
+// .filter(|v| v.bar > 4).and_then(|v| {"foo": v.map(|h| h.foo) + v.map(|h| h.bar})
+//
+// compared to
+//
+// {"foo": .filter(|v| v.bar > 4).map(|v| v.foo), "bar": .filter(|v| v.bar > 4).map(|v| v.bar}
+static struct function_data FUNC_AND_THEN = {
+    .function_name = "and_then",
+    .caller_type = JSON_TYPE_ANY,
+
+    .parameter_types = (JsonType[]) {JSON_TYPE_CLOSURE_WITH_PARAMS(1)},
+    .parameter_amount = 1,
+};
+Json eval_func_and_then(Eval *e, ASTNode *node) {
+    Json evaled_args[1] = {};
+
+    Json j = eval_to_json(e, func_expect_args(e, node, evaled_args, FUNC_AND_THEN));
+    if (eval_has_err(e)) {
+        return json_null();
+    }
+    ASTNode *closure = node->inner.function.args.data[0];
+
+    int pushed = vs_push_closure_variable(e, closure->inner.closure.args.data[0], j);
+    Json ret = json_invalid();
+
+    if (!eval_has_err(e)) {
+        ret = eval_to_json(e, eval_node(e, closure->inner.closure.body));
+    }
+
+    int popped = vs_pop_closure_variable(e, closure->inner.closure.args.data[0], j);
+    assert(pushed == popped);
+    json_free(j);
+
+    return ret;
+}

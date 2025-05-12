@@ -45,6 +45,8 @@ EvalData eval_node_function(Eval *e, ASTNode *node) {
         return eval_from_iter(eval_func_skip(e, node));
     } else if (string_equal(func_name, string_from_chars("split"))) {
         return eval_from_iter(eval_func_split(e, node));
+    } else if (string_equal(func_name, string_from_chars("and_then"))) {
+        return eval_from_json(eval_func_and_then(e, node));
     }
 
     eval_set_err(e, EVAL_ERR_FUNC_NOT_FOUND(func_name));
