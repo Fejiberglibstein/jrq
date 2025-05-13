@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
         result = eval_res.json;
     }
 
-    JsonSerializeFlags flags = JSON_FLAG_TAB;
+    JsonSerializeFlags flags = JSON_FLAG_TAB | JSON_FLAG_SPACES;
     if (isatty(STDOUT_FILENO)) {
         flags = JSON_FLAG_TAB | JSON_FLAG_SPACES | JSON_FLAG_COLORS;
     }
