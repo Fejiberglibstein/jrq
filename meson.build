@@ -19,7 +19,12 @@ files = [
   'src/strings.c',
 ]
 
-executable('jrq', files + './src/main.c', dependencies: m_dep)
+executable(
+  'jrq',
+  files + './src/main.c',
+  dependencies: m_dep,
+  install: true
+)
 
 tests = [
   ['json', 'serialize', './tests/json/serialize.c'],
