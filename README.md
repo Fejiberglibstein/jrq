@@ -13,84 +13,66 @@ For a full list of features and a tutorial, see the [wiki](https://github.com/Fe
 
 # Usage
 
-```js
-// Input
-{
-  "foo": [
-    { "bar": 0 },
-    { "bar": 1 },
-    { "bar": 2 },
-  ]
-}
-```
-
 ```bash
-cat file.json | jrq '.foo.map(|v| v.bar)'
-```
+# data.json
+# {
+#   "foo":
+#     [
+#       { "bar": 0 },
+#       { "bar": 1 },
+#       { "bar": 2 },
+#     ]
+# }
 
-```js
-// Output
-[0, 1, 2]
+cat data.json | jrq '.foo.map(|v| v.bar)'
+
+# Output:
+# [0, 1, 2]
 ```
 
 ---
 
-```js
-// Input
-[
-  {
-    "foo": 10,
-    "bar": 6                
-  },                        
-  {                            
-    "foo": 8,
-    "bar": 8
-  },
-  {
-    "foo": 7,
-    "bar": 8
-  },
-  {
-    "foo": 21,
-    "bar": 3
-  },
-  {
-    "foo": 1,
-    "bar": 11
-  },
-  {
-    "foo": 7,
-    "bar": 9
-  }
-]
-```
-
 ```bash
-cat file.json | jrq '
+# data.json
+# [
+#   {
+#     "foo": 10,
+#     "bar": 6                
+#   },                        
+#   {                            
+#     "foo": 8,
+#     "bar": 8
+#   },
+#   {
+#     "foo": 7,
+#     "bar": 8
+#   },
+#   {
+#     "foo": 21,
+#     "bar": 3
+#   },
+#   {
+#     "foo": 1,
+#     "bar": 11
+#   },
+#   {
+#     "foo": 7,
+#     "bar": 9
+#   }
+# ]
+
+cat data.json | jrq '
   .filter(|v| v.foo <= v.bar)
   .and_then(|h| {
     "foo": h.map(|v| v.foo),
     "bar": h.map(|v| v.bar)
   })'
 
-```
-
-```js
-// Output
-{
-  "foo": [
-    8, 
-    7, 
-    1, 
-    7
-  ], 
-  "bar": [
-    8, 
-    8, 
-    11, 
-    9
-  ]
-}
+# Output
+# {
+#  "foo": [ 8, 7, 1, 7 ], 
+#  "bar": [ 8, 8, 11, 9 ]
+# }
 ```
 
 # Installation
