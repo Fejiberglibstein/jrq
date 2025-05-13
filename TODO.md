@@ -36,10 +36,10 @@
   - Links two iterators together like a chain
     - `[1, 2, 3].chain([4, 5, 6]) -> [1, 2, 3, 4, 5, 6]`
 
-- [ ] `(Iterator<T>).take_while(|T| -> bool) -> Iterator<T>`
-- [ ] `(Iterator<T>).skip_while(|T| -> bool) -> Iterator<T>`
-- [ ] `(Iterator<T>).take(number) -> Iterator<T>`
-- [ ] `(Iterator<T>).skip(number) -> Iterator<T>`
+- [x] `(Iterator<T>).take_while(|T| -> bool) -> Iterator<T>`
+- [x] `(Iterator<T>).skip_while(|T| -> bool) -> Iterator<T>`
+- [x] `(Iterator<T>).take(number) -> Iterator<T>`
+- [x] `(Iterator<T>).skip(number) -> Iterator<T>`
 
 
 
