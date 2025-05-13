@@ -13,7 +13,7 @@ For a full list of features and a tutorial, see the [wiki](https://github.com/Fe
 
 # Usage
 
-```json
+```js
 // Input
 {
   "foo": [
@@ -28,14 +28,14 @@ For a full list of features and a tutorial, see the [wiki](https://github.com/Fe
 cat file.json | jrq '.foo.map(|v| v.bar)'
 ```
 
-```json
+```js
 // Output
 [0, 1, 2]
 ```
 
 ---
 
-```json
+```js
 // Input
 [
   {
@@ -75,7 +75,7 @@ cat file.json | jrq '
 
 ```
 
-```json
+```js
 // Output
 {
   "foo": [
