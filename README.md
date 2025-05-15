@@ -13,84 +13,22 @@ For a full list of features and a tutorial, see the [wiki](https://github.com/Fe
 
 # Usage
 
-```js
-// Input
-{
-  "foo": [
-    { "bar": 0 },
-    { "bar": 1 },
-    { "bar": 2 },
-  ]
-}
-```
-
+Access a field:
 ```bash
-cat file.json | jrq '.foo.map(|v| v.bar)'
+$echo '{"a": 2, "b": 6}' | jrq '.a'
+2
 ```
 
-```js
-// Output
-[0, 1, 2]
-```
-
----
-
-```js
-// Input
-[
-  {
-    "foo": 10,
-    "bar": 6                
-  },                        
-  {                            
-    "foo": 8,
-    "bar": 8
-  },
-  {
-    "foo": 7,
-    "bar": 8
-  },
-  {
-    "foo": 21,
-    "bar": 3
-  },
-  {
-    "foo": 1,
-    "bar": 11
-  },
-  {
-    "foo": 7,
-    "bar": 9
-  }
-]
-```
-
+Map over an iterable
 ```bash
-cat file.json | jrq '
-  .filter(|v| v.foo <= v.bar)
-  .and_then(|h| {
-    "foo": h.map(|v| v.foo),
-    "bar": h.map(|v| v.bar)
-  })'
-
+$echo '[1, 2, 3, 4]' | jrq '.map(|v| v * 2)'
+[2, 4, 6, 8]
 ```
 
-```js
-// Output
-{
-  "foo": [
-    8, 
-    7, 
-    1, 
-    7
-  ], 
-  "bar": [
-    8, 
-    8, 
-    11, 
-    9
-  ]
-}
+Apply multiple functions
+```bash
+$echo '"Hello World"' | jrq '.split("").filter(|v| v != "o" && v != "l").join("")'
+"He Wrd"
 ```
 
 # Installation
