@@ -558,3 +558,26 @@ Json eval_func_and_then(Eval *e, ASTNode *node) {
 
     return ret;
 }
+
+static struct function_data FUNC_CHAIN = {
+    .function_name = "chain",
+    .caller_type = JSON_TYPE_ITERATOR,
+
+    .parameter_types = (JsonType[]) {JSON_TYPE_ANY},
+    .parameter_amount = 1,
+};
+JsonIterator eval_func_chain(Eval *e, ASTNode *node) {
+    Json evaled_args[1] = {0};
+
+    EvalData i = func_expect_args(e, node, evaled_args, FUNC_CHAIN);
+    if (eval_has_err(e)) {
+        return NULL;
+    }
+    JsonIterator first = i.iter;
+    JsonIterator second = eval_to_iter(e, eval_from_json(evaled_args[0]));
+    if (eval_has_err(e)) {
+        return NULL;
+    }
+
+    return iter_chain(first, second);
+}
