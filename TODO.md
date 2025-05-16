@@ -18,7 +18,7 @@
   - This would make something like `range(10)` allowed.
   - Right now, only methods (`.foo()`) are allowed.
 
-- [ ] `.[]` syntax. This will be another way of accessing the input data, but
+- [x] `.[]` syntax. This will be another way of accessing the input data, but
   will allow for expression indexing.
   - Right now, only `{"foo": 1} | .foo`, `[0, 1, 2] | .0` is allowed, this will
     make it possible to do `{"foo bar": 10} | .["foo bar"]`
@@ -32,7 +32,7 @@
   - shorthand for `.map( ... ).flatten()`
     - `[1, 2, 3, 4].flatmap(|v| range(v)) -> [0, 0, 1, 0, 1, 2, 0, 1, 2, 3]`
 
-- [ ] `(Iterator<any>).chain(Iterator<any>) -> Iterator<any>`
+- [x] `(Iterator<any>).chain(Iterator<any>) -> Iterator<any>`
   - Links two iterators together like a chain
     - `[1, 2, 3].chain([4, 5, 6]) -> [1, 2, 3, 4, 5, 6]`
 
