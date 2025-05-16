@@ -648,3 +648,46 @@ JsonIterator iter_split(Json string, Json splitter) {
     };
     return (JsonIterator)i;
 };
+
+/*************
+ * ChainIter *
+ *************/
+
+typedef struct {
+    struct JsonIterator parent;
+    JsonIterator first;
+    JsonIterator second;
+} ChainIter;
+
+static void free_func_chain(JsonIterator _i) {
+    ChainIter *i = (typeof(i))_i;
+    iter_free(i->first);
+    iter_free(i->second);
+}
+static IterOption chain_iter_next(JsonIterator _i) {
+    ChainIter *i = (ChainIter *)_i;
+
+    Json j = json_null();
+
+    IterOption opt = iter_next(i->first);
+    if (opt.type == ITER_DONE) {
+        j = NEXT(i->second);
+    } else {
+        j = opt.some;
+    }
+
+    return iter_some(j);
+}
+
+/// Combines two iterators in a chain.
+///
+/// When the first one ends, the second will be yielded
+JsonIterator iter_chain(JsonIterator first, JsonIterator second) {
+    ChainIter *i = jrq_malloc(sizeof(*i));
+    *i = (ChainIter) {
+        .parent = {.func = &chain_iter_next, .free = &free_func_chain},
+        .first = first,
+        .second = second,
+    };
+    return (JsonIterator)i;
+};

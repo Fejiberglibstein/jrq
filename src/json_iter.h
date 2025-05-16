@@ -49,5 +49,6 @@ JsonIterator iter_skip(JsonIterator, int);
 JsonIterator iter_take(JsonIterator, int);
 
 JsonIterator iter_split(Json, Json);
+JsonIterator iter_chain(JsonIterator first, JsonIterator second);
 
 #endif // _JSON_ITER_H
