@@ -452,6 +452,12 @@ Json json_object_get(Json j, Json key) {
     return json_null();
 }
 
+size_t json_object_length(Json j) {
+    assert(j.type == JSON_TYPE_OBJECT);
+
+    return json_get_object(j)->length;
+}
+
 Json json_string(const char *str) {
     JsonStringRef *s = (JsonStringRef *)refcnt_init(sizeof(*s));
 

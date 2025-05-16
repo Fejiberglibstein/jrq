@@ -95,6 +95,7 @@ size_t json_list_length(Json j);
 Json json_object_sized(size_t);
 Json json_object_set(Json j, Json key, Json value);
 Json json_object_get(Json j, Json key);
+size_t json_object_length(Json);
 
 // clang-format off
 #define JSON_OBJECT_1(k1, v1) json_object_set(json_object(), json_string(k1), v1)
