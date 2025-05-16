@@ -520,7 +520,7 @@ Json iter_collect(JsonIterator i) {
     if (i == NULL) {
         return json_null();
     }
-    Json list = json_list(); // TODO make iter_sized_hint
+    Json list = json_list_sized(iter_size_hint(i));
 
     IterOption opt;
 

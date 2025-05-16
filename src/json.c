@@ -340,6 +340,10 @@ JsonObject *json_get_object(Json j) {
 // }
 
 Json json_list_sized(size_t i) {
+    if (i == 0) {
+        i = 16;
+    }
+
     JsonList d = {0};
     vec_grow(d, i);
 
