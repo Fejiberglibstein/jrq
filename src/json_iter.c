@@ -3,6 +3,7 @@
 #include "src/json.h"
 #include "src/strings.h"
 #include <assert.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -30,6 +31,10 @@ typedef IterOption (*IteratorFunc)(JsonIterator);
 /// iterator is handled by `iter_free`
 typedef void (*FreeFunc)(JsonIterator);
 
+/// A SizeHintFunc is the function that gets called every time `iter_size_hint`
+/// is called.
+typedef size_t (*SizeHintFunc)(JsonIterator);
+
 /// Base "class" for an iterator.
 ///
 /// Each specific iterator implementation will "extend" this by having a JsonIterator as the first
@@ -45,6 +50,9 @@ struct JsonIterator {
 
     /// Function to be called when `iter_free` is called on the iterator
     FreeFunc free;
+
+    /// Function to be called when `iter_size_hint` is called on the iterator
+    SizeHintFunc size_hint;
 };
 
 // clang-format off
@@ -69,9 +77,49 @@ void iter_free(JsonIterator i) {
     free(i);
 }
 
+size_t iter_size_hint(JsonIterator i) {
+    if (i->size_hint == NULL) {
+        return -1;
+    }
+    return i->size_hint(i);
+}
+
 /*********
  * Utils *
  *********/
+
+/// When using this method as the size_hint function, you must have a `Json data`
+/// field immediately after the JsonIterator in the iterator's struct definition
+static size_t size_hint_json(JsonIterator _i) {
+    struct {
+        struct JsonIterator base;
+        Json data;
+    } *i = (typeof(i))_i;
+
+    switch (i->data.type) {
+    case JSON_TYPE_OBJECT:
+        return json_object_length(i->data);
+    case JSON_TYPE_STRING:
+        return json_string_length(i->data);
+    case JSON_TYPE_LIST:
+        return json_list_length(i->data);
+    default:
+        return 0;
+    }
+}
+
+static size_t size_hint_next(JsonIterator _i) {
+    struct {
+        struct JsonIterator base;
+        JsonIterator iter;
+    } *i = (typeof(i))_i;
+
+    return i->iter->size_hint(i->iter);
+}
+
+static size_t size_hint_unknown(JsonIterator _i) {
+    return 0;
+}
 
 /// When using this method as the free function, you must have a `Json data`
 /// field immediately after the JsonIterator in the iterator's struct definition
@@ -111,7 +159,7 @@ static void free_func_next_and_captures(JsonIterator _i) {
     JsonIterator CREATE_FUNC_NAME(Json j);                                                         \
                                                                                                    \
     typedef struct {                                                                               \
-        struct JsonIterator base;                                                                \
+        struct JsonIterator base;                                                                  \
         /* the json data being iterating over */                                                   \
         Json data;                                                                                 \
         /* the current index of the data we're iterating over */                                   \
@@ -124,7 +172,8 @@ static void free_func_next_and_captures(JsonIterator _i) {
         STRUCT_NAME *i = jrq_malloc(sizeof(*i));                                                   \
                                                                                                    \
         *i = (STRUCT_NAME) {                                                                       \
-            .base = {.func = &NEXT_FUNC_NAME, .free = &free_func_json},                          \
+            .base                                                                                  \
+            = {.func = &NEXT_FUNC_NAME, .free = &free_func_json, .size_hint = &size_hint_json},    \
             .index = 0,                                                                            \
             .data = j,                                                                             \
         };                                                                                         \
@@ -235,6 +284,7 @@ JsonIterator iter_map(JsonIterator iter, MapFunc func, void *captures, bool free
         .base = { 
             .func = &map_iter_next,
             .free = free_captures ? &free_func_next_and_captures : &free_func_next,
+            .size_hint = &size_hint_next,
         },
         .iter = iter,
         .map_func = func,
@@ -294,6 +344,7 @@ JsonIterator iter_filter(JsonIterator iter, FilterFunc func, void *captures, boo
         .base = { 
             .func = &filter_iter_next,
             .free = free_captures ? &free_func_next_and_captures : &free_func_next,
+            .size_hint = &size_hint_next,
         },
         .iter = iter,
         .filter_func = func,
@@ -386,6 +437,7 @@ JsonIterator iter_take_while(JsonIterator iter, FilterFunc F, void *captures, bo
         .base = { 
             .func = &take_while_iter_next,
             .free = free_captures ? &free_func_next_and_captures : &free_func_next,
+            .size_hint = &size_hint_next,
         },
         .iter = iter,
         .filter_func = F,
@@ -410,6 +462,7 @@ JsonIterator iter_skip_while(JsonIterator iter, FilterFunc F, void *captures, bo
         .base = { 
             .func = &skip_while_iter_next,
             .free = free_captures ? &free_func_next_and_captures : &free_func_next,
+            .size_hint = &size_hint_next,
         },
         .iter = iter,
         .filter_func = F,
@@ -420,9 +473,9 @@ JsonIterator iter_skip_while(JsonIterator iter, FilterFunc F, void *captures, bo
     return (JsonIterator)i;
 }
 
-/****************
- * EnumerateIter*
- ****************/
+/*****************
+ * EnumerateIter *
+ *****************/
 
 /// An iterator that creates a pair of [value, index] for each value yielded by
 /// the iterator
@@ -453,6 +506,7 @@ JsonIterator iter_enumerate(JsonIterator iter) {
         .base = { 
             .func = &enumerate_iter_next,
             .free = &free_func_next,
+            .size_hint = &size_hint_next,
         },
         .iter = iter,
         .index = 0,
@@ -512,6 +566,16 @@ static void free_func_zip(JsonIterator _i) {
     iter_free(i->b);
 }
 
+static size_t size_hint_zip(JsonIterator _i) {
+    ZipIter *i = (typeof(i))_i;
+
+    size_t a_length = iter_size_hint(i->a);
+    size_t b_length = iter_size_hint(i->b);
+
+    // return the minimum
+    return a_length < b_length ? a_length : b_length;
+}
+
 JsonIterator iter_zip(JsonIterator a, JsonIterator b) {
     ZipIter *i = jrq_malloc(sizeof(*i));
 
@@ -519,6 +583,7 @@ JsonIterator iter_zip(JsonIterator a, JsonIterator b) {
         .base = { 
             .func = &zip_iter_next,
             .free = &free_func_zip,
+            .size_hint = size_hint_zip,
         },
         .a = a,
         .b = b,
@@ -570,7 +635,7 @@ JsonIterator iter_take(JsonIterator _i, int N) {
     SkipTakeIter *i = jrq_malloc(sizeof(*i));
 
     *i = (SkipTakeIter) {
-        .base = {.func = &take_iter_next, .free = &free_func_next},
+        .base = {.func = &take_iter_next, .free = &free_func_next, .size_hint = &size_hint_next},
         .iter = _i,
         .N = N,
     };
@@ -582,7 +647,7 @@ JsonIterator iter_skip(JsonIterator _i, int N) {
     SkipTakeIter *i = jrq_malloc(sizeof(*i));
 
     *i = (SkipTakeIter) {
-        .base = {.func = &skip_iter_next, .free = &free_func_next},
+        .base = {.func = &skip_iter_next, .free = &free_func_next, .size_hint = &size_hint_next},
         .iter = _i,
         .N = N,
     };
@@ -641,7 +706,11 @@ static IterOption split_iter_next(JsonIterator _i) {
 JsonIterator iter_split(Json string, Json splitter) {
     SplitIter *i = jrq_malloc(sizeof(*i));
     *i = (SplitIter) {
-        .base = {.func = &split_iter_next, .free = &free_func_split},
+        .base = {
+            .func = &split_iter_next,
+            .free = &free_func_split,
+            .size_hint = &size_hint_unknown,
+        },
         .offset = 0,
         .string = string,
         .splitter = splitter,
@@ -679,13 +748,23 @@ static IterOption chain_iter_next(JsonIterator _i) {
     return iter_some(j);
 }
 
+static size_t size_hint_chain(JsonIterator _i) {
+    ChainIter *i = (ChainIter *)_i;
+
+    return iter_size_hint(i->first) + iter_size_hint(i->second);
+}
+
 /// Combines two iterators in a chain.
 ///
 /// When the first one ends, the second will be yielded
 JsonIterator iter_chain(JsonIterator first, JsonIterator second) {
     ChainIter *i = jrq_malloc(sizeof(*i));
     *i = (ChainIter) {
-        .base = {.func = &chain_iter_next, .free = &free_func_chain},
+        .base = {
+            .func = &chain_iter_next,
+            .free = &free_func_chain,
+            .size_hint = &size_hint_chain,
+        },
         .first = first,
         .second = second,
     };
