@@ -249,7 +249,7 @@ JsonIterator eval_func_zip(Eval *e, ASTNode *node) {
 
 static struct function_data FUNC_SUM = {
     .function_name = "sum",
-    .caller_type = JSON_TYPE_LIST_T(JSON_TYPE_NUMBER),
+    .caller_type = JSON_TYPE_ITERATOR,
 
     .parameter_types = (JsonType[]) {},
     .parameter_amount = 0,
@@ -267,6 +267,17 @@ Json eval_func_sum(Eval *e, ASTNode *node) {
     double sum = 0;
     for (size_t i = 0; i < json_list_length(j); i++) {
         Json el = json_list_get(j, i);
+        EXPECT_TYPE(
+            e,
+            el.type,
+            JSON_TYPE_NUMBER,
+            EVAL_ERR_FUNC_WRONG_ARGS(JSON_TYPE(JSON_TYPE_LIST_T(JSON_TYPE_NUMBER)), json_type(el))
+        );
+        if (eval_has_err(e)) {
+            json_free(el);
+            return json_invalid();
+        }
+
         sum += json_get_number(el);
         json_free(el);
     }
@@ -276,7 +287,7 @@ Json eval_func_sum(Eval *e, ASTNode *node) {
 
 static struct function_data FUNC_PRODUCT = {
     .function_name = "product",
-    .caller_type = JSON_TYPE_LIST_T(JSON_TYPE_NUMBER),
+    .caller_type = JSON_TYPE_LIST,
 
     .parameter_types = (JsonType[]) {},
     .parameter_amount = 0,
@@ -294,6 +305,17 @@ Json eval_func_product(Eval *e, ASTNode *node) {
     double product = 1;
     for (size_t i = 0; i < json_list_length(j); i++) {
         Json el = json_list_get(j, i);
+        EXPECT_TYPE(
+            e,
+            el.type,
+            JSON_TYPE_NUMBER,
+            EVAL_ERR_FUNC_WRONG_ARGS(JSON_TYPE(JSON_TYPE_LIST_T(JSON_TYPE_NUMBER)), json_type(el))
+        );
+        if (eval_has_err(e)) {
+            json_free(el);
+            return json_invalid();
+        }
+
         product *= json_get_number(el);
         json_free(el);
     }
@@ -355,7 +377,7 @@ Json eval_func_flatten(Eval *e, ASTNode *node) {
             e,
             json.list_inner_type,
             -1,
-            EVAL_ERR_FUNC_WRONG_CALLER("object or list", JSON_TYPE(json.list_inner_type))
+            EVAL_ERR_FUNC_WRONG_CALLER("list[object | list]", json_type(json))
         );
         json_free(json);
         return json_null();
