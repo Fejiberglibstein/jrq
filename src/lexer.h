@@ -41,6 +41,7 @@ typedef enum uint8_t {
     TOKEN_RANGLE,   // >
     TOKEN_LBRACKET, // [
     TOKEN_RBRACKET, // ]
+    TOKEN_ELLIPSIS, // ...
 
     // All of these have a `.inner` in the token
     TOKEN_IDENT,

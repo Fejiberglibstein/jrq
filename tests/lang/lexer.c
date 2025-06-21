@@ -2,6 +2,7 @@
 #include "../test.h"
 #include "src/strings.h"
 #include <assert.h>
+#include <stdio.h>
 
 void foo(char *, int, int);
 
@@ -47,6 +48,7 @@ char *tok_equal(Token exp, Token actual) {
 
 void lex(char *inp, Token *expected, int len) {
     Lexer l = lex_init(inp);
+    printf("input: %s\n", inp);
 
     for (int i = 0; i < len; i++) {
         LexResult res = lex_next_tok(&l);
@@ -224,6 +226,15 @@ void test_simple_lex() {
             },
             .type = TOKEN_IDENT,
             .inner.ident = string_from_chars("foo"),
+        },
+    }));
+    lex("..." , LIST((Token[]) {
+        (Token) {
+            .range = (Range) {
+                .start = (Position) {.col = 1, .line = 1},
+                .end = (Position) {.col = 3, .line = 1},
+            },
+            .type = TOKEN_ELLIPSIS,
         },
     }));
 }
