@@ -16,6 +16,7 @@ typedef enum {
     AST_TYPE_JSON_FIELD,
     AST_TYPE_JSON_OBJECT,
     AST_TYPE_GROUPING,
+    AST_TYPE_SPREAD,
 
     AST_TYPE_FALSE,
     AST_TYPE_TRUE,
@@ -95,6 +96,8 @@ typedef struct ASTNode {
         /// A json object:
         /// "{" (json_field",")* "}"
         Vec_ASTNode json_object;
+
+        struct ASTNode *spread;
 
     } inner;
 } ASTNode;

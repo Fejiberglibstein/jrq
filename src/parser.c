@@ -296,6 +296,21 @@ static ASTNode *primary(Parser *p) {
     return NULL;
 }
 
+static ASTNode *spread(Parser *p, ASTNode *(*other)(Parser *p)) {
+    if (!parser_matches(p, LIST((TokenType[]) {TOKEN_ELLIPSIS}))) {
+        return other(p);
+    }
+
+    Range start = p->prev.range;
+
+    ASTNode *node = jrq_calloc(sizeof(ASTNode), 1);
+    node->type = AST_TYPE_SPREAD;
+    node->inner.spread = access(p);
+    node->range = range_combine(start, p->prev.range);
+
+    return node;
+}
+
 static ASTNode *list(Parser *p) {
     Vec_ASTNode items = (Vec_ASTNode) {0};
     Range start = p->prev.range;
@@ -303,7 +318,7 @@ static ASTNode *list(Parser *p) {
     // If we don't have a closing paren immediately after the open paren
     if (p->curr.type != TOKEN_RBRACKET) {
         do {
-            vec_append(items, expression(p));
+            vec_append(items, spread(p, expression));
         } while (parser_matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
     }
 
@@ -341,7 +356,7 @@ static ASTNode *json(Parser *p) {
     // If we don't have a closing paren immediately after the open paren
     if (p->curr.type != TOKEN_RBRACE) {
         do {
-            vec_append(fields, json_field(p));
+            vec_append(fields, spread(p, json_field));
         } while (parser_matches(p, LIST((TokenType[]) {TOKEN_COMMA})));
     }
 
