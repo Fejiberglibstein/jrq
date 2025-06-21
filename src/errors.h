@@ -31,6 +31,8 @@
     TYPE_ERROR("Unexpected arguments to binary " OP " (expected %s, got %s)", exp, t)
 
 #define EVAL_ERR_JSON_KEY_STRING(t) TYPE_ERROR("Expected string in json key, got %s", t)
+#define EVAL_ERR_SPREAD_JSON(t) TYPE_ERROR("Expected spread operator to be object, got %s", t)
+#define EVAL_ERR_SPREAD_LIST(t) TYPE_ERROR("Expected spread operator to be list, got %s", t)
 
 #define EVAL_ERR_LIST_ACCESS(t) TYPE_ERROR("Expected number in list access, got %s", t)
 #define EVAL_ERR_JSON_ACCESS(t) TYPE_ERROR("Expected string in object access, got %s", t)

@@ -4,6 +4,7 @@
 #include "src/json.h"
 #include "src/parser.h"
 #include "src/utils.h"
+#include "src/vector.h"
 #include <assert.h>
 #include <math.h>
 #include <stdint.h>
@@ -51,8 +52,10 @@ EvalData eval_node(Eval *e, ASTNode *node) {
         unreachable("Json Field shouldn't be eval'd");
     case AST_TYPE_CLOSURE:
         unreachable("We shouldn't be evaluating closures");
+    case AST_TYPE_SPREAD:
+        unreachable("Spread shouldn't be eval'd");
     }
-    unreachable("No other case should be covered");
+    unreachable("Cannot reach");
 }
 
 static EvalData eval_node_access(Eval *e, ASTNode *node) {
@@ -99,6 +102,22 @@ static EvalData eval_node_json(Eval *e, ASTNode *node) {
 
     for (int i = 0; i < elems.length; i++) {
         ASTNode *field = elems.data[i];
+        if (field->type == AST_TYPE_SPREAD) {
+            Json inner_obj = eval_to_json(e, eval_node(e, field->inner.spread));
+            EXPECT_TYPE(
+                e, inner_obj.type, JSON_TYPE_OBJECT, EVAL_ERR_SPREAD_JSON(json_type(inner_obj))
+            );
+            BUBBLE_ERROR(e, (Json[]) {inner_obj});
+
+            JsonObject *inner_json_obj = json_get_object(inner_obj);
+            JsonObject *json_obj = json_get_object(obj);
+            for (int j = 0; j < inner_json_obj->length; j++) {
+                vec_append(*json_obj, inner_json_obj->data[j]);
+            }
+
+            json_free(inner_obj);
+            continue;
+        }
         assert(field->type == AST_TYPE_JSON_FIELD);
 
         Json key = eval_to_json(e, eval_node(e, field->inner.json_field.key));
@@ -120,6 +139,20 @@ static EvalData eval_node_list(Eval *e, ASTNode *node) {
     Json list = json_list_sized(elems.length);
 
     for (int i = 0; i < elems.length; i++) {
+        if (elems.data[i]->type == AST_TYPE_SPREAD) {
+            Json inner_list = eval_to_json(e, eval_node(e, elems.data[i]->inner.spread));
+            EXPECT_TYPE(
+                e, inner_list.type, JSON_TYPE_LIST, EVAL_ERR_SPREAD_LIST(json_type(inner_list))
+            );
+            BUBBLE_ERROR(e, (Json[]) {inner_list});
+
+            for (int j = 0; j < json_list_length(inner_list); j++) {
+                json_list_append(list, json_list_get(inner_list, j));
+            }
+
+            json_free(inner_list);
+            continue;
+        }
         Json el = eval_to_json(e, eval_node(e, elems.data[i]));
         BUBBLE_ERROR(e, (Json[]) {list, el});
 
