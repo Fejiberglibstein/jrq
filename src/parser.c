@@ -455,6 +455,9 @@ void ast_free(ASTNode *n) {
     case AST_TYPE_GROUPING:
         ast_free(n->inner.grouping);
         break;
+    case AST_TYPE_SPREAD:
+        ast_free(n->inner.spread);
+        break;
     case AST_TYPE_FALSE:
     case AST_TYPE_TRUE:
     case AST_TYPE_NULL:

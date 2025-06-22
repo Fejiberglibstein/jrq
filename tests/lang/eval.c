@@ -78,6 +78,10 @@ void simple_eval() {
             json_boolean(8 == 2)
         )
     ));
+
+    assert(test_eval(
+        "[...([10, 2]), 2]", json_null(), JSON_LIST(json_number(10), json_number(2), json_number(2))
+    ));
 }
 
 void accesor_eval() {

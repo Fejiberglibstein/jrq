@@ -44,8 +44,6 @@ EvalData eval_node(Eval *e, ASTNode *node) {
     case AST_TYPE_TRUE:
         return eval_from_json(json_boolean(true));
     case AST_TYPE_FALSE:
-        return eval_from_json(json_boolean(false));
-    case AST_TYPE_NULL:
         return eval_from_json(json_null());
     case AST_TYPE_JSON_FIELD:
         // This is handled when we eval the json_object type
@@ -112,6 +110,9 @@ static EvalData eval_node_json(Eval *e, ASTNode *node) {
             JsonObject *inner_json_obj = json_get_object(inner_obj);
             JsonObject *json_obj = json_get_object(obj);
             for (int j = 0; j < inner_json_obj->length; j++) {
+                json_copy(inner_json_obj->data[j].value);
+                json_copy(inner_json_obj->data[j].key);
+
                 vec_append(*json_obj, inner_json_obj->data[j]);
             }
 
@@ -147,7 +148,7 @@ static EvalData eval_node_list(Eval *e, ASTNode *node) {
             BUBBLE_ERROR(e, (Json[]) {inner_list});
 
             for (int j = 0; j < json_list_length(inner_list); j++) {
-                json_list_append(list, json_list_get(inner_list, j));
+                json_list_append(list, json_copy(json_list_get(inner_list, j)));
             }
 
             json_free(inner_list);
