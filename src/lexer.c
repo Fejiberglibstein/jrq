@@ -227,8 +227,6 @@ static LexResult parse_n_char(Lexer *l, TokenType *types, char *chars_to_match, 
     int result_index = 0;
 
     for (int i = 0; i < len; n = peek_char_n(l, ++i)) {
-        printf("`%c`, `%c`\n", n, chars_to_match[i]);
-
         if (n == chars_to_match[i]) {
             result_index = i + 1;
         } else {
