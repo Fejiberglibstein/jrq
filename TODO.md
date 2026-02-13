@@ -4,7 +4,7 @@
 - [ ] bulk allocator for initial file read
 - [ ] Bulk allocator for ASTNode (should be easy)
 
-- [ ] iter_size_hint() 
+- [x] iter_size_hint() 
 - Maybe remove type checking for lists? When an iterator is converted into a
   list only to be iterated over again (as the case with .sum()) it seems a bit
   pointless.
